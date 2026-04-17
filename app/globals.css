@@ -1,0 +1,53 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-void: #020206;
+  --color-neon-cyan: #06b6d4;
+  --color-neon-cyan-light: #22d3ee;
+  --color-neon-magenta: #ec4899;
+  --color-neon-magenta-light: #f472b6;
+  --color-neon-violet: #7c3aed;
+  --color-neon-violet-light: #a78bfa;
+  --color-neon-orange: #f97316;
+  --color-neon-lime: #84cc16;
+  --color-silver: #e0e0e8;
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), monospace;
+}
+
+html {
+  background-color: var(--color-void);
+  color: var(--color-silver);
+}
+
+body {
+  min-height: 100vh;
+}
+
+/* Lenis smooth scroll */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Ghost content image handling */
+.prose img {
+  border-radius: 0.5rem;
+  margin-inline: auto;
+}
+
+/* Glass panel base */
+.glass {
+  background: rgba(2, 2, 6, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+}
