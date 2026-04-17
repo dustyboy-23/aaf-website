@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { GhostPost } from "@/lib/ghost.types";
 import { getArticleImage } from "@/lib/article-images";
+import { StickyRail } from "./StickyRail";
 
 interface ArticleSideRailProps {
   related: GhostPost[];
@@ -9,23 +10,24 @@ interface ArticleSideRailProps {
 }
 
 /**
- * Sticky promo + content rail alongside the article body on desktop.
+ * Promo + content rail alongside the article body on desktop.
  *
- * Four real slots — only AAF-owned surfaces, no third-party ads, no filler:
+ * Five real slots — only AAF-owned surfaces, no third-party ads, no filler:
  *   1. Newsletter (hero slot — highest-yield conversion)
  *   2. Lead magnet (free PDF — Build Your First AI Agent)
  *   3. Related/Latest posts (velocity signal, next click)
  *   4. Skool community
  *   5. Venti Scale (B2B services — if you need this built for your business)
  *
- * Slots are big and bold on purpose. Previous rail was too easy to skim —
- * Dusty called it out. Bigger blocks, stronger headlines, clear CTAs.
+ * Wrapped in <StickyRail> (client) which handles the sticky math so the rail
+ * scrolls with the article, then pins its bottom to the viewport bottom once
+ * it reaches it — keeping the bottom blocks in view as the reader continues.
  */
 export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
   const railPosts = (related.length ? related : latest).slice(0, 4);
 
   return (
-    <aside className="space-y-5">
+    <StickyRail>
       {/* Slot 1 — Newsletter (hero) */}
       <div
         className="relative overflow-hidden rounded-2xl p-6 border"
@@ -249,6 +251,6 @@ export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
           Venti Scale →
         </a>
       </div>
-    </aside>
+    </StickyRail>
   );
 }
