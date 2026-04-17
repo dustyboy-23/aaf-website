@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Header } from "@/components/ui/Header";
 import { Footer } from "@/components/ui/Footer";
+import { GpuTierProvider } from "@/components/ui/GpuTierProvider";
+import { ScrollProvider } from "@/components/ui/ScrollProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -19,9 +21,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
       <body className="bg-void font-sans antialiased">
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <GpuTierProvider>
+          <ScrollProvider>
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </ScrollProvider>
+        </GpuTierProvider>
       </body>
     </html>
   );
