@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
 import { GPU_TIER } from "@/lib/constants";
 import { useGpuTier } from "@/components/ui/GpuTierProvider";
 import { NeuralCore } from "./NeuralCore";
@@ -53,11 +52,15 @@ export function NexusScene({
       >
         <SceneController scrollProgress={scrollProgress} />
         <ambientLight intensity={0.15} />
-        {/* HDR environment so physical materials have something to reflect.
-            background={false} keeps the void scene; preset "studio" gives the
-            concentrated specular highlights the fiber material needs to read
-            as wet glass instead of matte plastic. */}
-        <Environment preset="studio" background={false} />
+        {/* Bright positioned lights feed specular highlights to the fiber
+            glass material. Using direct lights instead of drei's
+            <Environment preset> — the preset suspends loading an HDR and
+            was killing hydration. Same visual effect (streaky highlights
+            running along the fibers) without the async load. */}
+        <pointLight position={[6, 4, 4]} intensity={40} color="#ffffff" />
+        <pointLight position={[-6, 4, 4]} intensity={40} color="#aee8ff" />
+        <pointLight position={[0, -5, 2]} intensity={25} color="#ffd5aa" />
+        <directionalLight position={[0, 0, 10]} intensity={0.6} />
         <NeuralCore />
         <ParticleField count={particleCount} />
         <NeuralBranches hoveredIndex={hoveredBranch} />
