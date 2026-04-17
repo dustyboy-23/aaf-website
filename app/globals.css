@@ -4,8 +4,8 @@
 @theme {
   /* Surface scale */
   --color-surface: #050507;
-  --color-surface-raised: #0d0d12;
-  --color-surface-overlay: #16161e;
+  --color-surface-raised: #0c0c11;
+  --color-surface-overlay: #14141c;
 
   /* Accent */
   --color-accent: #06b6d4;
@@ -17,8 +17,8 @@
   --color-text-tertiary: #4b5563;
 
   /* Borders */
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.16);
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-hover: rgba(255, 255, 255, 0.2);
 
   /* Category colors */
   --color-neon-cyan: #06b6d4;
@@ -55,4 +55,25 @@ html.lenis, html.lenis body { height: auto; }
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Article card */
+.article-card {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.article-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-hover);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Newsletter section */
+.newsletter-section {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(124, 58, 237, 0.06) 100%);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }

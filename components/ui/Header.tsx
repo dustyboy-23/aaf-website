@@ -33,15 +33,23 @@ export function Header() {
               </Link>
             ))}
           </nav>
-          <button
-            className="md:hidden text-text-primary"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Toggle menu"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {menuOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
-            </svg>
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/signal"
+              className="hidden sm:inline-flex px-4 py-1.5 rounded-md bg-accent text-surface text-xs font-semibold hover:bg-accent/90 transition-colors"
+            >
+              Subscribe
+            </Link>
+            <button
+              className="md:hidden text-text-primary"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Toggle menu"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                {menuOpen ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M3 12h18M3 6h18M3 18h18" />}
+              </svg>
+            </button>
+          </div>
         </div>
         {menuOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-3">
@@ -55,6 +63,13 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/signal"
+              onClick={() => setMenuOpen(false)}
+              className="inline-flex justify-center px-4 py-2 rounded-md bg-accent text-surface text-sm font-semibold hover:bg-accent/90 transition-colors mt-2"
+            >
+              Subscribe
+            </Link>
           </nav>
         )}
       </div>
