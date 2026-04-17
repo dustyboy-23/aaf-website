@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { getArticleImage } from "@/lib/article-images";
 import Link from "next/link";
 import type { GhostPost } from "@/lib/ghost.types";
 import { categoryColors, colors } from "@/lib/constants";
@@ -67,25 +68,16 @@ export function TodaysSignal({ post }: { post: GhostPost }) {
           }}
         >
           <div className="grid md:grid-cols-[1.1fr_1fr] gap-0">
-            {/* Image */}
+            {/* Image — always resolves (dedicated or slug-hashed cosmic fallback) */}
             <div className="relative aspect-[16/10] md:aspect-auto md:min-h-[360px] overflow-hidden">
-              {post.feature_image ? (
-                <Image
-                  src={post.feature_image}
-                  alt={post.title}
-                  fill
-                  sizes="(min-width: 768px) 55vw, 100vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                  priority
-                />
-              ) : (
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: `radial-gradient(ellipse at 30% 40%, ${color}40, transparent 70%), radial-gradient(ellipse at 70% 60%, #8A63FF30, transparent 70%)`,
-                  }}
-                />
-              )}
+              <Image
+                src={post.feature_image || getArticleImage(post.slug)}
+                alt={post.title}
+                fill
+                sizes="(min-width: 768px) 55vw, 100vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                priority
+              />
               {/* Image → panel fade for clean transition on mobile */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#09101B] via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:via-transparent md:to-[#09101B]/40" />
             </div>

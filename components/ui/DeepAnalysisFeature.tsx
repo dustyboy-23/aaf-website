@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { GhostPost } from "@/lib/ghost.types";
 import { colors } from "@/lib/constants";
+import { getArticleImage } from "@/lib/article-images";
 import { VERTICAL_TAG_MAP } from "./VerticalsGrid";
 
 /**
@@ -82,49 +83,23 @@ export function DeepAnalysisFeature({ posts }: { posts: GhostPost[] }) {
           href={`/${post.slug}`}
           className="group grid lg:grid-cols-[1.2fr_1fr] gap-10 lg:gap-14 items-center"
         >
-          {/* Visual */}
+          {/* Visual — always resolves (dedicated or slug-hashed cosmic fallback) */}
           <div className="relative aspect-[16/10] lg:aspect-[4/3] overflow-hidden rounded-2xl glass-panel">
-            {post.feature_image ? (
-              <Image
-                src={post.feature_image}
-                alt={post.title}
-                fill
-                sizes="(min-width: 1024px) 55vw, 100vw"
-                className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-              />
-            ) : (
-              <div
-                className="absolute inset-0"
-                style={{
-                  background: `
-                    radial-gradient(ellipse at 25% 25%, ${accent}40, transparent 60%),
-                    radial-gradient(ellipse at 75% 75%, #8A63FF30, transparent 60%),
-                    linear-gradient(135deg, #09101B, #140B21)
-                  `,
-                }}
-              >
-                {/* Schematic grid overlay to feel technical */}
-                <svg
-                  className="absolute inset-0 w-full h-full opacity-30"
-                  viewBox="0 0 400 300"
-                  fill="none"
-                  stroke={accent}
-                  strokeWidth="0.5"
-                >
-                  <defs>
-                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                      <path d="M 40 0 L 0 0 0 40" />
-                    </pattern>
-                  </defs>
-                  <rect width="400" height="300" fill="url(#grid)" />
-                  <circle cx="200" cy="150" r="60" stroke={accent} strokeWidth="1" opacity="0.6" />
-                  <circle cx="200" cy="150" r="100" stroke={accent} strokeWidth="0.7" opacity="0.3" />
-                  <circle cx="200" cy="150" r="140" stroke={accent} strokeWidth="0.5" opacity="0.2" />
-                </svg>
-              </div>
-            )}
-            {/* Depth vignette */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#04050A]/60 via-transparent to-transparent" />
+            <Image
+              src={post.feature_image || getArticleImage(post.slug)}
+              alt={post.title}
+              fill
+              sizes="(min-width: 1024px) 55vw, 100vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+            />
+            {/* Accent-tinted vignette on top so the image still feels
+                on-brand even when using a generic cosmic fallback. */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `linear-gradient(135deg, ${accent}18, transparent 60%), linear-gradient(to top, rgba(4,5,10,0.7), transparent 55%)`,
+              }}
+            />
           </div>
 
           {/* Copy */}
