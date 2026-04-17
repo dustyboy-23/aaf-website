@@ -9,23 +9,24 @@ interface NeuralBranchProps {
   points: THREE.Vector3[];
   color: string;
   brightness?: number;
-  /** Deterministic per-branch index — seeds the organic thickness bumps */
+  /** Deterministic per-fiber index — seeds the organic thickness bumps */
   index?: number;
-  /** Fatten or slim the whole vein — used to differentiate branches */
+  /** Fatten or slim the whole vein — used to differentiate fibers in a bundle */
   radiusScale?: number;
 }
 
 /**
- * Step 1 + 2 of the vein rebuild.
+ * Single fiber in a vein bundle.
  *
- * Material: plain `meshPhysicalMaterial` with partial transmission. Not
- * drei's MeshTransmissionMaterial — that one samples a back-buffer and
- * rendered black against our near-void scene. Plain physical with
- * emissive carries the glow without the extra render pass.
+ * Step 3: emissive was dominating the look, drowning out the specular
+ * highlights that make the reference read as real glass fiber. Flipped the
+ * ratio — emissive is now a whisper, specular (via envMap) + anisotropy does
+ * the visual work.
  *
- * Shape: custom `buildVeinGeometry` with a radius profile that tapers
- * from thick (core) to thin (tip) with organic sine-wave swells. Ends
- * the "perfect tube" look from step 1.
+ * Anisotropy gives the streaky hair/silk sheen you see running along each
+ * fiber in the reference; without it, thin glass tubes look like wet spaghetti.
+ * envMapIntensity is boosted so the HDR environment lights actually show up
+ * against the pitch-black scene.
  */
 export function NeuralBranch({
   points,
@@ -44,13 +45,18 @@ export function NeuralBranch({
       0.045 * radiusScale, // tip end
       index,
     );
-    return buildVeinGeometry(curve, 160, 20, radiusFn);
+    // Fewer segments per fiber — we have 8x the fiber count now, so budget
+    // each one leaner. 100×8 per fiber × 8 fibers × 6 branches ≈ 38k verts
+    // vs the old 160×20 single tube × 6 branches ≈ 19k. Doubles the vert
+    // count but the perceptual payoff (multi-strand look) is huge.
+    return buildVeinGeometry(curve, 100, 8, radiusFn);
   }, [points, index, radiusScale]);
 
-  // Smoothly ease emissive intensity on hover transitions
+  // Smoothly ease emissive intensity on hover transitions. Target stays low
+  // so specular highlights from the HDR environment read cleanly.
   useFrame(() => {
     if (!matRef.current) return;
-    const target = 0.8 * brightness;
+    const target = 0.25 * brightness;
     matRef.current.emissiveIntensity = THREE.MathUtils.lerp(
       matRef.current.emissiveIntensity,
       target,
@@ -64,18 +70,21 @@ export function NeuralBranch({
         ref={matRef}
         color={colorObj}
         emissive={colorObj}
-        emissiveIntensity={0.8}
-        transmission={0.65}
-        thickness={0.4}
-        ior={1.42}
-        roughness={0.12}
+        emissiveIntensity={0.25}
+        transmission={0.85}
+        thickness={0.12}
+        ior={1.45}
+        roughness={0.05}
         metalness={0}
         clearcoat={1}
-        clearcoatRoughness={0.12}
+        clearcoatRoughness={0.08}
         attenuationColor={colorObj}
-        attenuationDistance={0.8}
+        attenuationDistance={0.6}
+        anisotropy={0.9}
+        anisotropyRotation={0}
+        envMapIntensity={1.8}
         transparent
-        opacity={0.9}
+        opacity={0.88}
         toneMapped={false}
         side={THREE.DoubleSide}
       />

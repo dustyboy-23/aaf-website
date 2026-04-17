@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { Environment } from "@react-three/drei";
 import { GPU_TIER } from "@/lib/constants";
 import { useGpuTier } from "@/components/ui/GpuTierProvider";
 import { NeuralCore } from "./NeuralCore";
@@ -52,6 +53,11 @@ export function NexusScene({
       >
         <SceneController scrollProgress={scrollProgress} />
         <ambientLight intensity={0.15} />
+        {/* HDR environment so physical materials have something to reflect.
+            background={false} keeps the void scene; preset "studio" gives the
+            concentrated specular highlights the fiber material needs to read
+            as wet glass instead of matte plastic. */}
+        <Environment preset="studio" background={false} />
         <NeuralCore />
         <ParticleField count={particleCount} />
         <NeuralBranches hoveredIndex={hoveredBranch} />
