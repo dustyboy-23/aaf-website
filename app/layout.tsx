@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { Header } from "@/components/ui/Header";
 import { Footer } from "@/components/ui/Footer";
 import { GpuTierProvider } from "@/components/ui/GpuTierProvider";
@@ -28,6 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Footer />
           </ScrollProvider>
         </GpuTierProvider>
+        <Script
+          src="https://aiagentsfirst.com/public/ghost-portal.min.js"
+          data-ghost="https://aiagentsfirst.com"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );
