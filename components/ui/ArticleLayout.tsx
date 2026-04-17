@@ -55,6 +55,7 @@ export function ArticleLayout({ post }: ArticleLayoutProps) {
             width={800}
             height={450}
             className="w-full object-cover"
+            sizes="(max-width: 768px) 100vw, 768px"
             priority
           />
         </div>

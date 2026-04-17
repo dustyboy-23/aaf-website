@@ -36,6 +36,7 @@ export function ContentList({ posts, title, description }: ContentListProps) {
                     width={160}
                     height={96}
                     className="w-full h-full object-cover"
+                    sizes="160px"
                   />
                 </div>
               )}
