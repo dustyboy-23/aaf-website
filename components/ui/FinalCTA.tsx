@@ -1,14 +1,46 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function FinalCTA() {
   return (
-    <section className="py-32 text-center">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6">
-        <p className="font-mono text-xs uppercase tracking-widest text-silver/30 mb-6">the system is alive</p>
-        <h2 className="text-4xl sm:text-5xl font-black uppercase tracking-tighter text-white mb-4">Are you in?</h2>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-          <Link href="/news" className="px-8 py-3 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan-light font-mono text-xs uppercase tracking-widest hover:bg-neon-cyan/20 transition-colors">Enter the nexus</Link>
-          <Link href="/signal" className="px-8 py-3 rounded-full bg-white/5 border border-white/10 text-silver font-mono text-xs uppercase tracking-widest hover:bg-white/10 transition-colors">Latest drops</Link>
+    <section className="py-20 lg:py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* About */}
+          <div className="flex items-start gap-5">
+            <Image
+              src="/dusty.jpg"
+              alt="Dustin Gilmour"
+              width={56}
+              height={56}
+              className="rounded-full border border-border shrink-0"
+            />
+            <div>
+              <h3 className="text-base font-semibold text-white mb-2">
+                Built by Dustin Gilmour
+              </h3>
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Building the AI agent layer. Real signal from the frontier -- no
+                filler, no regurgitated summaries.
+              </p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="lg:text-right">
+            <p className="text-lg font-semibold text-white mb-2">
+              The agent era moves fast.
+            </p>
+            <p className="text-sm text-text-secondary mb-5">
+              Get the daily brief. One read. Zero noise.
+            </p>
+            <Link
+              href="/signal"
+              className="inline-flex px-7 py-3 rounded-md bg-accent text-surface font-semibold text-sm hover:bg-accent/90 transition-colors"
+            >
+              Get the daily signal
+            </Link>
+          </div>
         </div>
       </div>
     </section>

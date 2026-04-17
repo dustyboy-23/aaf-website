@@ -2,24 +2,39 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-void: #020206;
+  /* Surface scale */
+  --color-surface: #050507;
+  --color-surface-raised: #0d0d12;
+  --color-surface-overlay: #16161e;
+
+  /* Accent */
+  --color-accent: #06b6d4;
+  --color-accent-dim: #06b6d41e;
+
+  /* Text */
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #9ca3af;
+  --color-text-tertiary: #4b5563;
+
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.16);
+
+  /* Category colors */
   --color-neon-cyan: #06b6d4;
-  --color-neon-cyan-light: #22d3ee;
   --color-neon-magenta: #ec4899;
-  --color-neon-magenta-light: #f472b6;
   --color-neon-violet: #7c3aed;
-  --color-neon-violet-light: #a78bfa;
   --color-neon-orange: #f97316;
   --color-neon-lime: #84cc16;
-  --color-silver: #e0e0e8;
 
+  /* Typography */
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), monospace;
 }
 
 html {
-  background-color: var(--color-void);
-  color: var(--color-silver);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
 }
 
 body {
@@ -27,27 +42,17 @@ body {
 }
 
 /* Lenis smooth scroll */
-html.lenis, html.lenis body {
-  height: auto;
-}
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
+/* Ghost prose */
+.prose img { border-radius: 0.75rem; margin-inline: auto; }
 
-.lenis.lenis-smooth [data-lenis-prevent] {
-  overscroll-behavior: contain;
-}
-
-/* Ghost content image handling */
-.prose img {
-  border-radius: 0.5rem;
-  margin-inline: auto;
-}
-
-/* Glass panel base */
-.glass {
-  background: rgba(2, 2, 6, 0.6);
+/* Header blur */
+.header-blur {
+  background: rgba(5, 5, 7, 0.85);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(6, 182, 212, 0.15);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }

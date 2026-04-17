@@ -10,8 +10,8 @@ export function TagPill({ tag, className = "" }: TagPillProps) {
 
   return (
     <span
-      className={`inline-block font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border ${className}`}
-      style={{ color, borderColor: `${color}33`, backgroundColor: `${color}11` }}
+      className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded ${className}`}
+      style={{ color, backgroundColor: `${color}14` }}
     >
       {tag}
     </span>
