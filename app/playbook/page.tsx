@@ -73,84 +73,85 @@ export default function PlaybookPage() {
         }}
       />
 
-      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-24 pb-32">
-        {/* Eyebrow */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <span
-            className="h-2 w-2 rounded-full animate-pulse"
-            style={{
-              backgroundColor: colors.signalLime,
-              boxShadow: `0 0 12px ${colors.signalLime}`,
-            }}
-          />
-          <span
-            className="font-mono text-[11px] uppercase tracking-[0.3em] font-semibold"
-            style={{ color: colors.signalLime }}
-          >
-            Free Executive Playbook
-          </span>
-        </div>
+      <main className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-20 sm:pt-24 pb-32">
+        {/* Hero — two-column split */}
+        <section className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-12 lg:gap-16 items-center">
+          {/* Left — copy + form */}
+          <div className="order-2 lg:order-1">
+            <div className="flex items-center gap-3 mb-6">
+              <span
+                className="h-2 w-2 rounded-full animate-pulse"
+                style={{
+                  backgroundColor: colors.signalLime,
+                  boxShadow: `0 0 12px ${colors.signalLime}`,
+                }}
+              />
+              <span
+                className="font-mono text-[11px] uppercase tracking-[0.3em] font-semibold"
+                style={{ color: colors.signalLime }}
+              >
+                Free Executive Playbook
+              </span>
+            </div>
 
-        {/* Hero headline */}
-        <h1 className="text-center text-[clamp(2.75rem,6.5vw,5.25rem)] font-black tracking-[-0.045em] leading-[0.95] text-white max-w-4xl mx-auto">
-          Build your first{" "}
-          <span
-            className="inline-block"
-            style={{
-              background: `linear-gradient(135deg, ${colors.neonCyan} 0%, ${colors.ultraviolet} 60%, ${colors.hotMagenta} 100%)`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            AI agent
-          </span>
-          .
-        </h1>
+            <h1 className="text-[clamp(2.25rem,5vw,4rem)] font-black tracking-[-0.035em] leading-[1] text-white">
+              The playbook for your{" "}
+              <span
+                className="inline-block"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.neonCyan} 0%, ${colors.ultraviolet} 60%, ${colors.hotMagenta} 100%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                first real agent
+              </span>
+              .
+            </h1>
 
-        <p className="mt-8 text-center text-base sm:text-lg text-white/65 max-w-2xl mx-auto leading-relaxed">
-          The 11-page executive playbook for designing, building, and deploying
-          your first working AI agent. Not a chatbot. Not a prompt. A system
-          that does real work on your behalf.
-        </p>
+            <p className="mt-6 text-base sm:text-lg text-white/65 max-w-xl leading-relaxed">
+              Eleven pages. Seven decisions. The exact framework teams use to
+              ship agents that do real work. Not chatbots. Not prompts. Not
+              demos.
+            </p>
 
-        {/* Email form */}
-        <LeadMagnetForm />
-
-        {/* Hero mockups */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <div
-            className="relative aspect-[8.5/11] rounded-2xl overflow-hidden border"
-            style={{
-              borderColor: `${colors.signalLime}25`,
-              boxShadow: `0 20px 80px ${colors.ultraviolet}35, 0 0 40px ${colors.neonCyan}15`,
-            }}
-          >
-            <Image
-              src="/lead-magnet/cover.png"
-              alt="Cover of Build Your First AI Agent playbook"
-              fill
-              sizes="(max-width: 768px) 100vw, 400px"
-              className="object-cover"
-              priority
-            />
+            <LeadMagnetForm />
           </div>
-          <div
-            className="relative aspect-[8.5/11] rounded-2xl overflow-hidden border hidden md:block"
-            style={{
-              borderColor: `${colors.neonCyan}25`,
-              boxShadow: `0 20px 80px ${colors.hotMagenta}25, 0 0 40px ${colors.ultraviolet}20`,
-            }}
-          >
-            <Image
-              src="/lead-magnet/step.png"
-              alt="Interior step page from the playbook"
-              fill
-              sizes="(max-width: 768px) 100vw, 400px"
-              className="object-cover"
+
+          {/* Right — single cover mockup */}
+          <div className="order-1 lg:order-2 relative mx-auto w-full max-w-[360px] lg:max-w-none">
+            {/* Atmospheric glow behind the cover */}
+            <div
+              aria-hidden
+              className="absolute -inset-8 rounded-[2rem] pointer-events-none"
+              style={{
+                background: `
+                  radial-gradient(ellipse at 30% 20%, ${colors.neonCyan}30 0%, transparent 55%),
+                  radial-gradient(ellipse at 70% 80%, ${colors.ultraviolet}35 0%, transparent 55%)
+                `,
+                filter: "blur(24px)",
+              }}
             />
+            <div
+              className="relative aspect-[8.5/11] rounded-2xl overflow-hidden border"
+              style={{
+                borderColor: "rgba(255,255,255,0.08)",
+                boxShadow: `0 30px 90px ${colors.ultraviolet}40, 0 10px 40px rgba(0,0,0,0.6)`,
+                transform: "perspective(1400px) rotateY(-6deg) rotateX(2deg)",
+              }}
+            >
+              <Image
+                src="/lead-magnet/cover.png"
+                alt="Cover of Build Your First AI Agent — the AAF Executive Playbook"
+                fill
+                sizes="(max-width: 1024px) 360px, 500px"
+                className="object-cover"
+                priority
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
         {/* What's inside */}
         <section className="mt-32 max-w-5xl mx-auto">
