@@ -25,7 +25,7 @@ export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
   const railPosts = (related.length ? related : latest).slice(0, 4);
 
   return (
-    <aside className="lg:sticky lg:top-24 self-start space-y-5">
+    <aside className="space-y-5">
       {/* Slot 1 — Newsletter (hero) */}
       <div
         className="relative overflow-hidden rounded-2xl p-6 border"
