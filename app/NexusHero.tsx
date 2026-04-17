@@ -43,14 +43,57 @@ export function NexusHero() {
       className="relative h-[100vh] min-h-[640px] overflow-hidden"
       aria-label="AI Agents First — living neural nexus"
     >
-      {/* Void backdrop — always rendered so the fallback state never flashes white */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 55%, rgba(20,11,33,0.9) 0%, rgba(9,16,27,0.95) 45%, #04050A 100%)",
-        }}
-      />
+      {/* Layered void backdrop — multiple radial washes create atmospheric
+          depth even before the 3D canvas paints. Order matters: deepest
+          purple wash first, then cooler cyan halo off-center, then an
+          off-axis violet rim so the frame feels lit from above. Without
+          these layers the scene clips against a flat black and kills the
+          sense of infinite space the nexus needs. */}
+      <div className="absolute inset-0 z-0" aria-hidden>
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 110% 80% at 50% 55%, rgba(20,11,33,0.95) 0%, rgba(9,16,27,0.98) 45%, #04050A 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 mix-blend-screen opacity-80"
+          style={{
+            background:
+              "radial-gradient(ellipse 55% 45% at 50% 50%, rgba(69,240,255,0.10) 0%, rgba(138,99,255,0.06) 35%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 mix-blend-screen opacity-60"
+          style={{
+            background:
+              "radial-gradient(ellipse 45% 35% at 18% 18%, rgba(138,99,255,0.18) 0%, transparent 70%), radial-gradient(ellipse 45% 35% at 85% 85%, rgba(255,79,209,0.10) 0%, transparent 70%)",
+          }}
+        />
+        {/* Sub-pixel star field — tiny white dots at low opacity for depth parallax */}
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage:
+              "radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,0.7), transparent 60%)," +
+              "radial-gradient(1px 1px at 27% 68%, rgba(255,255,255,0.55), transparent 60%)," +
+              "radial-gradient(1px 1px at 41% 14%, rgba(255,255,255,0.65), transparent 60%)," +
+              "radial-gradient(1px 1px at 58% 55%, rgba(255,255,255,0.4), transparent 60%)," +
+              "radial-gradient(1px 1px at 72% 82%, rgba(255,255,255,0.6), transparent 60%)," +
+              "radial-gradient(1px 1px at 83% 33%, rgba(255,255,255,0.75), transparent 60%)," +
+              "radial-gradient(1px 1px at 91% 71%, rgba(255,255,255,0.5), transparent 60%)," +
+              "radial-gradient(1px 1px at 7% 81%, rgba(255,255,255,0.55), transparent 60%)",
+          }}
+        />
+        {/* Top / bottom edge falloff so the hero bleeds into the sections below */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-40 pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, transparent, #04050A)",
+          }}
+        />
+      </div>
 
       {/* 3D scene, streamed in after hydration */}
       <Suspense fallback={null}>

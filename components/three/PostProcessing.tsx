@@ -4,29 +4,41 @@ import {
   EffectComposer,
   Bloom,
   ChromaticAberration,
+  Vignette,
   Noise,
 } from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
+import { BlendFunction, KernelSize } from "postprocessing";
 import { Vector2 } from "three";
 
+/**
+ * Post-processing stack for the hero.
+ *
+ * Bloom uses luminanceThreshold 0.85 so only HDR-emissive materials
+ * (cores, rings, pulse heads, mote sparks) bleed light — not every bright
+ * DOM pixel visible on screen. Materials that should bloom MUST set
+ * `toneMapped: false` so their HDR colors survive the bloom pass.
+ */
 export function PostProcessingEffects() {
   return (
-    <EffectComposer>
+    <EffectComposer multisampling={0}>
       <Bloom
-        intensity={1.5}
-        luminanceThreshold={0.2}
+        intensity={1.1}
+        luminanceThreshold={0.85}
+        luminanceSmoothing={0.3}
         mipmapBlur
-        luminanceSmoothing={0.9}
+        kernelSize={KernelSize.LARGE}
       />
       <ChromaticAberration
-        offset={new Vector2(0.0006, 0.0006)}
+        offset={new Vector2(0.0008, 0.0008)}
         radialModulation
-        modulationOffset={0.15}
+        modulationOffset={0.25}
       />
-      <Noise
-        opacity={0.03}
-        blendFunction={BlendFunction.ADD}
+      <Vignette
+        offset={0.35}
+        darkness={0.7}
+        blendFunction={BlendFunction.NORMAL}
       />
+      <Noise opacity={0.04} blendFunction={BlendFunction.OVERLAY} />
     </EffectComposer>
   );
 }
