@@ -1,27 +1,28 @@
 import { getPosts } from "@/lib/content";
-import { HeroSection } from "./HeroSection";
-import { BentoGrid } from "@/components/ui/BentoGrid";
-import { CategoryShowcase } from "@/components/ui/CategoryShowcase";
+import { NexusHero } from "./NexusHero";
+import { TodaysSignal } from "@/components/ui/TodaysSignal";
+import { VerticalsGrid } from "@/components/ui/VerticalsGrid";
+import { DeepAnalysisFeature } from "@/components/ui/DeepAnalysisFeature";
+import { LatestDrops } from "@/components/ui/LatestDrops";
 import { NewsletterCTA } from "@/components/ui/NewsletterCTA";
-import { LatestFeed } from "@/components/ui/LatestFeed";
-import { FinalCTA } from "@/components/ui/FinalCTA";
+import { CommunityRail } from "@/components/ui/CommunityRail";
 
 export default async function Home() {
-  const { posts } = await getPosts({ limit: 20 });
+  const { posts } = await getPosts({ limit: 40 });
 
-  const featured = posts[0] ?? null;
-  const bentoPosts = posts.slice(1, 6);
-  const feedPosts = posts.slice(6);
+  const todaysSignal = posts[0] ?? null;
+  const feedPosts = posts.slice(1);
 
   return (
     <>
-      <HeroSection />
-      <div className="relative z-10 bg-surface">
-        {featured && <BentoGrid featured={featured} posts={bentoPosts} />}
-        <CategoryShowcase />
+      <NexusHero />
+      <div className="relative z-10 bg-void">
+        {todaysSignal && <TodaysSignal post={todaysSignal} />}
+        <VerticalsGrid posts={posts} />
+        <DeepAnalysisFeature posts={posts} />
+        <LatestDrops posts={feedPosts} />
         <NewsletterCTA />
-        <LatestFeed posts={feedPosts} />
-        <FinalCTA />
+        <CommunityRail />
       </div>
     </>
   );
