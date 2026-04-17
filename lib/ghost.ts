@@ -41,7 +41,10 @@ export async function getPosts(
 
 export async function getPostBySlug(slug: string): Promise<GhostPost | null> {
   const url = apiUrl(`posts/slug/${slug}`, { include: "tags" });
-  const data = await ghostFetch<GhostPostResponse>(url);
+  const res = await fetch(url, { next: { revalidate: 3600 } });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Ghost API error: ${res.status}`);
+  const data: GhostPostResponse = await res.json();
   return data.posts[0] ?? null;
 }
 
