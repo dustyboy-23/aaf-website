@@ -4,6 +4,9 @@ import type { GhostPost } from "@/lib/ghost.types";
 import { TagPill } from "./TagPill";
 import { getArticleImage } from "@/lib/article-images";
 import { ArticleSideRail } from "./ArticleSideRail";
+import { InlineArticlePromo, pickPromoKind } from "./InlineArticlePromo";
+import { ArticleBottomCTA } from "./ArticleBottomCTA";
+import { processArticleHtml, splitAtSecondH2 } from "@/lib/article-html";
 
 interface ArticleLayoutProps {
   post: GhostPost;
@@ -14,10 +17,11 @@ interface ArticleLayoutProps {
 /**
  * Editorial article layout.
  *
- * Shape: full-bleed hero image with title + meta overlaid, then a 2-column
- * desktop grid with the article body on the left and a sticky promo rail on
- * the right. Kills the old narrow centered-column feel that read as mobile
- * even on a 1440px screen.
+ * - Full-bleed hero with title + meta overlaid
+ * - 2-col desktop grid: article body + sticky promo rail
+ * - Mid-article inline promo injected after the 2nd <h2>
+ * - FAQ sections auto-transformed to <details> accordions
+ * - Full-bleed newsletter CTA before related posts
  */
 export function ArticleLayout({
   post,
@@ -31,6 +35,11 @@ export function ArticleLayout({
     year: "numeric",
   });
 
+  // Run server-side HTML transforms (FAQ → accordion) then split for inline promo
+  const processed = processArticleHtml(post.html);
+  const [bodyBefore, bodyAfter] = splitAtSecondH2(processed);
+  const promoKind = pickPromoKind(post.primary_tag?.slug);
+
   return (
     <article className="relative">
       {/* ——— Full-bleed hero ——— */}
@@ -43,7 +52,6 @@ export function ArticleLayout({
           sizes="100vw"
           className="object-cover"
         />
-        {/* Darken + tint so the title stays legible over any image */}
         <div
           className="absolute inset-0"
           style={{
@@ -111,10 +119,27 @@ export function ArticleLayout({
           <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-12 lg:gap-16">
             {/* Article body */}
             <div>
-              <div
-                className="prose prose-invert prose-lg max-w-none article-body"
-                dangerouslySetInnerHTML={{ __html: post.html }}
-              />
+              {bodyAfter ? (
+                <>
+                  <div
+                    className="prose prose-invert prose-lg max-w-none article-body"
+                    dangerouslySetInnerHTML={{ __html: bodyBefore }}
+                  />
+                  <InlineArticlePromo kind={promoKind} />
+                  <div
+                    className="prose prose-invert prose-lg max-w-none article-body"
+                    dangerouslySetInnerHTML={{ __html: bodyAfter }}
+                  />
+                </>
+              ) : (
+                <>
+                  <div
+                    className="prose prose-invert prose-lg max-w-none article-body"
+                    dangerouslySetInnerHTML={{ __html: bodyBefore }}
+                  />
+                  <InlineArticlePromo kind={promoKind} />
+                </>
+              )}
 
               {/* Share + tags */}
               <div className="mt-14 pt-8 border-t border-white/10">
@@ -158,6 +183,9 @@ export function ArticleLayout({
             <ArticleSideRail related={related} latest={latest} />
           </div>
         </div>
+
+        {/* ——— Bottom-of-article full-bleed CTA ——— */}
+        <ArticleBottomCTA />
 
         {/* ——— Related posts grid ——— */}
         {related.length > 0 && (

@@ -9,77 +9,136 @@ interface ArticleSideRailProps {
 }
 
 /**
- * Sticky promo + content rail that sits alongside the article body on
- * desktop. On mobile it stacks below the article so the prose reads first.
+ * Sticky promo + content rail alongside the article body on desktop.
  *
- * Slot order is intentional:
- *   1. Newsletter pitch — highest-yield conversion, top of fold
- *   2. Latest drops — signals velocity, gives readers a next click
- *   3. Daily Signal promo — pushes the daily habit loop
- *   4. Follow block — social proof / follow-through
+ * Four real slots — only AAF-owned surfaces, no third-party ads, no filler:
+ *   1. Newsletter (hero slot — highest-yield conversion)
+ *   2. Lead magnet (free PDF — Build Your First AI Agent)
+ *   3. Related/Latest posts (velocity signal, next click)
+ *   4. Skool community
+ *   5. Venti Scale (B2B services — if you need this built for your business)
  *
- * Every slot is "our own promo" — no third-party ads, just AAF surfaces we
- * want to drive traffic or signups toward.
+ * Slots are big and bold on purpose. Previous rail was too easy to skim —
+ * Dusty called it out. Bigger blocks, stronger headlines, clear CTAs.
  */
 export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
-  // Use related if we have them, else latest as filler
   const railPosts = (related.length ? related : latest).slice(0, 4);
 
   return (
-    <aside className="lg:sticky lg:top-24 self-start space-y-6">
-      {/* Slot 1 — Newsletter */}
+    <aside className="lg:sticky lg:top-24 self-start space-y-5">
+      {/* Slot 1 — Newsletter (hero) */}
       <div
         className="relative overflow-hidden rounded-2xl p-6 border"
         style={{
           background:
-            "linear-gradient(135deg, rgba(138,99,255,0.18) 0%, rgba(69,240,255,0.12) 100%), rgba(9,16,27,0.85)",
-          borderColor: "rgba(138,99,255,0.35)",
+            "linear-gradient(135deg, rgba(138,99,255,0.22) 0%, rgba(69,240,255,0.14) 100%), rgba(9,16,27,0.9)",
+          borderColor: "rgba(138,99,255,0.4)",
+        }}
+      >
+        <div
+          aria-hidden
+          className="absolute -top-16 -right-16 h-40 w-40 rounded-full"
+          style={{
+            background:
+              "radial-gradient(closest-side, rgba(69,240,255,0.35), transparent 70%)",
+            filter: "blur(8px)",
+          }}
+        />
+        <div className="relative">
+          <div className="flex items-center gap-2 mb-3">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{
+                backgroundColor: "#45F0FF",
+                boxShadow: "0 0 10px #45F0FF",
+              }}
+            />
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-neon-cyan)]">
+              Free Newsletter
+            </span>
+          </div>
+          <h3 className="text-xl font-black tracking-tight text-white leading-[1.1] mb-3">
+            The daily AI agent signal.
+          </h3>
+          <p className="text-sm text-white/75 leading-relaxed mb-5">
+            One email, every morning. The builds, tools, and frontier research
+            that actually matter — nothing that doesn&apos;t.
+          </p>
+          <Link
+            href="/#newsletter"
+            className="block w-full text-center px-4 py-3 rounded-full font-semibold text-sm text-[#04050A] transition-transform hover:-translate-y-0.5"
+            style={{
+              background: "linear-gradient(135deg, #45F0FF 0%, #8A63FF 100%)",
+              boxShadow:
+                "0 0 18px rgba(69,240,255,0.35), 0 0 36px rgba(138,99,255,0.25)",
+            }}
+          >
+            Subscribe free
+          </Link>
+        </div>
+      </div>
+
+      {/* Slot 2 — Lead magnet (free PDF) */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 border"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(183,255,60,0.14) 0%, rgba(69,240,255,0.08) 100%), rgba(9,16,27,0.9)",
+          borderColor: "rgba(183,255,60,0.32)",
         }}
       >
         <div className="flex items-center gap-2 mb-3">
           <span
             className="h-2 w-2 rounded-full"
             style={{
-              backgroundColor: "#45F0FF",
-              boxShadow: "0 0 10px #45F0FF",
+              backgroundColor: "#B7FF3C",
+              boxShadow: "0 0 10px #B7FF3C",
             }}
           />
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-neon-cyan)]">
-            Free Newsletter
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-signal-lime)]">
+            Free PDF
           </span>
         </div>
         <h3 className="text-lg font-black tracking-tight text-white leading-snug mb-2">
-          The daily AI agent signal.
+          Build Your First AI Agent.
         </h3>
         <p className="text-sm text-white/70 leading-relaxed mb-4">
-          One email. Every morning. The builds, tools, and frontier research
-          that matter — nothing that doesn&apos;t.
+          Free 11-page playbook. Role, stack, system prompt, tools, memory,
+          triggers, guardrails. The full blueprint.
         </p>
         <Link
-          href="/#newsletter"
-          className="block w-full text-center px-4 py-2.5 rounded-full font-semibold text-sm text-[#04050A] transition-transform hover:-translate-y-0.5"
-          style={{
-            background: "linear-gradient(135deg, #45F0FF 0%, #8A63FF 100%)",
-            boxShadow:
-              "0 0 18px rgba(69,240,255,0.35), 0 0 36px rgba(138,99,255,0.25)",
-          }}
+          href="/playbook"
+          className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] font-semibold text-white hover:text-[color:var(--color-signal-lime)] transition-colors"
         >
-          Subscribe free
+          Get the PDF
+          <svg
+            className="h-3 w-3"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path
+              d="M2 6h8M7 2l4 4-4 4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </Link>
       </div>
 
-      {/* Slot 2 — Latest / Related posts list */}
+      {/* Slot 3 — Related / Latest posts */}
       {railPosts.length > 0 && (
         <div className="glass-panel rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <span
               className="h-2 w-2 rounded-full"
               style={{
-                backgroundColor: "#B4F542",
-                boxShadow: "0 0 10px #B4F542",
+                backgroundColor: "#45F0FF",
+                boxShadow: "0 0 8px #45F0FF",
               }}
             />
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-signal-lime)]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-neon-cyan)]">
               {related.length ? "Related" : "Latest"}
             </span>
           </div>
@@ -116,32 +175,34 @@ export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
         </div>
       )}
 
-      {/* Slot 3 — Deep Dives pillar promo */}
+      {/* Slot 4 — Skool community */}
       <div
         className="relative overflow-hidden rounded-2xl p-6 border"
         style={{
           background:
-            "linear-gradient(135deg, rgba(255,79,209,0.14) 0%, rgba(138,99,255,0.12) 100%), rgba(9,16,27,0.85)",
+            "linear-gradient(135deg, rgba(255,79,209,0.16) 0%, rgba(138,99,255,0.12) 100%), rgba(9,16,27,0.9)",
           borderColor: "rgba(255,79,209,0.3)",
         }}
       >
         <div className="flex items-center gap-2 mb-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-hot-magenta)]">
-            Deep Analysis
+            Community
           </span>
         </div>
         <h3 className="text-lg font-black tracking-tight text-white leading-snug mb-2">
-          The long reads.
+          Build with other builders.
         </h3>
         <p className="text-sm text-white/70 leading-relaxed mb-4">
-          Full-length frontier breakdowns. The stories you won&apos;t get in a
-          ten-tweet thread.
+          Join the Skool community. Ask questions, share builds, learn from
+          people shipping real agents.
         </p>
-        <Link
-          href="/deep-dives"
+        <a
+          href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about"
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] font-semibold text-white hover:text-[color:var(--color-hot-magenta)] transition-colors"
         >
-          Browse deep dives
+          Join Skool
           <svg
             className="h-3 w-3"
             viewBox="0 0 12 12"
@@ -155,39 +216,38 @@ export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
               strokeLinejoin="round"
             />
           </svg>
-        </Link>
+        </a>
       </div>
 
-      {/* Slot 4 — Follow block */}
-      <div className="glass-panel rounded-2xl p-5">
+      {/* Slot 5 — Venti Scale (B2B services) */}
+      <div
+        className="relative overflow-hidden rounded-2xl p-6 border"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255,140,55,0.14) 0%, rgba(255,79,209,0.08) 100%), rgba(9,16,27,0.92)",
+          borderColor: "rgba(255,140,55,0.28)",
+        }}
+      >
         <div className="flex items-center gap-2 mb-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-white/60">
-            Follow the feed
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-[color:var(--color-signal-orange)]">
+            For Businesses
           </span>
         </div>
-        <p className="text-sm text-white/65 leading-relaxed mb-4">
-          New signals, builds, and breakdowns every day across the network.
+        <h3 className="text-lg font-black tracking-tight text-white leading-snug mb-2">
+          Need this built for your company?
+        </h3>
+        <p className="text-sm text-white/70 leading-relaxed mb-4">
+          We design and ship custom AI automations, social media systems, email
+          flows, and agent stacks for businesses that want to move fast.
         </p>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/news"
-            className="flex-1 min-w-[80px] text-center px-3 py-2 rounded-full font-mono text-[10px] uppercase tracking-[0.2em] font-semibold text-white/80 hover:text-white transition-colors glass-panel"
-          >
-            News
-          </Link>
-          <Link
-            href="/signal"
-            className="flex-1 min-w-[80px] text-center px-3 py-2 rounded-full font-mono text-[10px] uppercase tracking-[0.2em] font-semibold text-white/80 hover:text-white transition-colors glass-panel"
-          >
-            Signal
-          </Link>
-          <Link
-            href="/tools"
-            className="flex-1 min-w-[80px] text-center px-3 py-2 rounded-full font-mono text-[10px] uppercase tracking-[0.2em] font-semibold text-white/80 hover:text-white transition-colors glass-panel"
-          >
-            Tools
-          </Link>
-        </div>
+        <a
+          href="https://ventiscale.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] font-semibold text-white hover:text-[color:var(--color-signal-orange)] transition-colors"
+        >
+          Venti Scale →
+        </a>
       </div>
     </aside>
   );

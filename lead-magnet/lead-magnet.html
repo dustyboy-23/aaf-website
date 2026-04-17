@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Build Your First AI Agent — The AAF Executive Playbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #04050A;
+    --midnight: #09101B;
+    --dark-violet: #140B21;
+    --cyan: #45F0FF;
+    --violet: #8A63FF;
+    --magenta: #FF4FD1;
+    --lime: #B7FF3C;
+    --orange: #FF8C37;
+    --text: #ffffff;
+    --text-dim: #B8BCC8;
+    --text-faint: #6A6F7E;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 11pt;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+
+  .serif {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* Each .page renders as a single US Letter 8.5x11" sheet */
+  .page {
+    width: 8.5in;
+    height: 11in;
+    padding: 0.7in 0.75in;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    background: var(--void);
+  }
+  .page:last-child { page-break-after: auto; }
+
+  /* Shared atmospheric background */
+  .page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 10%, rgba(138,99,255,0.18), transparent 70%),
+      radial-gradient(ellipse 55% 45% at 90% 90%, rgba(69,240,255,0.13), transparent 70%),
+      radial-gradient(ellipse 40% 35% at 85% 15%, rgba(255,79,209,0.08), transparent 75%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Subtle grid overlay */
+  .page::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page > * { position: relative; z-index: 1; }
+
+  /* ─── Corner meta ─── */
+  .corner {
+    position: absolute;
+    top: 0.35in;
+    left: 0.75in;
+    right: 0.75in;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    z-index: 2;
+  }
+  .corner .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  .foot {
+    position: absolute;
+    bottom: 0.35in;
+    left: 0.75in;
+    right: 0.75in;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    z-index: 2;
+  }
+  .foot .brand {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+  }
+
+  /* ─── Page 1: Cover ─── */
+  .cover {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding-top: 0.8in;
+    padding-bottom: 1in;
+  }
+
+  .cover-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 18px;
+    border: 1px solid rgba(69,240,255,0.35);
+    border-radius: 999px;
+    background: rgba(69,240,255,0.05);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    width: fit-content;
+  }
+  .cover-badge .ping {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  .cover-title {
+    font-size: 72pt;
+    font-weight: 900;
+    line-height: 0.94;
+    letter-spacing: -0.045em;
+    margin-top: 0.4in;
+    color: #fff;
+  }
+  .cover-title .grad {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 60%, var(--magenta) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .cover-sub-wrap {
+    margin-top: 0.35in;
+    max-width: 5.6in;
+  }
+  .cover-sub {
+    font-size: 16pt;
+    line-height: 1.4;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .cover-kicker {
+    margin-top: 0.55in;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 22pt;
+    line-height: 1.25;
+    color: var(--text);
+    max-width: 5.2in;
+  }
+  .cover-kicker .mark {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cover-meta {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: auto;
+  }
+  .cover-meta .left {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    line-height: 2;
+  }
+  .cover-meta .left strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .seal {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 1px solid rgba(69,240,255,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: radial-gradient(circle at 35% 30%, rgba(69,240,255,0.18), transparent 65%);
+    flex-shrink: 0;
+  }
+  .seal::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(138,99,255,0.25);
+  }
+  .seal-inner {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7pt;
+    letter-spacing: 0.3em;
+    text-align: center;
+    color: var(--text);
+    line-height: 1.55;
+  }
+  .seal-inner .big {
+    display: block;
+    font-size: 14pt;
+    letter-spacing: 0;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 2px 0;
+  }
+
+  /* ─── Section intro / TOC ─── */
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+  }
+  .section-title {
+    font-size: 40pt;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+    margin-top: 12px;
+    color: #fff;
+  }
+  .section-title .grad {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .lede {
+    font-size: 13pt;
+    line-height: 1.55;
+    color: var(--text-dim);
+    margin-top: 0.3in;
+    max-width: 5.8in;
+  }
+  .lede strong { color: var(--text); font-weight: 600; }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(69,240,255,0.35), transparent);
+    margin: 0.35in 0;
+  }
+
+  /* ─── TOC ─── */
+  .toc {
+    margin-top: 0.35in;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toc-row {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    align-items: baseline;
+    gap: 18px;
+    padding: 10px 18px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    background: rgba(9,16,27,0.55);
+    transition: border-color 0.2s;
+  }
+  .toc-row .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+  .toc-row .label {
+    font-size: 12pt;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .toc-row .label .sub {
+    display: block;
+    font-size: 9.5pt;
+    font-weight: 400;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .toc-row .pg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    color: var(--text-faint);
+    letter-spacing: 0.15em;
+  }
+
+  /* ─── Step pages ─── */
+  .step-head {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.3em;
+  }
+  .step-num-big {
+    font-size: 120pt;
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: absolute;
+    top: 0.55in;
+    right: 0.6in;
+    opacity: 0.18;
+    z-index: 0;
+  }
+  .step-title {
+    font-size: 32pt;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-top: 0.22in;
+    color: #fff;
+  }
+  .step-intro {
+    font-size: 12pt;
+    line-height: 1.6;
+    color: var(--text-dim);
+    margin-top: 0.25in;
+    max-width: 6in;
+  }
+  .step-intro strong { color: var(--text); font-weight: 600; }
+
+  .body p {
+    font-size: 10.5pt;
+    line-height: 1.65;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+  .body p strong { color: var(--text); font-weight: 600; }
+  .body p em { color: var(--cyan); font-style: normal; font-weight: 500; }
+
+  /* ─── Panels ─── */
+  .panel {
+    margin-top: 0.3in;
+    padding: 0.25in 0.3in;
+    border: 1px solid rgba(69,240,255,0.22);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(69,240,255,0.05), rgba(138,99,255,0.035));
+    position: relative;
+  }
+  .panel.warm {
+    border-color: rgba(255,140,55,0.28);
+    background: linear-gradient(135deg, rgba(255,140,55,0.05), rgba(255,79,209,0.035));
+  }
+  .panel.lime {
+    border-color: rgba(183,255,60,0.28);
+    background: linear-gradient(135deg, rgba(183,255,60,0.05), rgba(69,240,255,0.035));
+  }
+  .panel .panel-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .panel.warm .panel-label { color: var(--orange); }
+  .panel.lime .panel-label { color: var(--lime); }
+
+  .panel h4 {
+    font-size: 13pt;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.01em;
+  }
+  .panel p {
+    font-size: 10pt;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  .panel p + p { margin-top: 8px; }
+
+  /* Code/prompt box */
+  .code {
+    margin-top: 16px;
+    padding: 18px 20px;
+    background: rgba(4,5,10,0.85);
+    border: 1px solid rgba(138,99,255,0.28);
+    border-radius: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5pt;
+    line-height: 1.65;
+    color: #D6E4FF;
+    white-space: pre-wrap;
+    position: relative;
+  }
+  .code::before {
+    content: "PROMPT";
+    position: absolute;
+    top: -8px;
+    left: 18px;
+    padding: 2px 8px;
+    background: var(--void);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7pt;
+    letter-spacing: 0.3em;
+    color: var(--violet);
+    font-weight: 700;
+  }
+  .code .token-key { color: var(--cyan); }
+  .code .token-accent { color: var(--lime); }
+
+  /* Checklist */
+  .checklist {
+    margin-top: 14px;
+    list-style: none;
+  }
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: var(--text-dim);
+  }
+  .checklist li:last-child { border-bottom: 0; }
+  .checklist li::before {
+    content: "";
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--cyan);
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .checklist li strong { color: var(--text); font-weight: 600; margin-right: 4px; }
+
+  /* Numbered steps inside a step page */
+  .mini-steps {
+    margin-top: 14px;
+    counter-reset: mini;
+  }
+  .mini-steps li {
+    list-style: none;
+    counter-increment: mini;
+    padding: 10px 0 10px 38px;
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: var(--text-dim);
+  }
+  .mini-steps li:last-child { border-bottom: 0; }
+  .mini-steps li::before {
+    content: counter(mini, decimal-leading-zero);
+    position: absolute;
+    left: 0; top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9pt;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 0.05em;
+  }
+  .mini-steps li strong { color: var(--text); font-weight: 600; }
+
+  /* ─── Idea grid (what to agentize) ─── */
+  .idea-grid {
+    margin-top: 0.35in;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .idea {
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    background: rgba(9,16,27,0.55);
+    font-size: 10pt;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  .idea .idea-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7pt;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .idea.p-magenta .idea-tag { color: var(--magenta); }
+  .idea.p-lime .idea-tag { color: var(--lime); }
+  .idea.p-orange .idea-tag { color: var(--orange); }
+
+  /* ─── Finale ─── */
+  .finale-wrap {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 100%;
+    padding-top: 0.5in;
+    padding-bottom: 0.2in;
+  }
+  .finale-title {
+    font-size: 46pt;
+    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+    color: #fff;
+    margin-top: 8px;
+  }
+  .finale-title .grad {
+    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 60%, var(--magenta) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cta-grid {
+    margin-top: 0.35in;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .cta {
+    padding: 18px 20px;
+    border: 1px solid rgba(69,240,255,0.22);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(69,240,255,0.08), rgba(138,99,255,0.05));
+  }
+  .cta.magenta {
+    border-color: rgba(255,79,209,0.25);
+    background: linear-gradient(135deg, rgba(255,79,209,0.08), rgba(138,99,255,0.05));
+  }
+  .cta.orange {
+    border-color: rgba(255,140,55,0.25);
+    background: linear-gradient(135deg, rgba(255,140,55,0.08), rgba(255,79,209,0.04));
+  }
+  .cta.lime {
+    border-color: rgba(183,255,60,0.25);
+    background: linear-gradient(135deg, rgba(183,255,60,0.08), rgba(69,240,255,0.04));
+  }
+  .cta .cta-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+  }
+  .cta.magenta .cta-label { color: var(--magenta); }
+  .cta.orange .cta-label { color: var(--orange); }
+  .cta.lime .cta-label { color: var(--lime); }
+
+  .cta h3 {
+    font-size: 17pt;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-top: 6px;
+    color: #fff;
+  }
+  .cta p {
+    font-size: 10pt;
+    line-height: 1.55;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .cta .link {
+    display: inline-block;
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    font-weight: 700;
+    border-bottom: 1px solid rgba(69,240,255,0.35);
+    padding-bottom: 2px;
+  }
+  .cta.magenta .link { color: var(--magenta); border-bottom-color: rgba(255,79,209,0.35); }
+  .cta.orange .link { color: var(--orange); border-bottom-color: rgba(255,140,55,0.35); }
+  .cta.lime .link { color: var(--lime); border-bottom-color: rgba(183,255,60,0.35); }
+
+  .signoff {
+    margin-top: 0.3in;
+    padding-top: 0.22in;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .signoff .line1 {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 20pt;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .signoff .line2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  .v-ornament {
+    position: absolute;
+    top: 0.75in;
+    right: 0.75in;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-align: right;
+    color: var(--text-faint);
+    line-height: 1.8;
+  }
+  .v-ornament strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 1 — COVER                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="cover">
+    <div>
+      <div class="cover-badge">
+        <span class="ping"></span>
+        <span>AI Agents First · Starter Edition</span>
+      </div>
+      <h1 class="cover-title">
+        Build Your<br>
+        First<br>
+        <span class="grad">AI Agent.</span>
+      </h1>
+      <div class="cover-sub-wrap">
+        <p class="cover-sub">
+          The executive playbook for designing, building, and deploying your first working AI agent. Not a chatbot. Not a prompt. A system that does real work on your behalf.
+        </p>
+      </div>
+      <p class="cover-kicker">
+        You don't need to write code.<br>
+        You need a clear role, the right stack, and <span class="mark">ninety focused minutes</span>.
+      </p>
+    </div>
+
+    <div class="cover-meta">
+      <div class="left">
+        <div><strong>Volume 01</strong></div>
+        <div>Starter Kit · 2026</div>
+        <div>aiagentsfirst.com</div>
+      </div>
+      <div class="seal">
+        <div class="seal-inner">
+          A·A·F
+          <span class="big">01</span>
+          FRONTIER
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 2 — INTRO + TOC                                                 -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="corner">
+    <span><span class="dot"></span>AAF · Starter Kit</span>
+    <span>Contents · 02</span>
+  </div>
+
+  <p class="section-label">The Frame</p>
+  <h2 class="section-title">
+    <span class="grad">7 steps.</span>
+    <br>One working agent.
+  </h2>
+
+  <p class="lede">
+    An AI agent is a system with a defined role, the tools to do its job, and the memory to apply both consistently. This playbook walks through the seven decisions that separate a working agent from a novelty chatbot. The exact stack choices, prompts, and deployment paths used by teams shipping AI agents in production.
+  </p>
+
+  <div class="divider"></div>
+
+  <div class="toc">
+    <div class="toc-row"><span class="num">01</span><span class="label">Define the role, not the task.<span class="sub">Tasks are brittle. Roles scale.</span></span><span class="pg">pg 04</span></div>
+    <div class="toc-row"><span class="num">02</span><span class="label">Choose the stack.<span class="sub">Match the platform to the use case, not the hype.</span></span><span class="pg">pg 05</span></div>
+    <div class="toc-row"><span class="num">03</span><span class="label">Write the system prompt.<span class="sub">The agent's constitution. Role, constraints, format.</span></span><span class="pg">pg 06</span></div>
+    <div class="toc-row"><span class="num">04</span><span class="label">Connect the tools.<span class="sub">Tools turn a chatbot into an agent. Pick three.</span></span><span class="pg">pg 07</span></div>
+    <div class="toc-row"><span class="num">05</span><span class="label">Give it memory.<span class="sub">Three layers of context that compound over time.</span></span><span class="pg">pg 08</span></div>
+    <div class="toc-row"><span class="num">06</span><span class="label">Trigger the first run.<span class="sub">Manual, scheduled, event-based. When to use each.</span></span><span class="pg">pg 09</span></div>
+    <div class="toc-row"><span class="num">07</span><span class="label">Measure, harden, scale.<span class="sub">From 70% quality to production-grade autonomy.</span></span><span class="pg">pg 10</span></div>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Vol 01 · 2026</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 3 — WHAT IS AN AGENT                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="corner">
+    <span><span class="dot"></span>Before you start</span>
+    <span>Primer · 03</span>
+  </div>
+
+  <p class="section-label">First, the definition that matters</p>
+  <h2 class="section-title">What an <span class="grad">AI agent</span><br>actually is.</h2>
+
+  <p class="lede">
+    Most content on this topic conflates three different things: chatbots, prompts, and agents. Here's the line that separates them.
+  </p>
+
+  <div class="panel">
+    <div class="panel-label">The one-liner</div>
+    <h4>An AI agent is a system with a defined role, the tools to act without asking, and the memory to apply both consistently over time.</h4>
+    <p>
+      Every real agent has three components: <em style="color:var(--cyan);font-style:normal;font-weight:600;">(1) instructions</em>, the role, behavior, and constraints. <em style="color:var(--violet);font-style:normal;font-weight:600;">(2) tools</em>, what it can actually do in the real world: send email, query APIs, read files, browse, execute code. <em style="color:var(--magenta);font-style:normal;font-weight:600;">(3) memory</em>, the examples, rules, and prior context it reads before every action.
+    </p>
+  </div>
+
+  <div class="body">
+    <p><strong>"Isn't this a chatbot?"</strong> A chatbot answers questions you type. An agent has a job description, the tools to execute it, and the memory to stay consistent across runs. You configure it once. It keeps working.</p>
+    <p><strong>"Do I need to code?"</strong> No. Modern platforms (Claude Desktop with MCP, ChatGPT with Custom GPTs and Actions, n8n, Zapier) let you build production agents from a browser. Code is the upgrade path, not the entry fee.</p>
+    <p><strong>"What does a real agent do?"</strong> Triage your inbox and surface only what needs you. Draft external replies in your voice. Run a daily report from Stripe and GA. Research inbound leads and queue personalized first touches. Publish content on schedule. Anything with a repeatable process and a measurable outcome.</p>
+  </div>
+
+  <div class="panel warm">
+    <div class="panel-label">Set expectations</div>
+    <p><strong>Your first agent owns one lane, not your business.</strong> Teams shipping serious AI products did not start with an omni-agent. They started with one narrow role done better than a human, then stacked more. That's the path.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Primer · 03</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 4 — STEP 1                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">01</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 01 of 07</span>
+    <span>Define the role · 04</span>
+  </div>
+
+  <p class="step-num">STEP 01</p>
+  <h2 class="step-title">Define the role.<br>Not the task.</h2>
+
+  <p class="step-intro">
+    <strong>The difference between a useful agent and a clever toy is whether it was built around a role or a task.</strong> Tasks are brittle: the inputs change and the agent breaks. Roles scale: the agent owns a function, not a single job.
+  </p>
+
+  <div class="body">
+    <p>A task-based agent does one isolated thing: "rewrite this email." A role-based agent owns an outcome: "you are my inbox editor. You triage, draft replies, and escalate the three messages I need to see." The second agent keeps working when the inputs change next week.</p>
+  </div>
+
+  <div class="panel lime">
+    <div class="panel-label">The role brief. Answer all four.</div>
+    <ul class="checklist">
+      <li><strong>Who does it replace?</strong> Name the human role. Inbox editor. Research analyst. LinkedIn ghostwriter. Pipeline SDR. Operations reporter.</li>
+      <li><strong>What outcome does it deliver?</strong> One sentence. "A sorted inbox with three escalations and ten drafted replies by 9am."</li>
+      <li><strong>When does it run?</strong> Manual, scheduled, or triggered by an event. Pick one for v1.</li>
+      <li><strong>How is success measured?</strong> "Zero inbox by noon." "Five research briefs per week." Measure or it's theater.</li>
+    </ul>
+  </div>
+
+  <p class="section-label" style="margin-top:0.3in;color:var(--magenta)">Real roles, shipped by real operators</p>
+  <div class="idea-grid">
+    <div class="idea"><span class="idea-tag">FOUNDER</span>Inbox editor. Triages, drafts, escalates the three that need you.</div>
+    <div class="idea p-magenta"><span class="idea-tag">CREATOR</span>Content strategist. Turns voice notes into publish-ready posts for three platforms.</div>
+    <div class="idea p-lime"><span class="idea-tag">OPERATOR</span>Reporting analyst. Pulls Stripe + GA daily, returns a one-page dashboard.</div>
+    <div class="idea p-orange"><span class="idea-tag">SALES</span>Pipeline SDR. Researches inbound leads, drafts personalized first touch.</div>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 01 · 04</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 5 — STEP 2                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">02</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 02 of 07</span>
+    <span>Choose the stack · 05</span>
+  </div>
+
+  <p class="step-num">STEP 02</p>
+  <h2 class="step-title">Choose the stack.<br><span style="background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Ignore the rest.</span></h2>
+
+  <p class="step-intro">
+    There is no best stack. There is a best stack for your role, budget, and technical comfort. The trap is picking the most powerful option before you know what you're building.
+  </p>
+
+  <ol class="mini-steps">
+    <li><strong>Personal assistant with tools.</strong> Claude Desktop plus MCP servers. Free on Claude Pro. Fastest path to a real agent that can read your files, email, and calendar. Ceiling: your laptop stays on.</li>
+    <li><strong>Shareable branded assistant.</strong> OpenAI Custom GPT with Actions. $20/mo. Shareable link. Solid ceiling for most SMB use cases. Weaker on file handling than Claude.</li>
+    <li><strong>Workflow automation agent.</strong> n8n (self-host, powerful) or Zapier/Make (cloud, simpler). Best when the work is a pipeline with multiple apps, not a chat. Runs on a schedule or trigger.</li>
+    <li><strong>Developer stack.</strong> Claude Agents SDK or OpenAI Assistants API. Full control, custom tools, production-grade deployments. Requires code. Ceiling: anything.</li>
+  </ol>
+
+  <div class="panel lime">
+    <div class="panel-label">The recommendation for v1</div>
+    <h4>Start with Claude Desktop + MCP, or n8n.</h4>
+    <p>Both deliver a real agent with real tools in one focused afternoon. The role and the system prompt transfer between stacks later. What you're building now is the blueprint. The platform is just a substrate.</p>
+  </div>
+
+  <div class="panel warm">
+    <div class="panel-label">What to ignore for your first build</div>
+    <p>Multi-agent frameworks (CrewAI, AutoGen), vector databases (Pinecone, Weaviate), and custom orchestration. All real, all powerful, and all wrong for agent #1. Ship the single-agent version first. Graduate to frameworks when you've hit their ceiling.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 02 · 05</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 6 — STEP 3                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">03</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 03 of 07</span>
+    <span>System prompt · 06</span>
+  </div>
+
+  <p class="step-num">STEP 03</p>
+  <h2 class="step-title">Write the system prompt.<br><span style="background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">The constitution.</span></h2>
+
+  <p class="step-intro">
+    The system prompt is what the agent reads before every action. Role, constraints, format. A strong one makes a mid-tier model feel senior. A weak one makes a frontier model feel like a lazy intern.
+  </p>
+
+  <div class="code"><span class="token-key"># ROLE</span>
+You are <span class="token-accent">[role]</span>, a senior <span class="token-accent">[function]</span>. Sole job: <span class="token-accent">[outcome]</span>.
+
+<span class="token-key"># TOOLS</span>
+Access: <span class="token-accent">[list tools]</span>. Use them without asking inside scope.
+
+<span class="token-key"># HOW I WORK</span>
+- Direct. No hedging, no preambles, no apologies.
+- Voice: <span class="token-accent">[traits]</span>. Never use: <span class="token-accent">[banned patterns]</span>.
+- When in doubt, act. When out of scope, escalate.
+
+<span class="token-key"># OUTPUT FORMAT</span>
+1. The deliverable (lead with it, no setup)
+2. What you used to reach it (one line)
+3. Anything that needs attention (flag, don't bury)
+
+<span class="token-key"># SCOPE</span>
+IN: <span class="token-accent">[3-5 things the agent owns]</span>
+OUT: <span class="token-accent">[3-5 things it escalates]</span>
+
+<span class="token-key"># HARD LIMITS</span>
+You do not <span class="token-accent">[list 2-3 refusals]</span>.</div>
+
+  <div class="panel lime">
+    <div class="panel-label">Where it goes</div>
+    <p>Claude Desktop: "Project instructions." Custom GPTs: "Instructions." n8n AI Agent: "System message." Paste the filled-in version. Save. The agent has a constitution.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 03 · 06</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 7 — STEP 4                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">04</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 04 of 07</span>
+    <span>Connect the tools · 07</span>
+  </div>
+
+  <p class="step-num">STEP 04</p>
+  <h2 class="step-title">Connect the tools.<br><span style="background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">This is the difference.</span></h2>
+
+  <p class="step-intro">
+    Without tools, you have an eloquent chatbot. With tools, you have an agent. This is the step most people skip, and it is the single biggest determinant of whether your agent actually does work or just talks about it.
+  </p>
+
+  <div class="body">
+    <p>A tool is anything the agent can invoke to take a real action: read a file, search the web, send an email, query an API, post to a channel, execute code, browse a site. Start with three, chosen to match the role.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">The starter toolset. Pick three.</div>
+    <ul class="checklist">
+      <li><strong>Web search.</strong> So the agent can research beyond its training cutoff. Claude has this native. GPT has it via browsing.</li>
+      <li><strong>File or document access.</strong> So it can read the project knowledge you'll attach in Step 05, plus anything you drop mid-task.</li>
+      <li><strong>Email, Slack, or calendar.</strong> So it can act on your behalf. Inbox editor needs Gmail. SDR agent needs email plus LinkedIn. Reporting agent needs calendar for context.</li>
+      <li><strong>API call.</strong> So it can pull from or write to your stack: Notion, Airtable, Stripe, Sheets, your CRM. Most modern tools expose a clean API.</li>
+    </ul>
+  </div>
+
+  <div class="panel lime">
+    <div class="panel-label">How to wire tools, by stack</div>
+    <p><strong>Claude Desktop:</strong> install MCP servers (gmail, slack, filesystem, brave-search). Settings, Developer, Edit Config. Five minutes per server.</p>
+    <p><strong>Custom GPT:</strong> Actions tab. Paste the OpenAPI spec for whatever service you want. Most SaaS tools publish one.</p>
+    <p><strong>n8n, Zapier, Make:</strong> add nodes. Every major app has a native integration. Drag, authenticate, connect.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 04 · 07</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 8 — STEP 5                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">05</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 05 of 07</span>
+    <span>Memory · 08</span>
+  </div>
+
+  <p class="step-num">STEP 05</p>
+  <h2 class="step-title">Give it memory.<br><span style="background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Context compounds.</span></h2>
+
+  <p class="step-intro">
+    An agent with no memory repeats the same mistakes every run. An agent with memory compounds. It gets sharper weekly until it knows your business, your voice, and your constraints better than a new hire.
+  </p>
+
+  <div class="panel">
+    <div class="panel-label">The three memory layers</div>
+    <ul class="checklist">
+      <li><strong>System prompt</strong> (never changes). Role, constraints, format. Written once in Step 03.</li>
+      <li><strong>Project knowledge</strong> (updated weekly). Examples, style guides, brand rules, customer docs. Lives in the platform's knowledge or project files field.</li>
+      <li><strong>Working context</strong> (per task). The notes, thread, or raw input you drop in at run time.</li>
+    </ul>
+  </div>
+
+  <div class="panel lime">
+    <div class="panel-label">What to load as project knowledge</div>
+    <ul class="checklist">
+      <li><strong>Five to ten examples</strong> of the exact output you want. Best emails, posts, briefings. Concrete beats abstract.</li>
+      <li><strong>A voice guide.</strong> One page. Words you use, patterns you avoid, format you expect.</li>
+      <li><strong>Business context.</strong> Audience, positioning, product, pricing. One paragraph each.</li>
+      <li><strong>Hard rules.</strong> Claims it cannot make. Features it cannot reference. Phrases off-limits.</li>
+    </ul>
+  </div>
+
+  <div class="panel warm">
+    <div class="panel-label">Curate, don't dump</div>
+    <p>Five excellent examples beat fifty mediocre ones. The agent learns from what you show it. Replace old examples as your bar moves.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 05 · 08</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 9 — STEP 6                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">06</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 06 of 07</span>
+    <span>Trigger · 09</span>
+  </div>
+
+  <p class="step-num">STEP 06</p>
+  <h2 class="step-title">Trigger the first run.<br><span style="background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Then run it tomorrow.</span></h2>
+
+  <p class="step-intro">
+    The moment an agent runs without you kicking it off manually is the moment it becomes an agent in practice, not just in name. You don't have to automate on day one. But plan for it from day one.
+  </p>
+
+  <ol class="mini-steps">
+    <li><strong>Manual.</strong> You open the agent and paste the input. Fine for v1. Fastest way to validate the role before you automate.</li>
+    <li><strong>Scheduled.</strong> Runs at 7am weekdays. Runs hourly. Runs Monday mornings. Configured in n8n, Zapier, or a cron. Ideal for reporting, daily digests, weekly pipelines.</li>
+    <li><strong>Event-triggered.</strong> Email lands, agent runs. Form submits, agent runs. PR opens, agent runs. Webhooks or native platform triggers.</li>
+    <li><strong>Conversational handoff.</strong> You or a teammate mention the agent in Slack, Discord, or a shared thread. It picks up, handles, replies in-channel.</li>
+  </ol>
+
+  <div class="code"><span class="token-key"># TASK</span>
+<span class="token-accent">[one-line description of what you want delivered]</span>
+
+<span class="token-key"># INPUT</span>
+<span class="token-accent">[paste raw source: notes, thread, data, messy draft]</span>
+
+<span class="token-key"># CONSTRAINTS</span>
+- <span class="token-accent">[anything unique to this run: deadline, length, audience]</span>
+
+DELIVER.</div>
+
+  <div class="panel lime">
+    <div class="panel-label">Reduce friction to one paste</div>
+    <p>Save the template as a text snippet: Raycast, Alfred, TextExpander, or a pinned note. One paste to trigger a run. Friction is what kills the habit, and the habit is what makes the agent worth building.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 06 · 09</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 10 — STEP 7                                                      -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="step-num-big">07</div>
+
+  <div class="corner">
+    <span><span class="dot"></span>Step 07 of 07</span>
+    <span>Harden · 10</span>
+  </div>
+
+  <p class="step-num">STEP 07</p>
+  <h2 class="step-title">Measure. Harden.<br><span style="background:linear-gradient(135deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Then scale.</span></h2>
+
+  <p class="step-intro">
+    Your first agent will hit 70% quality out of the gate. The gap between 70% and production-grade is entirely about supervision, promotion, and guardrails. This is the step that separates a weekend project from a real operator on your team.
+  </p>
+
+  <ol class="mini-steps">
+    <li><strong>Measure.</strong> Track one number that proves the agent works. Time saved per week. Drafts shipped. Leads triaged. Pick one. Write it down. Check it weekly.</li>
+    <li><strong>Harden.</strong> Every time you correct an output, ask: one-off or pattern? If it's a pattern, promote the correction into the system prompt or project knowledge. The agent compounds. You stop correcting the same things twice.</li>
+    <li><strong>Scale wider.</strong> Once the agent runs reliably with minimal correction, give it more tools or expand its scope inside the same role.</li>
+    <li><strong>Scale deeper.</strong> Spin up agent #2 for an adjacent role. Inbox editor, then calendar assistant. Content strategist, then distribution agent. Role by role, not all at once.</li>
+  </ol>
+
+  <div class="panel warm">
+    <div class="panel-label">Guardrails before autonomy</div>
+    <p>An agent taking real actions needs real guardrails. Before you let any agent act externally: require human approval on the first 20 runs, scope tools narrowly (read-only until the agent earns write access), log every action somewhere auditable, and set a kill switch you can trigger in one click if something looks off.</p>
+  </div>
+
+  <div class="panel lime">
+    <div class="panel-label">The compounding principle</div>
+    <p>One working agent becomes five. The second takes half as long. The fifth takes an afternoon. Stack them and you start every Monday with a silent team running the repetitive work. That is the play. This playbook is step one.</p>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First</span>
+    <span>Step 07 · 10</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- PAGE 11 — FINALE / CTA                                                -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<section class="page">
+  <div class="corner">
+    <span><span class="dot"></span>You made it</span>
+    <span>Next · 11</span>
+  </div>
+
+  <div class="finale-wrap">
+    <p class="section-label" style="margin-top:0.35in">Now what?</p>
+    <h2 class="finale-title">
+      One agent down.<br>
+      <span class="grad">An empire to go.</span>
+    </h2>
+
+    <p class="lede" style="margin-top:0.25in;max-width:6in">
+      You now have the architecture the teams shipping real AI products use in production. The difference between your one and their twenty is time, not talent. Keep building.
+    </p>
+
+    <div class="cta-grid">
+      <div class="cta">
+        <div class="cta-label">◉ Daily signal</div>
+        <h3>The AAF Newsletter</h3>
+        <p>One email, every morning. The builds, tools, and frontier research that actually matter. No AI hype cycle noise. Free.</p>
+        <span class="link">aiagentsfirst.com/#newsletter</span>
+      </div>
+      <div class="cta magenta">
+        <div class="cta-label">◉ Community</div>
+        <h3>Join the Skool Community</h3>
+        <p>Stop building alone. Ask questions, share wins, learn from other people actually shipping real AI agents every day.</p>
+        <span class="link">skool.com/e-com-freedom-amazon-tiktok-4556</span>
+      </div>
+      <div class="cta orange">
+        <div class="cta-label">◉ For businesses</div>
+        <h3>Need this built for your company?</h3>
+        <p>Venti Scale designs and ships custom AI automations, social systems, and agent stacks for businesses that want to move fast.</p>
+        <span class="link">ventiscale.com</span>
+      </div>
+      <div class="cta lime">
+        <div class="cta-label">◉ Keep reading</div>
+        <h3>50+ AI agent deep dives</h3>
+        <p>Everything we publish lives here. Tool reviews, frontier research, what's shipping, what's hype. Bookmark it.</p>
+        <span class="link">aiagentsfirst.com</span>
+      </div>
+    </div>
+
+    <div class="signoff">
+      <div>
+        <div class="line1">Now build the thing.</div>
+        <div class="line2">The AAF team</div>
+      </div>
+      <div class="seal" style="width:80px;height:80px">
+        <div class="seal-inner">
+          <span class="big" style="font-size:10pt">VOL·01</span>
+          END
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="brand">AI Agents First · aiagentsfirst.com</span>
+    <span>© 2026</span>
+  </div>
+</section>
+
+</body>
+</html>
