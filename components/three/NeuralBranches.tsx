@@ -33,16 +33,15 @@ function makeBranchPoints(
   return [start, mid1, mid2, end];
 }
 
-// Branch endpoint positions:
-// Left side (indices 0-2): x=-5.5, y=[2, 0, -2]
-// Right side (indices 3-5): x=5.5, y=[2, 0, -2]
+// Keep these in lock-step with BranchPanels panelPositions — they drive the
+// start/end of each pulse path, so drift between the two will look broken.
 const endpointPositions = [
-  { x: -5.5, y: 2 },
-  { x: -5.5, y: 0 },
-  { x: -5.5, y: -2 },
-  { x: 5.5, y: 2 },
-  { x: 5.5, y: 0 },
-  { x: 5.5, y: -2 },
+  { x: -4.2, y: 1.8 },
+  { x: -4.2, y: 0 },
+  { x: -4.2, y: -1.8 },
+  { x: 4.2, y: 1.8 },
+  { x: 4.2, y: 0 },
+  { x: 4.2, y: -1.8 },
 ];
 
 export function NeuralBranches({ hoveredIndex }: NeuralBranchesProps) {

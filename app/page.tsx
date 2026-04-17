@@ -1,5 +1,5 @@
 import { getPosts } from "@/lib/content";
-import { HeroSection } from "./HeroSection";
+import { NexusHero } from "./NexusHero";
 import { BentoGrid } from "@/components/ui/BentoGrid";
 import { CategoryShowcase } from "@/components/ui/CategoryShowcase";
 import { NewsletterCTA } from "@/components/ui/NewsletterCTA";
@@ -15,8 +15,8 @@ export default async function Home() {
 
   return (
     <>
-      <HeroSection />
-      <div className="relative z-10 bg-surface">
+      <NexusHero />
+      <div className="relative z-10 bg-void">
         {featured && <BentoGrid featured={featured} posts={bentoPosts} />}
         <CategoryShowcase />
         <NewsletterCTA />
