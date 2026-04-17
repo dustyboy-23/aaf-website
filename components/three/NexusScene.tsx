@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { GPU_TIER } from "@/lib/constants";
 import { useGpuTier } from "@/components/ui/GpuTierProvider";
@@ -7,6 +8,8 @@ import { NeuralCore } from "./NeuralCore";
 import { ParticleField } from "./ParticleField";
 import { BackgroundOrbs } from "./BackgroundOrbs";
 import { PostProcessingEffects } from "./PostProcessing";
+import { NeuralBranches } from "./NeuralBranches";
+import { BranchPanels } from "./BranchPanels";
 
 /** Drives camera position based on scroll progress */
 function SceneController({ scrollProgress }: { scrollProgress: number }) {
@@ -27,6 +30,7 @@ export function NexusScene({
   scrollProgress?: number;
 }) {
   const gpuTier = useGpuTier();
+  const [hoveredBranch, setHoveredBranch] = useState<number | null>(null);
 
   if (gpuTier === GPU_TIER.LOW) return null;
 
@@ -50,6 +54,8 @@ export function NexusScene({
         <ambientLight intensity={0.15} />
         <NeuralCore />
         <ParticleField count={particleCount} />
+        <NeuralBranches hoveredIndex={hoveredBranch} />
+        <BranchPanels onHover={setHoveredBranch} />
         <BackgroundOrbs />
         {enablePostProcessing && <PostProcessingEffects />}
       </Canvas>
