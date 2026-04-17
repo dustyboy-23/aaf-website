@@ -48,13 +48,30 @@ export const motion = {
  * Maps post pillars to the brief's palette.
  */
 export const categoryColors: Record<string, string> = {
+  // Singulars and plurals both map — frontmatter is inconsistent across
+  // the 40+ imported posts, so alias every common variant back to the
+  // six-pillar palette.
   news: colors.ultraviolet,
+  dispatch: colors.ultraviolet,
+  update: colors.ultraviolet,
   learn: colors.neonCyan,
   tutorial: colors.neonCyan,
+  tutorials: colors.neonCyan,
+  guide: colors.neonCyan,
+  guides: colors.neonCyan,
   analysis: colors.electricBlue,
+  "deep-dive": colors.electricBlue,
+  "deep-dives": colors.electricBlue,
+  essay: colors.electricBlue,
   tool: colors.signalOrange,
+  tools: colors.signalOrange,
+  stack: colors.signalOrange,
   signal: colors.signalLime,
+  signals: colors.signalLime,
+  daily: colors.signalLime,
   network: colors.hotMagenta,
+  community: colors.hotMagenta,
+  interview: colors.hotMagenta,
 };
 
 /**
