@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getPostBySlug, getAllSlugs } from "@/lib/content";
+import { getPostBySlug, getAllSlugs, getPosts } from "@/lib/content";
 import { ArticleLayout } from "@/components/ui/ArticleLayout";
 
 interface Props { params: Promise<{ slug: string }> }
@@ -31,5 +31,17 @@ export default async function ArticlePage({ params }: Props) {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
   if (!post) notFound();
-  return <ArticleLayout post={post} />;
+
+  // Pull enough posts to fuel related + latest rails without a second request
+  const { posts: allPosts } = await getPosts({ limit: 40 });
+  const otherPosts = allPosts.filter((p) => p.slug !== slug);
+
+  // "Related" = shares the primary tag, falls back to latest
+  const primaryTag = post.primary_tag?.slug;
+  const related = primaryTag
+    ? otherPosts.filter((p) => p.primary_tag?.slug === primaryTag).slice(0, 4)
+    : [];
+  const latest = otherPosts.slice(0, 5);
+
+  return <ArticleLayout post={post} related={related} latest={latest} />;
 }
