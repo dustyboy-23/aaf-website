@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { GPU_TIER } from "@/lib/constants";
@@ -17,29 +17,42 @@ export function HeroSection() {
   const heroRef = useRef<HTMLElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  const progressRef = useRef(0);
+  const setProgress = useCallback((val: number) => {
+    progressRef.current = val;
+    setScrollProgress(val);
+  }, []);
+
   useEffect(() => {
     if (gpuTier === GPU_TIER.LOW || !heroRef.current) return;
 
-    let rafId: number;
-    const hero = heroRef.current;
+    let cleanup: (() => void) | undefined;
 
-    const onScroll = () => {
-      rafId = requestAnimationFrame(() => {
-        const rect = hero.getBoundingClientRect();
-        const progress = Math.min(
-          1,
-          Math.max(0, -rect.top / rect.height)
-        );
-        setScrollProgress(progress);
+    // Dynamically import GSAP ScrollTrigger to keep it tree-shakeable
+    import("gsap").then(({ gsap }) => {
+      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
+        gsap.registerPlugin(ScrollTrigger);
+
+        const trigger = ScrollTrigger.create({
+          trigger: heroRef.current!,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+          onUpdate: (self) => {
+            setProgress(self.progress);
+          },
+        });
+
+        cleanup = () => {
+          trigger.kill();
+        };
       });
-    };
+    });
 
-    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(rafId);
+      cleanup?.();
     };
-  }, [gpuTier]);
+  }, [gpuTier, setProgress]);
 
   // Mobile / low GPU fallback
   if (gpuTier === GPU_TIER.LOW) {
