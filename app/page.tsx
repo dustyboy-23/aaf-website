@@ -1,4 +1,4 @@
-import { getPosts } from "@/lib/ghost";
+import { getPosts } from "@/lib/content";
 import { HeroSection } from "./HeroSection";
 import { BentoGrid } from "@/components/ui/BentoGrid";
 import { CategoryShowcase } from "@/components/ui/CategoryShowcase";

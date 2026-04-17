@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPostsByTag, getTags } from "@/lib/ghost";
+import { getPostsByTag, getTags } from "@/lib/content";
 import { ContentList } from "@/components/ui/ContentList";
 
 interface Props { params: Promise<{ tag: string }> }

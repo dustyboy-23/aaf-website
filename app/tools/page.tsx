@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPostsByTag } from "@/lib/ghost";
+import { getPostsByTag } from "@/lib/content";
 import { ContentList } from "@/components/ui/ContentList";
 
 export const metadata: Metadata = { title: "Tool Vault", description: "Curated AI agent frameworks, stacks, and tested resources." };

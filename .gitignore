@@ -3,3 +3,10 @@ node_modules/
 .env.local
 .env*.local
 .vercel
+
+# One-time Ghost export artifacts (content lives in content/posts/ as MDX)
+_migration/
+
+# Build outputs
+tsconfig.tsbuildinfo
+next-env.d.ts

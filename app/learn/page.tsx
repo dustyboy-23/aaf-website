@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPostsByTag } from "@/lib/ghost";
+import { getPostsByTag } from "@/lib/content";
 import { ContentList } from "@/components/ui/ContentList";
 
 export const metadata: Metadata = { title: "Agent Academy", description: "Zero to deployed build guides for AI agents." };

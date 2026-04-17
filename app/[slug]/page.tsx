@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getPostBySlug, getAllSlugs } from "@/lib/ghost";
+import { getPostBySlug, getAllSlugs } from "@/lib/content";
 import { ArticleLayout } from "@/components/ui/ArticleLayout";
 
 interface Props { params: Promise<{ slug: string }> }

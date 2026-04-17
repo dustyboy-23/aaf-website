@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getPosts, getTags } from "@/lib/ghost";
+import { getPosts, getTags } from "@/lib/content";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://aiagentsfirst.com";

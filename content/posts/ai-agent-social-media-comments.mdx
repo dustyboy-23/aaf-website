@@ -1,0 +1,67 @@
+---
+id: 69e15a8fa82eff95ffd6df20
+uuid: 29f13a1d-9a20-45df-bae1-2644a52da5bb
+slug: ai-agent-social-media-comments
+title: How to Build an AI Agent That Manages Your Social Media Comments
+excerpt: "I used to spend 2 hours a day replying to comments across X, Instagram, and Facebook. Now my AI agent handles 90% of them. The other 10% (complex questions, angry customers, partnership inquiries) get flagged for my review. Total time: 15 minutes a day.
+
+Here is exactly how I built it. This tutorial assumes you have basic familiarity with Python and API keys. If you are brand new, read my guide on what-are first.
+
+
+Why Automate Social Media Comments?
+
+The math is simple. If you get 50 comments a"
+feature_image: null
+featured: false
+published_at: "2026-04-16T14:54:24.000-07:00"
+updated_at: "2026-04-16T14:54:23.000-07:00"
+reading_time: 5
+tags: [tutorials]
+tag_names: [Tutorials]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: null
+meta_description: Build an AI agent that manages social media comments automatically. Step-by-step tutorial for X, Instagram, and Facebook comment management.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<p>I used to spend 2 hours a day replying to comments across X, Instagram, and Facebook. Now my AI agent handles 90% of them. The other 10% (complex questions, angry customers, partnership inquiries) get flagged for my review. Total time: 15 minutes a day.</p><p>Here is exactly how I built it. This tutorial assumes you have basic familiarity with Python and API keys. If you are brand new, read my guide on <a href="https://aiagentsfirst.com/">what-are</a> first.</p><h2 id="why-automate-social-media-comments">Why Automate Social Media Comments?</h2><p>The math is simple. If you get 50 comments a day and spend 2 minutes per reply, that is 100 minutes. Over a month, that is 50 hours. An AI agent costs maybe $10/month in API calls to handle the same volume.</p><p>But it is not just about time. Response speed matters. Accounts that reply within 30 minutes get 3x more engagement than accounts that reply within 24 hours. Your AI agent replies in under 60 seconds.</p><h2 id="what-the-agent-does">What the Agent Does</h2>
+
+<table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+<thead><tr style="background:#f1f5f9;">
+<th style="padding:12px; text-align:left; border:1px solid #e2e8f0;">Task</th>
+<th style="padding:12px; text-align:left; border:1px solid #e2e8f0;">How It Works</th>
+<th style="padding:12px; text-align:left; border:1px solid #e2e8f0;">Human Needed?</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Thank-you replies</td><td style="padding:12px; border:1px solid #e2e8f0;">Detects positive comments, replies with personalized thanks</td><td style="padding:12px; border:1px solid #e2e8f0;">No</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Question answers</td><td style="padding:12px; border:1px solid #e2e8f0;">Matches questions to FAQ, provides accurate answers</td><td style="padding:12px; border:1px solid #e2e8f0;">No (if in FAQ)</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Engagement replies</td><td style="padding:12px; border:1px solid #e2e8f0;">Responds to opinions/discussions to keep conversation going</td><td style="padding:12px; border:1px solid #e2e8f0;">No</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Complaint handling</td><td style="padding:12px; border:1px solid #e2e8f0;">Detects negative sentiment, drafts empathetic response</td><td style="padding:12px; border:1px solid #e2e8f0;">Yes (review before send)</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Spam filtering</td><td style="padding:12px; border:1px solid #e2e8f0;">Identifies spam/bot comments, hides or ignores them</td><td style="padding:12px; border:1px solid #e2e8f0;">No</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Escalation</td><td style="padding:12px; border:1px solid #e2e8f0;">Flags complex issues for human review via Slack/email</td><td style="padding:12px; border:1px solid #e2e8f0;">Yes</td></tr>
+</tbody></table>
+
+<h2 id="architecture-overview">Architecture Overview</h2><p>The system has 4 components:</p><ol><li><strong>Comment Fetcher:</strong> Polls social media APIs every 5 minutes for new comments</li><li><strong>Classifier:</strong> Uses Claude Haiku to categorize each comment (positive, question, complaint, spam, complex)</li><li><strong>Responder:</strong> Generates replies using Claude Sonnet with your brand voice and FAQ context</li><li><strong>Poster:</strong> Sends replies via social media APIs (with human approval for flagged items)</li></ol><h2 id="step-1-set-up-social-media-api-access">Step 1: Set Up Social Media API Access</h2><h3 id="x-twitter-api">X (Twitter) API</h3><p>You need X API Pro or Basic plan ($100/month or $200/month). The free tier has very limited read access and no write access for replies. Apply at developer.x.com.</p><h3 id="instagram-graph-api">Instagram Graph API</h3><p>You need a Meta Business account and an Instagram Business or Creator account. The API is free but requires a Facebook App with Instagram permissions. Set this up at developers.facebook.com.</p><h3 id="facebook-graph-api">Facebook Graph API</h3><p>Same Meta Business setup as Instagram. You need page_manage_engagement permission to reply to comments on your Page.</p><h2 id="step-2-build-the-comment-fetcher">Step 2: Build the Comment Fetcher</h2><p>The fetcher runs on a schedule (every 5 minutes via cron) and pulls new comments from each platform. Store seen comment IDs in a SQLite database to avoid processing duplicates.</p><p>Key design decisions:</p><ul><li>Use a SQLite database (not a JSON file) for tracking. You will have thousands of comments and need fast lookups.</li><li>Fetch in reverse chronological order. Reply to the newest comments first.</li><li>Rate limit your API calls. Each platform has limits. X allows 300 reads per 15 minutes. Instagram allows 200 per hour.</li></ul><h2 id="step-3-classify-comments">Step 3: Classify Comments</h2><p>Send each comment through Claude Haiku (it is fast and cheap, about $0.001 per classification). Your classification prompt should return a category and confidence score.</p><p>Categories I use:</p><ul><li><strong>positive:</strong> "Great post!", "This is so helpful!", "Love this"</li><li><strong>question:</strong> "How do I...", "What is...", "Can you explain..."</li><li><strong>engagement:</strong> Opinions, agreements, debates, tag-a-friend</li><li><strong>complaint:</strong> Negative sentiment, frustration, product issues</li><li><strong>spam:</strong> Links, promotions, bot-like patterns</li><li><strong>complex:</strong> Anything that needs a human (partnership offers, legal, etc.)</li></ul><p>If the classifier's confidence is below 0.8, escalate to human review. Better safe than sorry with automated replies.</p><h2 id="step-4-generate-replies">Step 4: Generate Replies</h2><p>For each non-spam, non-complex comment, generate a reply with Claude Sonnet. Include in your prompt:</p><ul><li>Your brand voice description (casual, professional, funny, etc.)</li><li>The original post content (so the reply is contextually relevant)</li><li>Your FAQ document (for answering questions accurately)</li><li>A list of things to never say (competitor names, pricing promises, legal claims)</li></ul><h3 id="reply-quality-rules">Reply Quality Rules</h3><ul><li>Never start two replies with the same word</li><li>Keep replies under 280 characters for X, under 500 for Instagram/Facebook</li><li>Include the commenter's name when natural</li><li>Add a follow-up question 30% of the time to boost thread engagement</li><li>Never use generic phrases like "Thanks for sharing!" without adding something specific</li></ul><h2 id="step-5-human-review-layer">Step 5: Human Review Layer</h2><p>This is critical. Do not skip it. My agent sends flagged items to a Slack channel with the original comment, the proposed reply, and buttons to approve, edit, or reject.</p><p>What gets flagged:</p><ul><li>All complaints (never auto-reply to angry customers)</li><li>Low-confidence classifications</li><li>Comments mentioning competitors by name</li><li>Comments from accounts with 10,000+ followers (high visibility, high risk)</li><li>Any reply the quality check fails</li></ul><p>I check the Slack channel 3 times a day. Takes about 5 minutes each time. I covered automating this broader workflow in <a href="https://aiagentsfirst.com/">social</a>.</p><h2 id="step-6-deploy-and-monitor">Step 6: Deploy and Monitor</h2><p>Run the system on a VPS ($5-10/month). Use cron for scheduling. Set up alerts for:</p><ul><li>API errors (platform APIs go down sometimes)</li><li>Reply rate spikes (might indicate a viral post that needs human attention)</li><li>Negative sentiment trends (something might be going wrong)</li></ul><p>Monitor with the techniques from my <a href="https://aiagentsfirst.com/">dashboard</a> guide.</p><h2 id="results-from-my-setup">Results From My Setup</h2>
+
+<table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+<thead><tr style="background:#f1f5f9;">
+<th style="padding:12px; text-align:left; border:1px solid #e2e8f0;">Metric</th>
+<th style="padding:12px; text-align:left; border:1px solid #e2e8f0;">Before Agent</th>
+<th style="padding:12px; text-align:left; border:1px solid #e2e8f0;">After Agent</th>
+</tr></thead>
+<tbody>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Average reply time</td><td style="padding:12px; border:1px solid #e2e8f0;">4-6 hours</td><td style="padding:12px; border:1px solid #e2e8f0;">Under 5 minutes</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Reply rate</td><td style="padding:12px; border:1px solid #e2e8f0;">~60% of comments</td><td style="padding:12px; border:1px solid #e2e8f0;">~95% of comments</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Engagement rate</td><td style="padding:12px; border:1px solid #e2e8f0;">3.2%</td><td style="padding:12px; border:1px solid #e2e8f0;">5.8%</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">My time per day</td><td style="padding:12px; border:1px solid #e2e8f0;">2 hours</td><td style="padding:12px; border:1px solid #e2e8f0;">15 minutes</td></tr>
+<tr><td style="padding:12px; border:1px solid #e2e8f0;">Monthly cost</td><td style="padding:12px; border:1px solid #e2e8f0;">My time ($0 but 60 hrs)</td><td style="padding:12px; border:1px solid #e2e8f0;">~$15 (API + VPS)</td></tr>
+</tbody></table>
+
+<p>The biggest win was not the time savings. It was the engagement rate jump from 3.2% to 5.8%. Fast, relevant replies make people interact more with your content. The algorithm rewards that with more reach.</p><h3 id="join-500-ai-agent-builders">Join 500+ AI Agent Builders</h3><p>Get templates, workflows, and live build sessions inside our free Skool community.</p><p><a href="https://www.skool.com/ai-agents-first?ref=aiagentsfirst.com">Join Free on Skool →</a></p><h2 id="common-pitfalls">Common Pitfalls</h2><h3 id="being-too-generic">Being Too Generic</h3><p>If every reply sounds like "Thanks for your comment! We appreciate your feedback!" people will notice it is a bot and you will lose trust. Invest time in your voice prompt and FAQ.</p><h3 id="not-having-an-escalation-path">Not Having an Escalation Path</h3><p>One bad automated reply to an influencer's comment can go viral for the wrong reasons. Always have a human review layer for high-risk interactions.</p><h3 id="replying-to-everything">Replying to Everything</h3><p>Some comments do not need a reply. Emojis, "lol", tags of friends. Your agent should have a "no reply needed" category. Over-replying looks spammy.</p><h2 id="faq">FAQ</h2><h3 id="will-people-know-a-bot-is-replying">Will people know a bot is replying?</h3><p>Not if you do it well. My replies are varied, contextual, and match my voice. Nobody has called out a bot response in 6 months of running this. The key is the voice prompt and reply quality rules.</p><h3 id="does-this-violate-social-media-terms-of-service">Does this violate social media terms of service?</h3><p>Automated posting and engagement is a gray area. X's API terms allow automated replies through their API. Meta allows automated responses for business accounts. Using the official APIs (not scrapers) keeps you compliant.</p><h3 id="what-if-the-agent-says-something-wrong">What if the agent says something wrong?</h3><p>That is why the FAQ and guardrails exist. Your agent only answers questions it finds in your FAQ. For everything else, it either gives a general positive response or escalates. I have never had a factually wrong response go out.</p><h3 id="how-much-does-this-cost-to-run">How much does this cost to run?</h3><p>About $10-20/month. Claude Haiku for classification is almost free. Claude Sonnet for reply generation costs about $5-10 for 1,500 comments. VPS is $5. The X API plan ($100-200/month) is the biggest cost if you use X.</p><h3 id="can-i-use-this-for-multiple-accounts">Can I use this for multiple accounts?</h3><p>Yes. Add multiple API credentials and a brand voice profile for each account. The classification and reply logic stays the same. I run 3 accounts through the same system.</p>
