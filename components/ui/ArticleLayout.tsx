@@ -35,6 +35,22 @@ export function ArticleLayout({
     year: "numeric",
   });
 
+  // Prefer meta_description as the hero deck — it's hand-written for length
+  // and reads clean. Fall back to the first sentence of excerpt; final fallback
+  // is a trimmed excerpt. Prevents the mid-word truncation from Ghost exports.
+  const heroDeck = (() => {
+    if (post.meta_description && post.meta_description.trim()) {
+      return post.meta_description.trim();
+    }
+    const ex = (post.excerpt || "").trim();
+    if (!ex) return "";
+    // First sentence — cap at ~220 chars for visual balance
+    const firstSentence = ex.split(/(?<=[.!?])\s+/)[0] || ex;
+    return firstSentence.length > 220
+      ? firstSentence.slice(0, 217).trimEnd() + "…"
+      : firstSentence;
+  })();
+
   // Run server-side HTML transforms (FAQ → accordion) then split for inline promo
   const processed = processArticleHtml(post.html);
   const [bodyBefore, bodyAfter] = splitAtSecondH2(processed);
@@ -43,7 +59,7 @@ export function ArticleLayout({
   return (
     <article className="relative">
       {/* ——— Full-bleed hero ——— */}
-      <section className="relative h-[60vh] min-h-[480px] max-h-[720px] w-full overflow-hidden">
+      <section className="relative h-[54vh] min-h-[440px] max-h-[640px] w-full overflow-hidden">
         <Image
           src={heroImage}
           alt={post.title}
@@ -52,11 +68,20 @@ export function ArticleLayout({
           sizes="100vw"
           className="object-cover"
         />
+        {/* Darker overlay at the bottom where text sits, with a left-weighted
+            wash to protect the title block from busy feature images */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(180deg, rgba(4,5,10,0.45) 0%, rgba(4,5,10,0.25) 40%, rgba(4,5,10,0.92) 100%)",
+              "linear-gradient(180deg, rgba(4,5,10,0.55) 0%, rgba(4,5,10,0.35) 30%, rgba(4,5,10,0.85) 75%, rgba(4,5,10,0.96) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0 hidden md:block"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(4,5,10,0.55) 0%, rgba(4,5,10,0.2) 45%, transparent 70%)",
           }}
         />
 
@@ -104,9 +129,9 @@ export function ArticleLayout({
             >
               {post.title}
             </h1>
-            {post.excerpt && (
-              <p className="mt-5 text-base sm:text-lg text-white/75 leading-relaxed max-w-2xl">
-                {post.excerpt}
+            {heroDeck && (
+              <p className="mt-5 text-base sm:text-lg text-white/80 leading-relaxed max-w-2xl line-clamp-3">
+                {heroDeck}
               </p>
             )}
           </div>

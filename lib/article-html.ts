@@ -89,8 +89,23 @@ export function transformFaq(html: string): string {
 }
 
 /**
+ * Strip the leading <h1> from article body HTML.
+ *
+ * Ghost exports (and most CMS imports) embed the post title as an <h1> at the
+ * top of the body. We already render the title in the article hero, so showing
+ * it again inside the body is pure duplication. Remove it.
+ *
+ * Only strips an <h1> that appears before any other content — trailing
+ * whitespace is tolerated. An <h1> that sits mid-article (very rare) is left
+ * alone.
+ */
+export function stripLeadingH1(html: string): string {
+  return html.replace(/^\s*<h1\b[^>]*>[\s\S]*?<\/h1>\s*/i, "");
+}
+
+/**
  * Convenience composition — run every transform we apply site-wide.
  */
 export function processArticleHtml(html: string): string {
-  return transformFaq(html);
+  return transformFaq(stripLeadingH1(html));
 }

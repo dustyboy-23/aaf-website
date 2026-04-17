@@ -46,6 +46,21 @@ type Frontmatter = {
   visibility?: string;
 };
 
+/**
+ * Excerpts from the Ghost export frequently lead with the post title followed
+ * by a blank line, then the real excerpt. Strip that prefix so the hero
+ * doesn't double up the title.
+ */
+function cleanExcerpt(raw: string, title: string): string {
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  if (!title) return trimmed;
+  if (trimmed.toLowerCase().startsWith(title.trim().toLowerCase())) {
+    return trimmed.slice(title.trim().length).replace(/^[\s\n:—-]+/, "").trim();
+  }
+  return trimmed;
+}
+
 // Build a minimal GhostTag from a slug. We reconstruct tags from frontmatter.
 function makeTag(slug: string, name?: string): GhostTag {
   return {
@@ -80,7 +95,7 @@ function readPostFile(slug: string): GhostPost | null {
     slug: fm.slug,
     title: fm.title,
     html,
-    excerpt: fm.excerpt || "",
+    excerpt: cleanExcerpt(fm.excerpt || "", fm.title || ""),
     feature_image: fm.feature_image || null,
     featured: !!fm.featured,
     published_at: fm.published_at,
