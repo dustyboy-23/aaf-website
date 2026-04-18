@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
 import { getPosts } from "@/lib/content";
-import { ContentList } from "@/components/ui/ContentList";
+import { TagPageLayout } from "@/components/ui/TagPageLayout";
 
 export const metadata: Metadata = {
-  title: "All Articles",
-  description: "Every piece of analysis, build, and dispatch from the AI agent frontier.",
+  title: "The Feed — AI Agents First",
+  description:
+    "Every article from AI Agents First, newest first. Tutorials, comparisons, takes, and frontier dispatches.",
 };
 
-export default async function NewsPage() {
+export default async function FeedPage() {
   const { posts } = await getPosts({ limit: 100 });
   return (
-    <ContentList
+    <TagPageLayout
       posts={posts}
-      title="All Articles"
-      description="every piece of analysis, build, and dispatch"
+      tagSlug="news"
+      title="The Feed"
+      eyebrow="Live from the frontier"
+      description="Every article from AI Agents First, newest first. Tutorials, comparisons, takes, and frontier dispatches. All in one stream."
+      countLabel={`${posts.length} articles shipped`}
     />
   );
 }

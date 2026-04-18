@@ -20,11 +20,11 @@ export function Footer() {
             </h4>
             <div className="flex flex-col gap-2">
               {[
-                { href: "/news", label: "All Articles" },
+                { href: "/news", label: "The Feed" },
                 { href: "/tag/tutorials", label: "Tutorials" },
                 { href: "/tag/comparisons", label: "Comparisons" },
                 { href: "/tag/money", label: "Money" },
-                { href: "/tag/opinion", label: "Opinion" },
+                { href: "/tag/opinion", label: "Takes" },
               ].map((link) => (
                 <Link
                   key={link.href}

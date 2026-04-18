@@ -66,12 +66,67 @@ export const categoryColors: Record<string, string> = {
   tool: colors.signalOrange,
   tools: colors.signalOrange,
   stack: colors.signalOrange,
+  reviews: colors.signalOrange,
+  review: colors.signalOrange,
   signal: colors.signalLime,
   signals: colors.signalLime,
   daily: colors.signalLime,
+  money: colors.signalLime,
   network: colors.hotMagenta,
   community: colors.hotMagenta,
   interview: colors.hotMagenta,
+  opinion: colors.hotMagenta,
+  opinions: colors.hotMagenta,
+  takes: colors.hotMagenta,
+  comparisons: colors.ultraviolet,
+  comparison: colors.ultraviolet,
+  vs: colors.ultraviolet,
+};
+
+/**
+ * Editorial metadata per tag — eyebrow + description for the tag page hero.
+ * Keys are tag slugs. Used by TagPageLayout to give each tag its own voice.
+ */
+export const tagMeta: Record<
+  string,
+  { title: string; eyebrow: string; description: string }
+> = {
+  tutorials: {
+    title: "Tutorials",
+    eyebrow: "Build it. Ship it.",
+    description:
+      "Step-by-step build guides for AI agents. From first commit to deployed production.",
+  },
+  comparisons: {
+    title: "Comparisons",
+    eyebrow: "Head to head",
+    description:
+      "Tool vs tool. Model vs model. Stack vs stack. Real benchmarks, real tradeoffs.",
+  },
+  money: {
+    title: "Money",
+    eyebrow: "Revenue. Pricing. Monetization.",
+    description:
+      "How people are actually making money building with AI agents. Numbers, not hype.",
+  },
+  opinion: {
+    title: "Takes",
+    eyebrow: "Unfiltered",
+    description:
+      "Field notes, hot takes, and the honest read on where AI agents are actually headed.",
+  },
+  news: {
+    title: "News",
+    eyebrow: "Frontier dispatches",
+    description:
+      "What just dropped, what it means, and whether you should care.",
+  },
+  reviews: {
+    title: "Reviews",
+    eyebrow: "Tested in production",
+    description:
+      "What we ran, what broke, what we'd actually keep in the stack.",
+  },
 };
 
 /**
