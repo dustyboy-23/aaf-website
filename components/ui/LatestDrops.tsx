@@ -121,9 +121,10 @@ function DropCard({ post, index }: { post: GhostPost; index: number }) {
 export function LatestDrops({ posts }: { posts: GhostPost[] }) {
   if (!posts.length) return null;
 
-  // Take the first 12 — enough density to feel "alive" without drowning the
-  // page. Users who want more hit the /news archive or per-vertical pages.
-  const items = posts.slice(0, 12);
+  // 10 cards — lays out cleanly with the two row-span-2 lead cards (indexes
+  // 0 and 6) across four full rows. 12 left two orphans dangling in a
+  // half-empty fifth row which read as "out of place."
+  const items = posts.slice(0, 10);
 
   return (
     <section id="latest-drops" className="relative py-24 sm:py-28 scroll-mt-20" aria-label="Latest drops">
