@@ -23,8 +23,7 @@ AI Agents First is a publication covering AI agents, autonomous systems, and the
 
 ## Contact
 - Website: https://aiagentsfirst.com
-- X/Twitter: https://x.com/aiagentsfirst
-- LinkedIn: https://linkedin.com/company/aiagentsfirst
+- Community: https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about
 `;
 
 export async function GET() {

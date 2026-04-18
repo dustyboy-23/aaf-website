@@ -5,7 +5,6 @@ import { VerticalsGrid } from "@/components/ui/VerticalsGrid";
 import { DeepAnalysisFeature } from "@/components/ui/DeepAnalysisFeature";
 import { LatestDrops } from "@/components/ui/LatestDrops";
 import { NewsletterCTA } from "@/components/ui/NewsletterCTA";
-import { CommunityRail } from "@/components/ui/CommunityRail";
 
 export default async function Home() {
   const { posts } = await getPosts({ limit: 40 });
@@ -22,7 +21,6 @@ export default async function Home() {
         <DeepAnalysisFeature posts={posts} />
         <LatestDrops posts={feedPosts} />
         <NewsletterCTA />
-        <CommunityRail />
       </div>
     </>
   );
