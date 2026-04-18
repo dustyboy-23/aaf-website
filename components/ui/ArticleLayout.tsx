@@ -85,29 +85,6 @@ export function ArticleLayout({
           }}
         />
 
-        {/* Breadcrumbs — top-left */}
-        <div className="absolute top-6 left-0 right-0 z-10 px-4 sm:px-8">
-          <div className="mx-auto max-w-7xl font-mono text-[11px] uppercase tracking-[0.25em]">
-            <Link
-              href="/"
-              className="text-white/70 hover:text-white transition-colors"
-            >
-              Home
-            </Link>
-            {post.primary_tag && (
-              <>
-                <span className="mx-2 text-white/40">/</span>
-                <Link
-                  href={`/tag/${post.primary_tag.slug}`}
-                  className="text-white/70 hover:text-white transition-colors"
-                >
-                  {post.primary_tag.name}
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-
         {/* Title block — bottom-left of hero */}
         <div className="absolute inset-x-0 bottom-0 z-10 px-4 sm:px-8 pb-10 sm:pb-14">
           <div className="mx-auto max-w-7xl">
