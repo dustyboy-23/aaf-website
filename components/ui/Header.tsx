@@ -19,7 +19,6 @@ const navLinks: NavLink[] = [
   { href: "/tag/money", label: "Money", match: ["/tag/money"] },
   { href: "/tag/opinion", label: "Takes", match: ["/tag/opinion"] },
   { href: "/news", label: "The Feed", match: ["/news"] },
-  { href: "/about", label: "About", match: ["/about"] },
   {
     href: "https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about",
     label: "Community",
