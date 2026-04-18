@@ -35,7 +35,7 @@ export function FinalCTA() {
               Get the daily brief. One read. Zero noise.
             </p>
             <Link
-              href="/signal"
+              href="/#newsletter"
               className="inline-flex px-7 py-3 rounded-md bg-accent text-surface font-semibold text-sm hover:bg-accent/90 transition-colors"
             >
               Get the daily signal

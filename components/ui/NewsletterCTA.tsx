@@ -43,7 +43,8 @@ export function NewsletterCTA() {
 
   return (
     <section
-      className="relative overflow-hidden py-28 sm:py-36"
+      id="newsletter"
+      className="relative overflow-hidden py-28 sm:py-36 scroll-mt-20"
       aria-label="Subscribe to the daily signal"
     >
       {/* Ambient glow — cyan/violet bloom behind the CTA to mirror the hero */}

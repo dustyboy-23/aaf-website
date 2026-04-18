@@ -48,6 +48,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Legacy nav slugs that never got real content. Route them to the closest
+  // real destination so external bookmarks and homepage tiles keep working.
+  async redirects() {
+    return [
+      { source: "/learn", destination: "/tag/tutorials", permanent: true },
+      { source: "/deep-dives", destination: "/tag/opinion", permanent: true },
+      { source: "/tools", destination: "/tag/reviews", permanent: true },
+      { source: "/signal", destination: "/#newsletter", permanent: true },
+      {
+        source: "/network",
+        destination:
+          "https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about",
+        permanent: true,
+      },
+    ];
+  },
   turbopack: {
     rules: {
       "*.glsl": { loaders: ["raw-loader"], as: "*.js" },

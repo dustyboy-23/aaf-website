@@ -8,12 +8,13 @@ const content = `# AI Agents First
 AI Agents First is a publication covering AI agents, autonomous systems, and the tools powering the next wave of software. We publish news, tutorials, deep analysis, and curated daily intelligence.
 
 ## Content Categories
-- /news - Real-time drops from the AI agent frontier
-- /learn - Zero to deployed build guides and tutorials
-- /deep-dives - Architecture breakdowns and strategic analysis
-- /tools - Frameworks, stacks, and tested resources
-- /signal - Daily curated intelligence brief
-- /network - Community questions, answers, and builder network
+- /news - All articles, newest first
+- /tag/tutorials - Step-by-step build guides
+- /tag/comparisons - Tool and model comparisons
+- /tag/money - Revenue, pricing, and monetization
+- /tag/opinion - Analysis and strategic takes
+- /tag/news - Frontier dispatches and drops
+- /playbook - Free "Build Your First AI Agent" PDF
 
 ## API
 - Content API: Ghost CMS (headless)

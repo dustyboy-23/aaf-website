@@ -21,10 +21,12 @@ export async function POST(request: Request) {
   if (slug) {
     revalidatePath(`/${slug}`);
     revalidatePath("/news");
-    revalidatePath("/learn");
-    revalidatePath("/deep-dives");
-    revalidatePath("/tools");
-    revalidatePath("/signal");
+    revalidatePath("/tag/tutorials");
+    revalidatePath("/tag/comparisons");
+    revalidatePath("/tag/money");
+    revalidatePath("/tag/opinion");
+    revalidatePath("/tag/news");
+    revalidatePath("/tag/reviews");
   }
 
   return NextResponse.json({ revalidated: true, slug: slug ?? null });

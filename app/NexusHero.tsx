@@ -118,8 +118,10 @@ export function NexusHero() {
           AI agent frontier.
         </p>
         <div className="flex flex-wrap justify-center gap-3 mt-10">
-          <Link
-            href="#featured"
+          <a
+            href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about"
+            target="_blank"
+            rel="noopener noreferrer"
             className="px-7 py-3 rounded-full font-semibold text-sm text-[#04050A] transition-transform hover:-translate-y-0.5"
             style={{
               background:
@@ -128,14 +130,14 @@ export function NexusHero() {
                 "0 0 24px rgba(69,240,255,0.35), 0 0 48px rgba(138,99,255,0.25)",
             }}
           >
-            Explore the network
-          </Link>
+            Join the community
+          </a>
           <Link
-            href="/signal"
+            href="#latest-drops"
             className="px-7 py-3 rounded-full text-sm font-medium text-white glass-panel transition-colors hover:text-[color:var(--color-neon-cyan)]"
             style={{ borderRadius: 9999 }}
           >
-            Daily signal
+            Read the latest
           </Link>
         </div>
 

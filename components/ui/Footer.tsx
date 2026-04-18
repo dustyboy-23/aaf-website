@@ -50,10 +50,11 @@ export function Footer() {
             </h4>
             <div className="flex flex-col gap-2">
               {[
-                { href: "/news", label: "News" },
-                { href: "/learn", label: "Learn" },
-                { href: "/deep-dives", label: "Deep Dives" },
-                { href: "/tools", label: "Tools" },
+                { href: "/news", label: "All Articles" },
+                { href: "/tag/tutorials", label: "Tutorials" },
+                { href: "/tag/comparisons", label: "Comparisons" },
+                { href: "/tag/money", label: "Money" },
+                { href: "/tag/opinion", label: "Opinion" },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -71,19 +72,36 @@ export function Footer() {
             </h4>
             <div className="flex flex-col gap-2">
               {[
-                { href: "/signal", label: "Daily Signal" },
-                { href: "/network", label: "Network" },
+                { href: "/playbook", label: "Free Playbook" },
+                { href: "/#newsletter", label: "Newsletter" },
+                {
+                  href: "https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about",
+                  label: "Community",
+                  external: true,
+                },
                 { href: "/llms.txt", label: "llms.txt" },
                 { href: "/sitemap.xml", label: "Sitemap" },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
+              ].map((link) =>
+                link.external ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
             </div>
           </div>
           <div>
@@ -108,10 +126,10 @@ export function Footer() {
               Daily signal. Zero noise.
             </p>
             <Link
-              href="/signal"
+              href="/#newsletter"
               className="inline-flex mt-3 px-5 py-2 rounded-md bg-accent text-surface text-xs font-semibold hover:bg-accent/90 transition-colors"
             >
-              Subscribe
+              Get the daily
             </Link>
           </div>
         </div>

@@ -4,12 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 
 const navLinks = [
-  { href: "/news", label: "News" },
-  { href: "/learn", label: "Learn" },
-  { href: "/deep-dives", label: "Deep Dives" },
-  { href: "/tools", label: "Tools" },
-  { href: "/signal", label: "Signal" },
-  { href: "/network", label: "Network" },
+  { href: "/tag/tutorials", label: "Tutorials" },
+  { href: "/tag/comparisons", label: "Comparisons" },
+  { href: "/tag/money", label: "Money" },
+  { href: "/tag/opinion", label: "Opinion" },
+  { href: "/news", label: "All Articles" },
+  {
+    href: "https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about",
+    label: "Community",
+    external: true,
+  },
 ];
 
 export function Header() {
@@ -23,22 +27,34 @@ export function Header() {
             AI Agents First
           </Link>
           <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.external ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </nav>
           <div className="flex items-center gap-3">
             <Link
-              href="/signal"
+              href="/#newsletter"
               className="hidden sm:inline-flex px-4 py-1.5 rounded-md bg-accent text-surface text-xs font-semibold hover:bg-accent/90 transition-colors"
             >
-              Subscribe
+              Get the daily
             </Link>
             <button
               className="md:hidden text-text-primary"
@@ -53,22 +69,35 @@ export function Header() {
         </div>
         {menuOpen && (
           <nav className="md:hidden pb-4 flex flex-col gap-3">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-sm text-text-secondary hover:text-text-primary transition-colors py-1"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.external ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  className="text-sm text-text-secondary hover:text-text-primary transition-colors py-1"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="text-sm text-text-secondary hover:text-text-primary transition-colors py-1"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
             <Link
-              href="/signal"
+              href="/#newsletter"
               onClick={() => setMenuOpen(false)}
               className="inline-flex justify-center px-4 py-2 rounded-md bg-accent text-surface text-sm font-semibold hover:bg-accent/90 transition-colors mt-2"
             >
-              Subscribe
+              Get the daily
             </Link>
           </nav>
         )}

@@ -33,10 +33,10 @@ export function MobileHero() {
             Read the feed
           </Link>
           <Link
-            href="/signal"
+            href="/#newsletter"
             className="px-7 py-3 rounded-lg border border-border text-text-primary text-sm font-medium hover:border-border-hover hover:bg-surface-overlay transition-colors"
           >
-            Daily signal
+            Get the daily
           </Link>
         </div>
       </div>

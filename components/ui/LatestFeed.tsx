@@ -100,7 +100,7 @@ export function LatestFeed({ posts }: { posts: GhostPost[] }) {
                 The sharpest signal from the AI frontier. One read per day.
               </p>
               <Link
-                href="/signal"
+                href="/#newsletter"
                 className="block text-center px-5 py-2.5 rounded-md bg-accent text-surface font-semibold text-sm hover:bg-accent/90 transition-colors"
               >
                 Get the signal

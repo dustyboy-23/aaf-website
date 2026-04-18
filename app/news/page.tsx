@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
-import { getPostsByTag } from "@/lib/content";
+import { getPosts } from "@/lib/content";
 import { ContentList } from "@/components/ui/ContentList";
 
-export const metadata: Metadata = { title: "Live Intelligence", description: "Real-time drops from the AI agent frontier." };
+export const metadata: Metadata = {
+  title: "All Articles",
+  description: "Every piece of analysis, build, and dispatch from the AI agent frontier.",
+};
 
 export default async function NewsPage() {
-  const { posts } = await getPostsByTag("news", { limit: 30 });
-  return <ContentList posts={posts} title="Live Intelligence" description="real-time drops from the AI frontier" />;
+  const { posts } = await getPosts({ limit: 100 });
+  return (
+    <ContentList
+      posts={posts}
+      title="All Articles"
+      description="every piece of analysis, build, and dispatch"
+    />
+  );
 }

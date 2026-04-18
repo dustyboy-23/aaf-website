@@ -126,7 +126,7 @@ export function LatestDrops({ posts }: { posts: GhostPost[] }) {
   const items = posts.slice(0, 12);
 
   return (
-    <section className="relative py-24 sm:py-28" aria-label="Latest drops">
+    <section id="latest-drops" className="relative py-24 sm:py-28 scroll-mt-20" aria-label="Latest drops">
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none"
         style={{
