@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { SearchModal } from "./SearchModal";
 
 type NavLink = {
   href: string;
@@ -18,6 +19,7 @@ const navLinks: NavLink[] = [
   { href: "/tag/money", label: "Money", match: ["/tag/money"] },
   { href: "/tag/opinion", label: "Takes", match: ["/tag/opinion"] },
   { href: "/news", label: "The Feed", match: ["/news"] },
+  { href: "/about", label: "About", match: ["/about"] },
   {
     href: "https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about",
     label: "Community",
@@ -65,9 +67,24 @@ function isActive(link: NavLink, pathname: string): boolean {
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
 
+  // Cmd+K / Ctrl+K opens search from anywhere
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((s) => !s);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
+    <>
+    <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     <header className="fixed top-0 left-0 right-0 z-50 header-blur border-b border-white/5">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-[68px] items-center justify-between gap-8">
@@ -123,6 +140,32 @@ export function Header() {
 
           {/* CTA */}
           <div className="flex items-center gap-3 shrink-0">
+            {/* Search trigger */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/10 hover:border-white/25 hover:bg-white/[0.03] transition-colors text-white/50 hover:text-white/80"
+              aria-label="Search articles"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <span className="text-[12px] font-medium">Search</span>
+              <kbd className="ml-1 px-1.5 py-0.5 rounded border border-white/10 text-[10px] font-medium tracking-wider">⌘K</kbd>
+            </button>
+            {/* Mobile search icon-only */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="md:hidden text-white/70 hover:text-white"
+              aria-label="Search articles"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
             <Link
               href="/#newsletter"
               className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-bold text-[#04050A] transition-transform hover:-translate-y-0.5"
@@ -190,5 +233,6 @@ export function Header() {
         )}
       </div>
     </header>
+    </>
   );
 }

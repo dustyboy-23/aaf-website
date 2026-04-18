@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
+import { getPosts } from "@/lib/content";
 
-const content = `# AI Agents First
+export async function GET() {
+  const { posts } = await getPosts({ limit: 1000 });
+
+  const articleLines = posts
+    .map((p) => `- [${p.title}](https://aiagentsfirst.com/${p.slug})`)
+    .join("\n");
+
+  const content = `# AI Agents First
 
 > The intelligence hub for the agent era.
 
@@ -16,21 +24,22 @@ AI Agents First is a publication covering AI agents, autonomous systems, and the
 - /tag/news - Frontier dispatches and drops
 - /playbook - Free "Build Your First AI Agent" PDF
 
-## API
-- Content API: Ghost CMS (headless)
+## Articles
+${articleLines}
+
+## Feeds
 - Sitemap: /sitemap.xml
-- RSS: /rss (via Ghost)
+- RSS: /feed.xml
 
 ## Contact
 - Website: https://aiagentsfirst.com
-- Community: https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about
+- Community: https://www.skool.com/e-com-freedom-amazon-tiktok-4556
 `;
 
-export async function GET() {
   return new NextResponse(content, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=86400, s-maxage=86400",
+      "Cache-Control": "public, max-age=3600, s-maxage=86400",
     },
   });
 }

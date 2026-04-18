@@ -1,8 +1,7 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { GhostPost } from "@/lib/ghost.types";
 import { categoryColors, colors } from "@/lib/constants";
 import { getArticleImage } from "@/lib/article-images";
+import { TagGrid, type FilterChip, type ResolvedPost } from "./TagGrid";
 
 /**
  * Editorial tag / archive page layout.
@@ -11,6 +10,10 @@ import { getArticleImage } from "@/lib/article-images";
  * that matches the Latest Drops density on the homepage. Tag-specific
  * accent color + editorial description give every tag page its own feel
  * instead of being rubber-stamped "blog index."
+ *
+ * Optional `filters` prop renders filter chips above the grid (client-side
+ * instant filtering). Use this for tag pages like /tag/tutorials where
+ * sub-topic browsing helps — e.g. Agents / Automation / Tools / Models.
  */
 
 export interface TagPageLayoutProps {
@@ -25,90 +28,13 @@ export interface TagPageLayoutProps {
   description: string;
   /** Override count label — defaults to posts.length + " articles" */
   countLabel?: string;
-}
-
-function ArticleCard({
-  post,
-  accent,
-  size = "regular",
-}: {
-  post: GhostPost;
-  accent: string;
-  size?: "lead" | "regular";
-}) {
-  const tagName = post.primary_tag?.name ?? "Dispatch";
-  const image = post.feature_image || getArticleImage(post.slug);
-  const date = new Date(post.published_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-  const isLead = size === "lead";
-
-  return (
-    <Link
-      href={`/${post.slug}`}
-      className={`group relative glass-panel overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-1 ${
-        isLead ? "lg:col-span-2 lg:row-span-2" : ""
-      }`}
-      style={{ borderColor: `${accent}20` }}
-    >
-      <div
-        className={`relative overflow-hidden ${
-          isLead ? "aspect-[16/9] lg:aspect-[21/10]" : "aspect-[16/9]"
-        }`}
-      >
-        <Image
-          src={image}
-          alt={post.title}
-          fill
-          sizes={
-            isLead
-              ? "(min-width: 1024px) 66vw, (min-width: 640px) 100vw, 100vw"
-              : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-          }
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0E1A]/85 via-transparent to-transparent" />
-        <div className="absolute top-3 left-3">
-          <span
-            className="px-2 py-0.5 rounded-full text-[9px] font-mono uppercase tracking-[0.2em] font-bold backdrop-blur"
-            style={{
-              color: accent,
-              backgroundColor: "rgba(4,5,10,0.65)",
-              border: `1px solid ${accent}55`,
-            }}
-          >
-            {tagName}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex-1 flex flex-col gap-2.5 p-5">
-        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
-          <span>{date}</span>
-          <span>{post.reading_time || 5} min</span>
-        </div>
-        <h3
-          className={`font-bold tracking-tight text-white leading-snug line-clamp-3 ${
-            isLead ? "text-2xl sm:text-3xl" : "text-base"
-          }`}
-        >
-          <span className="group-hover:text-[color:var(--color-neon-cyan)] transition-colors">
-            {post.title}
-          </span>
-        </h3>
-        {post.excerpt && (
-          <p
-            className={`text-sm text-white/55 leading-relaxed ${
-              isLead ? "line-clamp-3" : "line-clamp-2"
-            }`}
-          >
-            {post.excerpt}
-          </p>
-        )}
-      </div>
-    </Link>
-  );
+  /** Optional filter chips rendered above the grid */
+  filters?: FilterChip[];
+  /**
+   * Server-side bucket tagger — takes a post, returns an array of chip
+   * slugs it matches. Runs in the server component (never sent to client).
+   */
+  bucketFor?: (post: GhostPost) => string[];
 }
 
 export function TagPageLayout({
@@ -118,9 +44,19 @@ export function TagPageLayout({
   eyebrow,
   description,
   countLabel,
+  filters,
+  bucketFor,
 }: TagPageLayoutProps) {
   const accent = categoryColors[tagSlug] ?? colors.neonCyan;
   const count = countLabel ?? `${posts.length} article${posts.length === 1 ? "" : "s"}`;
+
+  // Resolve hero images + bucket slugs server-side so TagGrid (client)
+  // doesn't import fs and doesn't receive functions as props.
+  const resolved: ResolvedPost[] = posts.map((p) => ({
+    ...p,
+    resolvedImage: getArticleImage(p.slug),
+    buckets: bucketFor ? bucketFor(p) : [],
+  }));
 
   return (
     <div className="relative">
@@ -171,24 +107,7 @@ export function TagPageLayout({
       {/* ——— Article grid ——— */}
       <section className="relative bg-void pb-24 sm:pb-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-8">
-          {posts.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="font-mono text-[11px] uppercase tracking-[0.3em] text-white/40">
-                Nothing here yet — check back soon.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-fr">
-              {posts.map((post, i) => (
-                <ArticleCard
-                  key={post.id}
-                  post={post}
-                  accent={accent}
-                  size={i === 0 ? "lead" : "regular"}
-                />
-              ))}
-            </div>
-          )}
+          <TagGrid posts={resolved} accent={accent} filters={filters} />
         </div>
       </section>
     </div>

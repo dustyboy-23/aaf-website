@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { getPosts } from "@/lib/content";
 import { NexusHero } from "./NexusHero";
+
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://aiagentsfirst.com").trim();
+
+export const metadata: Metadata = {
+  alternates: { canonical: siteUrl },
+};
 import { TodaysSignal } from "@/components/ui/TodaysSignal";
 import { VerticalsGrid } from "@/components/ui/VerticalsGrid";
 import { DeepAnalysisFeature } from "@/components/ui/DeepAnalysisFeature";

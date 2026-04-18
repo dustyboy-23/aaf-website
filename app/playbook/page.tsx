@@ -3,14 +3,18 @@ import Image from "next/image";
 import { LeadMagnetForm } from "@/components/ui/LeadMagnetForm";
 import { colors } from "@/lib/constants";
 
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://aiagentsfirst.com").trim();
+
 export const metadata: Metadata = {
   title: "Build Your First AI Agent — The AAF Executive Playbook",
   description:
     "The free 11-page playbook for designing, building, and deploying your first working AI agent. Role, stack, system prompt, tools, memory, triggers, guardrails.",
+  alternates: { canonical: `${siteUrl}/playbook` },
   openGraph: {
     title: "Build Your First AI Agent — The AAF Executive Playbook",
     description:
       "The free 11-page playbook for designing, building, and deploying your first working AI agent.",
+    url: `${siteUrl}/playbook`,
     images: ["/lead-magnet/cover.png"],
   },
 };

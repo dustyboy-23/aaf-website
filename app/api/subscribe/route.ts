@@ -1,22 +1,33 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 
 /**
- * Newsletter subscription stub.
+ * Newsletter subscription endpoint.
  *
- * Appends submissions to `data/subscribers.jsonl` at the repo root.
- * Designed to be swapped for a real provider (ConvertKit / Buttondown /
- * Loops) by replacing the persist block below — the request/response
- * contract stays stable, so the client component doesn't change.
- *
- * Why JSON Lines: atomic append semantics without needing a DB, and
- * easily replayable when we port to the real provider.
+ * Logs every signup to stdout (visible in Vercel function logs) and
+ * sends a Telegram notification to Dusty so he knows the moment
+ * someone subscribes. Email provider gets wired up once we hit 10.
  */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const DATA_DIR = path.join(process.cwd(), "data");
-const STORE = path.join(DATA_DIR, "subscribers.jsonl");
+
+async function notifyTelegram(email: string, source: string) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+  if (!token || !chatId) return;
+
+  const text = `New AAF subscriber: ${email}\nSource: ${source}\nTime: ${new Date().toISOString()}`;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    });
+  } catch {
+    // Don't let Telegram failures break the signup flow
+    console.error("[subscribe] Telegram notify failed");
+  }
+}
 
 export async function POST(req: Request) {
   let body: { email?: string; source?: string };
@@ -36,21 +47,13 @@ export async function POST(req: Request) {
     );
   }
 
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    const line =
-      JSON.stringify({
-        email,
-        source,
-        ts: new Date().toISOString(),
-      }) + "\n";
-    fs.appendFileSync(STORE, line, "utf-8");
-  } catch (err) {
-    console.error("[subscribe] persist failed", err);
-    // Don't leak filesystem errors to the client. Fail silently as far as
-    // the user is concerned — we'd rather lose one submission than hand
-    // them a scary "server error" screen on the homepage CTA.
-  }
+  // Log to stdout -- visible in Vercel function logs
+  console.log(
+    `[subscribe] ${JSON.stringify({ email, source, ts: new Date().toISOString() })}`,
+  );
+
+  // Ping Dusty on Telegram
+  await notifyTelegram(email, source);
 
   return NextResponse.json({ ok: true });
 }
