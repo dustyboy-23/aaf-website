@@ -1,0 +1,215 @@
+---
+id: claude-code-hooks-mcp-tool
+uuid: claude-code-hooks-mcp-tool
+slug: claude-code-hooks-mcp-tool
+title: How to Wire Claude Code Hooks to MCP Tools (v2.1.118)
+excerpt: "Claude Code v2.1.118 (released April 23, 2026) added type: &quot;mcp_tool&quot; as a new hook handler type. You can now wire any lifecycle event -- PreToolUse, PostToolUse, Stop, SessionStart -- direc"
+feature_image: null
+featured: false
+published_at: "2026-04-24T03:10:34-07:00"
+updated_at: "2026-04-24T03:10:34-07:00"
+reading_time: 11
+tags: [tutorials, claude-code, mcp, hooks, automation]
+tag_names: [Tutorials, Claude Code, MCP, Hooks, Automation]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Hooks Now Call MCP Tools: v2.1.118 Guide"
+meta_description: Claude Code v2.1.118 added mcp_tool hooks to wire lifecycle events to MCP servers. Here are the configs, 3 automation chains, and what else shipped.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Wire Claude Code Hooks to MCP Tools (v2.1.118)</h1>
+
+<p class="lede">Claude Code v2.1.118 (released April 23, 2026) added <code>type: &quot;mcp_tool&quot;</code> as a new hook handler type. You can now wire any lifecycle event -- PreToolUse, PostToolUse, Stop, SessionStart -- directly to a tool on any connected MCP server. No shell script, no subprocess. The tool output feeds back into the hook pipeline exactly like command-hook stdout.</p>
+
+<p>I have been waiting for this. The hooks system has been one of the most underused parts of Claude Code because writing a shell script for every automation chain is friction. With the mcp_tool handler, if you already have an MCP server configured, that friction is gone.</p>
+
+<h2>What exactly does the mcp_tool hook handler do?</h2>
+
+<p>The <code>mcp_tool</code> hook handler is one of five handler types in Claude Code -- alongside <code>command</code>, <code>http</code>, <code>prompt</code>, and <code>agent</code>. When a lifecycle event fires, it calls a named tool on an already-connected MCP server, passes an optional <code>input</code> object with template variables, and surfaces the tool text output back into the hook pipeline as if it were stdout from a shell command.</p>
+
+<p>The key phrase is "already-connected." The MCP server must be configured in your <code>settings.json</code> before the hook fires. This routes through the same persistent protocol channel Claude Code uses for all tool calls during a session -- it is not a fresh connection per hook invocation. There is no subprocess spawn, no new authentication handshake.</p>
+
+<p>From the official GitHub release notes for v2.1.118, released April 23, 2026, by @ashwin-ant at Anthropic: "Hooks can now invoke MCP tools directly via type: mcp_tool." That was one of 34 CLI changes shipped in that single release. The same release added vim visual modes, custom themes, a unified <code>/usage</code> command, the <code>DISABLE_UPDATES</code> env var, and WSL settings inheritance -- but the MCP hooks integration is the one with the highest automation leverage for anyone running MCP servers in their stack.</p>
+
+<p>The exit code behavior is identical to the <code>command</code> handler. From the official hooks docs at code.claude.com/docs/en/hooks: "A PreToolUse hook that exits 2 stops the tool. A Stop hook that exits 2 forces Claude to keep working." The <code>mcp_tool</code> handler participates in both of those control mechanisms fully.</p>
+
+<h2>How do you configure a mcp_tool hook in settings.json?</h2>
+
+<p>A <code>mcp_tool</code> hook block requires two fields -- <code>server</code> (the name of your configured MCP server) and <code>tool</code> (the tool name on that server). The optional <code>input</code> object supports <code>$&#123;variable&#125;</code> template substitution from the triggering event payload, letting you forward file paths, tool arguments, or other context directly into the MCP tool call without intermediate scripting.</p>
+
+<p>Here is the minimal config from the official hooks reference, showing a PreToolUse hook that calls a security scanning tool before any file Write:</p>
+
+<pre><code>&#123;
+  "hooks": &#123;
+    "PreToolUse": [
+      &#123;
+        "matcher": "Write",
+        "hooks": [
+          &#123;
+            "type": "mcp_tool",
+            "server": "my_server",
+            "tool": "security_scan",
+            "input": &#123; "file_path": "$&#123;tool_input.file_path&#125;" &#125;
+          &#125;
+        ]
+      &#125;
+    ]
+  &#125;
+&#125;</code></pre>
+
+<p>The <code>matcher</code> field targets which tool triggers the hook. For hooks on MCP tool calls themselves, the naming convention is <code>mcp__&lt;server&gt;__&lt;tool&gt;</code> with double underscores. So if you want a hook to fire when Claude calls <code>create_entities</code> on a <code>memory</code> server, the matcher is <code>mcp__memory__create_entities</code>. Regex patterns work here: <code>mcp__memory__.*</code> matches all tools on the memory server, and <code>mcp__.*__write.*</code> matches write-family tools across all servers.</p>
+
+<p>Where you place the config determines scope. User-level hooks in <code>~/.claude/settings.json</code> apply to every project on your machine. Project-level hooks in <code>.claude/settings.json</code> apply only to that project and can be committed to version control for team sharing. Plugin manifests can ship hooks in a <code>hooks/hooks.json</code> file, and skill frontmatter can define hooks that are active only while that skill is running. Five configuration scopes total: user, project, project-local, managed policy, and plugin.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What are the 3 most useful automation chains this unlocks?</h2>
+
+<p>The three highest-leverage automation chains are: (1) blocking file writes that fail a security scan, (2) posting a notification when Claude finishes a session, and (3) logging every tool call result to a memory MCP server for persistent audit trails. All three were possible before with shell scripts that called MCP servers -- the mcp_tool handler removes the subprocess layer and the authentication plumbing entirely.</p>
+
+<h3>Chain 1: Auto-security scan on every Write or Edit</h3>
+
+<p>Wire a <code>PreToolUse</code> hook on the <code>Write</code> matcher to call a security scanning tool on your MCP server. The <code>$&#123;tool_input.file_path&#125;</code> template variable forwards the target file path to the scanner automatically. If the scanner triggers exit code 2, the Write is blocked before it touches disk. This is the equivalent of a pre-commit hook, but it runs inline during the Claude session -- you catch the issue before the file is written, not after it is staged.</p>
+
+<pre><code>"PreToolUse": [
+  &#123;
+    "matcher": "Write",
+    "hooks": [
+      &#123;
+        "type": "mcp_tool",
+        "server": "security_tools",
+        "tool": "scan_file",
+        "input": &#123; "path": "$&#123;tool_input.file_path&#125;" &#125;
+      &#125;
+    ]
+  &#125;
+]</code></pre>
+
+<p>You can extend this to both <code>Write</code> and <code>Edit</code> matchers using a regex pattern. The hook runs synchronously before the file operation. If the MCP tool returns a warning, Claude sees it as hook stdout and can adjust before retrying.</p>
+
+<h3>Chain 2: Notification ping when Claude stops</h3>
+
+<p>Wire a <code>Stop</code> lifecycle event to a Slack, Telegram, or Discord MCP server. Every time Claude finishes a response turn, a message fires to your chosen channel. This is the most practical setup for long-running background sessions where you want to know when Claude finishes a task without watching the terminal. Because <code>Stop</code> hooks can exit with code 2 to force Claude to keep working, you can also build conditional stop logic -- notify only when a specific output condition is met, otherwise keep the session running.</p>
+
+<pre><code>"Stop": [
+  &#123;
+    "hooks": [
+      &#123;
+        "type": "mcp_tool",
+        "server": "slack",
+        "tool": "post_message",
+        "input": &#123;
+          "channel": "dev-alerts",
+          "text": "Claude Code session finished"
+        &#125;
+      &#125;
+    ]
+  &#125;
+]</code></pre>
+
+<p>The same pattern works for any notification MCP server. You pick the server and tool name; the hook wiring is identical regardless of which notification channel you use.</p>
+
+<h3>Chain 3: Cross-session logging via PostToolUse to a memory server</h3>
+
+<p>Wire a <code>PostToolUse</code> hook with a broad matcher or no matcher (catches all tool calls) to your memory MCP server. After every tool call -- file reads, edits, bash commands, MCP tool invocations -- the result gets written to the memory server. This gives you a persistent audit log across sessions that you can query to reconstruct what happened. The memory server text response feeds back into Claude context exactly like any hook stdout, so Claude can also receive and act on the log confirmation in the same turn.</p>
+
+<p>This chain has the longest tail of value. Session-level context evaporates when a Claude Code session ends. Routing PostToolUse through a memory MCP server means every action from every session builds into a queryable history. Combined with a PreToolUse hook on the same memory server, you can surface relevant past actions at the start of each new session automatically.</p>
+
+<h2>How does the mcp_tool handler fit into the full hooks lifecycle?</h2>
+
+<p>Claude Code has 25+ named lifecycle events across session, turn, and tool-call cadences. The <code>mcp_tool</code> handler can attach to any of them -- there is no event restriction specific to this handler type. This is worth noting because the <code>agent</code>-type hooks had a bug where they failed with "Messages are required for agent hooks" when configured for events other than <code>Stop</code> or <code>SubagentStop</code>. That bug was fixed in v2.1.118 alongside the mcp_tool addition.</p>
+
+<p>The three lifecycle cadences relevant to most automation chains:</p>
+
+<ul>
+<li><strong>Session cadence:</strong> <code>SessionStart</code> fires on startup, resume, clear, and compact. <code>SessionEnd</code> fires on clear, resume, logout, and other exit paths. Good for initialization and teardown logic.</li>
+<li><strong>Turn cadence:</strong> <code>UserPromptSubmit</code> fires before Claude processes input and can block it. <code>Stop</code> fires when Claude finishes a turn and can force continuation via exit code 2. <code>PostToolBatch</code> fires when all parallel tool calls resolve. Good for completion notifications and conditional continuation.</li>
+<li><strong>Tool-call cadence:</strong> <code>PreToolUse</code> fires before execution and exit code 2 blocks the tool. <code>PostToolUse</code> fires after completion and cannot block. <code>PostToolUseFailure</code> fires after failures. <code>PermissionRequest</code> fires before a permission dialog appears. Good for security gates, logging, and follow-on actions.</li>
+</ul>
+
+<p>The full event list also includes <code>SubagentStart</code>, <code>SubagentStop</code>, <code>PreCompact</code>, <code>PostCompact</code>, <code>Notification</code>, <code>InstructionsLoaded</code>, <code>ConfigChange</code>, <code>CwdChanged</code>, <code>FileChanged</code>, <code>WorktreeCreate</code>, <code>WorktreeRemove</code>, <code>Elicitation</code>, <code>ElicitationResult</code>, and more. The mcp_tool handler gives you native MCP protocol access at any point in that lifecycle.</p>
+
+<h2>What else shipped in v2.1.118?</h2>
+
+<p>The v2.1.118 release contained 34 CLI changes in total (per @ClaudeCodeLog on X). Beyond the MCP hooks feature, the most practically useful additions for daily use are vim visual modes, the unified <code>/usage</code> command, custom themes, and the <code>DISABLE_UPDATES</code> env var.</p>
+
+<p>Vim visual mode is now properly implemented: <code>v</code> starts character-wise visual selection, <code>V</code> starts line-wise, and both work with operator combinations and visual feedback. If you were using Claude Code in vim mode and running into selection behavior issues, this release resolves them.</p>
+
+<p>The <code>/cost</code> and <code>/stats</code> commands are merged into <code>/usage</code>, which opens with tabs for both views. Both old commands still work as shortcuts that open the relevant tab, so nothing breaks in existing workflows. Custom themes are now creatable and switchable from <code>/theme</code>, or you can hand-edit JSON files in <code>~/.claude/themes/</code>. Plugins can also ship themes via a <code>themes/</code> directory in the plugin manifest.</p>
+
+<p>The <code>DISABLE_UPDATES</code> env var is stricter than the old <code>DISABLE_AUTOUPDATER</code> flag. Setting <code>DISABLE_UPDATES=1</code> blocks all update paths including manual <code>claude update</code> from the terminal. The old flag only blocked the automatic background updater -- manual updates still went through. This is useful in CI environments or managed deployments where you pin a specific Claude Code version.</p>
+
+<p>WSL on Windows can now inherit Windows-side managed settings via the <code>wslInheritsWindowsSettings</code> policy key. The bug fixes in v2.1.118 also addressed two MCP OAuth issues that forced re-authentication every hour on servers with non-standard token responses, and a credential save crash on Linux and Windows that could corrupt <code>~/.claude/.credentials.json</code>.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does mcp_tool work with any MCP server, or only specific ones?</h3>
+<p>The <code>mcp_tool</code> hook handler works with any MCP server already configured in your Claude Code settings. There is no restriction on server type, protocol version, or transport layer. The server must be active and connected before the hook fires. Claude Code uses the same persistent protocol channel it uses for all tool calls during a session, so no additional authentication is needed beyond the initial server configuration.</p>
+
+<h3>What is the difference between mcp_tool and command hooks?</h3>
+<p>A <code>command</code> hook spawns a shell subprocess and receives event JSON on stdin. A <code>mcp_tool</code> hook routes through the MCP protocol directly, using the server connection already established during the session. No subprocess spawn, no shell overhead. The <code>mcp_tool</code> handler also accepts structured <code>input</code> objects with template variable substitution. Use <code>command</code> when you need shell access. Use <code>mcp_tool</code> when you are wiring to a tool already configured as an MCP server.</p>
+
+<h3>What lifecycle events can trigger a mcp_tool hook?</h3>
+<p>Any of the 25+ named lifecycle events in Claude Code can trigger a <code>mcp_tool</code> hook -- PreToolUse, PostToolUse, Stop, SessionStart, SessionEnd, UserPromptSubmit, PostToolBatch, SubagentStart, SubagentStop, PreCompact, PostCompact, and more. There is no event restriction specific to the mcp_tool handler type. PreToolUse with exit code 2 blocks the tool. Stop with exit code 2 forces Claude to continue. PostToolUse cannot block since the tool has already run.</p>
+
+<h3>Can I use template variables in the mcp_tool input field?</h3>
+<p>Yes. The <code>input</code> field in a <code>mcp_tool</code> hook supports <code>$&#123;variable&#125;</code> template substitution from the triggering event payload. The official example from the hooks reference at code.claude.com/docs/en/hooks forwards a file path: <code>"input": &#123; "file_path": "$&#123;tool_input.file_path&#125;" &#125;</code>. This lets a PreToolUse hook on Write or Edit pass the target file path directly to a scanning tool on your MCP server without any shell intermediary.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does mcp_tool work with any MCP server, or only specific ones?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The mcp_tool hook handler works with any MCP server already configured in your Claude Code settings. There is no restriction on server type, protocol version, or transport layer. The server must be active and connected before the hook fires. Claude Code uses the same persistent protocol channel it uses for all tool calls during a session, so no additional authentication is needed beyond the initial server configuration."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between mcp_tool and command hooks?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "A command hook spawns a shell subprocess and receives event JSON on stdin. A mcp_tool hook routes through the MCP protocol directly, using the server connection already established during the session. No subprocess spawn, no shell overhead. The mcp_tool handler also accepts structured input objects with template variable substitution. Use command when you need shell access. Use mcp_tool when wiring to a tool already configured as an MCP server."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What lifecycle events can trigger a mcp_tool hook?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Any of the 25+ named lifecycle events in Claude Code can trigger a mcp_tool hook -- PreToolUse, PostToolUse, Stop, SessionStart, SessionEnd, UserPromptSubmit, PostToolBatch, SubagentStart, SubagentStop, PreCompact, PostCompact, and more. There is no event restriction specific to the mcp_tool handler type. PreToolUse with exit code 2 blocks the tool. Stop with exit code 2 forces Claude to continue. PostToolUse cannot block since the tool has already run."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I use template variables in the mcp_tool input field?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The input field in a mcp_tool hook supports template substitution from the triggering event payload. The official example from code.claude.com/docs/en/hooks forwards a file path using the tool_input.file_path variable. This lets a PreToolUse hook on Write or Edit pass the target file path directly to a scanning tool on your MCP server without any shell intermediary."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
