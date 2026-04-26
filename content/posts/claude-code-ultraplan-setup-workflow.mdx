@@ -1,0 +1,166 @@
+---
+id: claude-code-ultraplan-setup-workflow
+uuid: claude-code-ultraplan-setup-workflow
+slug: claude-code-ultraplan-setup-workflow
+title: "Claude Code Ultraplan: Cloud Planning Setup and Workflow"
+excerpt: Claude Code Ultraplan is a research preview feature (requires v2.1.91+, Pro or Max subscription) that offloads the planning phase to a remote cloud container running Opus 4.6. Your terminal stays free
+feature_image: null
+featured: false
+published_at: "2026-04-26T03:11:55-07:00"
+updated_at: "2026-04-26T03:11:55-07:00"
+reading_time: 9
+tags: [tutorials, claude-code, claude-code-ultraplan]
+tag_names: [Tutorials, Claude Code, Claude Code Ultraplan]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Ultraplan: Cloud Planning Setup Guide 2026"
+meta_description: Claude Code Ultraplan offloads planning to the cloud, freeing your terminal. Learn requirements, triggers, the browser review workflow, and execution.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Ultraplan: Cloud Planning Setup and Workflow</h1>
+
+<p class="lede">Claude Code Ultraplan is a research preview feature (requires v2.1.91+, Pro or Max subscription) that offloads the planning phase to a remote cloud container running Opus 4.6. Your terminal stays free while the cloud session drafts a structured implementation plan. You review it in a browser with inline comments, then execute on the web or pull it back to your local terminal.</p>
+
+<p>I run Claude Code sessions daily. The planning phase always bothered me -- it locks your terminal for 20 to 45 minutes while Claude maps out a feature, and you cannot do anything else. Ultraplan landed in v2.1.101 and solves exactly that. Here is how it actually works.</p>
+
+<h2>What is Claude Code Ultraplan?</h2>
+
+<p>Claude Code Ultraplan routes the planning phase to a remote cloud container on Anthropic's infrastructure instead of blocking your local terminal. The cloud session uses Opus 4.6 to research your codebase and produce a structured implementation plan while your terminal stays completely free. When the plan is ready, you review it in a browser-based UI, then choose where to execute it.</p>
+
+<p>Ultraplan entered early preview between v2.1.92 and v2.1.101 during the week of April 6--10, 2026. The original implementation required manual cloud environment setup. V2.1.101 changed that -- cloud environments now auto-provision on first use. The current stable release is v2.1.118 (April 23, 2026).</p>
+
+<p>Anthropic runs three system prompt variants in A/B testing behind the scenes. The most capable is <code>three_subagents_with_critique</code> -- this variant spawns parallel research agents to explore your codebase and surface potential risks simultaneously, then a critique agent reviews their findings before producing the final plan. The simpler variants (<code>simple_plan</code> and <code>visual_plan</code>) run single-agent planning loops. You cannot choose which variant you get, but the three-subagents path is what most positive early reviewers were experiencing when they described Ultraplan as better than expected.</p>
+
+<h2>What are the requirements?</h2>
+
+<p>Ultraplan has three hard requirements: Claude Code v2.1.91 or later, a Pro ($20/month) or Max ($100-$200/month) subscription, and a GitHub-hosted repository. GitLab, Bitbucket, and self-hosted Git servers are not supported at research preview. If you run Claude Code through Amazon Bedrock, Google Cloud Vertex AI, or Microsoft Foundry, Ultraplan is also unavailable -- it requires Anthropic's own cloud infrastructure, not third-party providers.</p>
+
+<p>Update your Claude Code installation first:</p>
+
+<pre><code>npm update -g @anthropic-ai/claude-code
+claude --version</code></pre>
+
+<p>You need 2.1.91 at minimum. Running 2.1.118 gets you auto-provisioning and the latest planning improvements. If you are on an older version, the <code>/ultraplan</code> command will not exist and the keyword trigger will not fire -- you will get normal plan mode instead with no error message explaining why.</p>
+
+<p>The subscription constraint matters more than it sounds. Pro at $20/month works but exhausts quickly on complex planning sessions. Max at $100-$200/month gives 20x the usage limits of Pro. If you are running Ultraplan daily on substantial codebase work, Max is the practical choice. Below about 20 substantial sessions per month, Pro is workable if you are selective about which tasks you send to Ultraplan.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How do you trigger Ultraplan?</h2>
+
+<p>Three trigger methods exist. The slash command is the most direct: type <code>/ultraplan [your task description]</code> in the terminal. The keyword method works anywhere in a normal prompt -- include the word "ultraplan" and Claude recognizes and routes it accordingly. Third option: run a local plan first, and when Claude finishes drafting locally, select "No, refine with Ultraplan on Claude Code on the web" from the follow-up options.</p>
+
+<p>Example slash command:</p>
+
+<pre><code>/ultraplan migrate the auth service from sessions to JWTs</code></pre>
+
+<p>After triggering, your terminal shows three status states:</p>
+
+<ul>
+<li><code>&#9671; ultraplan</code> -- cloud session is researching and drafting</li>
+<li><code>&#9671; ultraplan needs your input</code> -- Claude has a clarifying question; open the browser session to respond</li>
+<li><code>&#9670; ultraplan ready</code> -- plan is complete and ready to review in the browser</li>
+</ul>
+
+<p>The terminal polls the cloud session every 3 seconds for status updates. While it runs, your terminal is completely free -- you can run commands, edit files, or start other Claude Code sessions. That parallel operation is the actual quality-of-life improvement. The "needs your input" state is worth paying attention to: if Ultraplan hits an ambiguous decision point, it pauses and waits for your answer rather than guessing. You have to actively check the browser to unblock it, which means complex sessions work best if you keep an eye on the terminal status periodically.</p>
+
+<h2>What does the browser review interface look like?</h2>
+
+<p>The Ultraplan review UI is structured like a pull request review, not a chat conversation. You get an outline sidebar for navigating between plan sections, inline commenting by highlighting any passage, and emoji reactions to signal approval or concern without writing full comments. Claude addresses feedback iteratively, presenting revised drafts until you approve the final version.</p>
+
+<p>This format shift from terminal output to PR-style review matters more than it sounds. Terminal chat creates pressure to respond quickly. The browser interface gives you space to read the full plan, leave targeted feedback on specific sections, and compare iterations side by side. If you have ever tried to catch an architectural problem buried in a wall of terminal text, you understand why the difference is meaningful in practice.</p>
+
+<p>One constraint: the cloud container runs for a maximum of 30 minutes per session. If planning would take longer -- which typically means the task scope is too broad -- the session times out. That is usually a useful signal: break overly broad requests into smaller planning units before triggering Ultraplan. A well-scoped Ultraplan prompt finishes in 2 to 12 minutes depending on complexity.</p>
+
+<h2>How do you execute the plan after review?</h2>
+
+<p>After approving the plan in the browser, two execution paths are available. Execute on the web: click "Approve Claude's plan and start coding" and the cloud session implements the plan, then automatically opens a pull request against your GitHub repo. Execute locally: click "Approve plan and teleport back to terminal" and the approved plan arrives in your local Claude Code session, where you can implement it, start a new session with the plan context loaded, or cancel.</p>
+
+<p>I use the local execution path in practice. Cloud execution is faster end-to-end, but implementing locally means I can watch tool calls happen in real time and intervene if something goes off-track. The cloud execution path works better when you trust the plan completely and want to step away during implementation.</p>
+
+<p>Known limitation: if you use Remote Control (the terminal interface for Claude Code on the web), it disconnects when Ultraplan activates. Both features occupy the same interface slot. It reconnects after the Ultraplan session completes. This is a documented research preview limitation.</p>
+
+<p>The cloud environment caveat matters for execution: the cloud container is a universal image with setup scripts, not a copy of your local machine. Plans that execute on the web may behave differently from executing the same plan locally if your project depends on custom tooling or environment variables not captured in the repo's setup scripts. For anything production-facing, test remote execution on a branch first before relying on it.</p>
+
+<h2>When does Ultraplan beat local plan mode?</h2>
+
+<p>Ultraplan wins on complex, multi-file refactors and large feature additions where codebase comprehension is the bottleneck. MindStudio's April 2026 speed comparison found Ultraplan completes simple bug fix planning in roughly 2 minutes versus 10-15 minutes locally, feature additions in 5 minutes versus 20-25 minutes, and multi-file refactors in 8-12 minutes versus 30-40 minutes. The Opus 4.6 model used in cloud sessions handles large codebase traversal better than what you would get running locally on a smaller model.</p>
+
+<p>Local plan mode wins when requirements are ambiguous and you need real-time back-and-forth clarification. If you need to explain architectural decisions verbally as the plan develops, the terminal loop is faster than waiting on cloud iteration cycles. Local also wins if your repo is on GitLab, Bitbucket, or a self-hosted server -- Ultraplan does not support those at research preview.</p>
+
+<p>Token costs to factor in: complex Ultraplan sessions run $0.40 to $1.20 each in token consumption on top of your subscription fee. At 20 or more substantial planning sessions per month, Max at $100-$200/month becomes cost-efficient compared to burning through Pro limits repeatedly. There is no per-session infrastructure charge beyond token consumption -- the cloud container is included in the subscription.</p>
+
+<p>The best use case I have found: Ultraplan before starting a large feature where you are not sure the approach is right. The PR-style review interface makes it easy to spot architectural gaps before you are three hours into implementation and realize the plan was wrong. Catching a bad approach in the planning review costs nothing except a few minutes. Catching it mid-implementation costs hours.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does Claude Code Ultraplan work with GitLab or Bitbucket repos?</h3>
+<p>No. Ultraplan is GitHub-only at research preview. GitLab, Bitbucket, self-hosted Git servers, and repos using third-party cloud providers (Amazon Bedrock, Google Cloud Vertex AI, Microsoft Foundry) are not supported. The official documentation does not give a timeline for broader Git host support. This is the biggest current limitation for teams not on GitHub.</p>
+
+<h3>What Claude Code version is required for Ultraplan?</h3>
+<p>Ultraplan requires Claude Code v2.1.91 or later. V2.1.101 added auto-provisioning so you do not need to manually set up a cloud environment before your first use. The current stable release is v2.1.118 (April 23, 2026). Update with <code>npm update -g @anthropic-ai/claude-code</code> and confirm with <code>claude --version</code>.</p>
+
+<h3>Can you use your terminal while Ultraplan is running?</h3>
+<p>Yes -- this is the core benefit. Your terminal is completely free while the cloud planning session runs in parallel. Ultraplan polls the cloud container every 3 seconds and surfaces status indicators in your terminal, but you can run other commands or start separate Claude Code sessions simultaneously. The cloud session runs for a maximum of 30 minutes before timing out.</p>
+
+<h3>Is Ultraplan available on free Claude accounts?</h3>
+<p>No. Ultraplan requires a Pro subscription ($20/month) at minimum. Free tier accounts do not have access. For sustained daily use with complex planning sessions, Max ($100-$200/month) is more practical -- Pro limits exhaust quickly on multi-file refactor planning. Enterprise and Team accounts are also supported.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does Claude Code Ultraplan work with GitLab or Bitbucket repos?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Ultraplan is GitHub-only at research preview. GitLab, Bitbucket, self-hosted Git servers, and repos using third-party cloud providers are not supported. The official documentation does not give a timeline for broader Git host support."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What Claude Code version is required for Ultraplan?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Ultraplan requires Claude Code v2.1.91 or later. V2.1.101 added auto-provisioning. The current stable release is v2.1.118 (April 23, 2026). Update with npm update -g @anthropic-ai/claude-code and confirm with claude --version."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can you use your terminal while Ultraplan is running?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Your terminal is completely free while the cloud planning session runs in parallel. Ultraplan polls every 3 seconds and surfaces status in your terminal, but you can run other commands simultaneously. The cloud session runs for a maximum of 30 minutes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is Ultraplan available on free Claude accounts?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Ultraplan requires a Pro subscription ($20/month) at minimum. Free tier accounts do not have access. For sustained daily use, Max ($100-$200/month) is more practical because Pro limits exhaust quickly on multi-file refactor planning."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
