@@ -1,0 +1,166 @@
+---
+id: claude-context-mcp-semantic-code-search
+uuid: claude-context-mcp-semantic-code-search
+slug: claude-context-mcp-semantic-code-search
+title: "claude-context MCP: Semantic Code Search Over Your Entire Codebase"
+excerpt: claude-context is an open-source MCP server by Zilliz that indexes your codebase with vector embeddings and gives Claude Code semantic retrieval over your whole project. Instead of Claude reading enti
+feature_image: null
+featured: false
+published_at: "2026-04-28T03:08:23-07:00"
+updated_at: "2026-04-28T03:08:23-07:00"
+reading_time: 9
+tags: [tutorials, claude-code, mcp, vector-search, token-optimization]
+tag_names: [Tutorials, Claude Code, MCP, Vector Search, Token Optimization]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "claude-context MCP: Semantic Code Search for Claude Code"
+meta_description: "claude-context by Zilliz is an MCP server that adds semantic vector search to Claude Code. Cut token costs 40% on large codebases. Full setup guide."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>claude-context MCP: Semantic Code Search Over Your Entire Codebase</h1>
+
+<p class="lede">claude-context is an open-source MCP server by Zilliz that indexes your codebase with vector embeddings and gives Claude Code semantic retrieval over your whole project. Instead of Claude reading entire files to find relevant code, it queries by meaning -- reducing token costs by roughly 40% on large projects. Setup takes under 10 minutes with a free Zilliz Cloud account.</p>
+
+<p>I have been watching Claude Code burn through tokens reading 500-line files to find one function. claude-context hit #1 on GitHub trending on April 23, 2026 -- 871 new stars in a single day, 7,476 total -- because this problem is universal for anyone running Claude Code on a real project. Here is a complete setup walkthrough and an honest take on what you actually get out of it.</p>
+
+<h2>What problem does claude-context actually fix in Claude Code?</h2>
+
+<p>Claude Code reads entire files by default when searching for context. On large codebases, 60-80% of your token budget gets consumed just navigating to the right location before Claude writes a single line of code. claude-context adds an MCP layer that intercepts those lookups and answers them with semantic vector search, returning only the relevant snippets instead of full files. This is the single most impactful optimization available for large-codebase Claude Code workflows in 2026.</p>
+
+<p>The token reduction numbers are striking. Milvus published benchmarks comparing full-file reads against semantic retrieval: a test code navigation query dropped from 84,193 tokens to 2,699 -- a 96.8% reduction for that specific query. Real-world full-session measurements are more conservative at roughly 40%, but on a $100+/month Claude Code bill, that is meaningful savings. The 40% figure comes from controlled evaluation documented in the <a href="https://github.com/zilliztech/claude-context">GitHub README</a> and corroborated independently by <a href="https://byteiota.com/claude-context-mcp-code-search-cuts-ai-tokens-40/">byteiota</a>.</p>
+
+<p>The reason Claude reads entire files is not a bug -- it is the safest strategy when there is no smarter retrieval layer available. The full file guarantees the answer is in there somewhere. claude-context gives it a better option: a ranked list of semantically relevant snippets that covers the same question at a fraction of the token cost.</p>
+
+<h2>How claude-context works: hybrid search and AST-aware chunking</h2>
+
+<p>claude-context indexes your codebase using hybrid search -- BM25 sparse retrieval for keyword precision combined with dense vector embeddings for semantic understanding. Both indexes live in Milvus (open-source, self-hosted) or Zilliz Cloud (the fully managed version, with a free serverless tier). When Claude Code needs context, it queries the MCP server and gets back ranked, relevant code snippets instead of entire files. The hybrid approach handles both exact identifier lookups and fuzzy conceptual queries well.</p>
+
+<p>The indexer uses AST-aware chunking rather than splitting code at arbitrary line boundaries. It parses your project into real semantic units -- functions, classes, interface definitions, method bodies -- before generating embeddings. This matters because chunks that correspond to actual code structures produce better embeddings. A chunk that contains a complete function definition gives the model the right unit to reason about. A chunk that starts in the middle of a conditional and ends in the middle of a loop does not.</p>
+
+<p>Incremental indexing handles updates automatically. After the initial index run, only changed files get re-indexed on subsequent sessions. The indexer detects changes via file hashes and skips everything that has not moved. On a 50K-line project, initial indexing takes roughly 3-8 minutes depending on OpenAI embedding API latency. Subsequent incremental runs are near-instant for small changesets -- fast enough to run as a pre-session hook or after a git pull.</p>
+
+<p>The MCP server is compatible with Claude Code, Cursor, VS Code with MCP extensions, and Windsurf -- any client that speaks Model Context Protocol. It surfaces a set of MCP tools that Claude can call to query the index, and Claude Code v2.x picks them up automatically once the server is registered.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How to set up claude-context in Claude Code (step by step)</h2>
+
+<p>Full setup requires Node.js 20 or 22 (Node 24 is explicitly not supported as of April 2026 -- check with <code>node --version</code> before starting), an OpenAI API key for generating embeddings, and a Zilliz Cloud account for the vector database. The free Zilliz Cloud serverless tier is sufficient for most projects.</p>
+
+<p><strong>Step 1: Create a Zilliz Cloud cluster</strong></p>
+
+<p>Go to <a href="https://cloud.zilliz.com">cloud.zilliz.com</a> and create a free serverless cluster. No credit card required for the free tier. From the cluster dashboard, copy two values: the Public Endpoint URL (this becomes your MILVUS_ADDRESS) and your API Key (this becomes your MILVUS_TOKEN). Keep them handy for the next step.</p>
+
+<p><strong>Step 2: Add the MCP server to Claude Code</strong></p>
+
+<p>Run this command from your terminal:</p>
+
+<pre><code>claude mcp add claude-context \
+  -e OPENAI_API_KEY=sk-your-openai-key \
+  -e MILVUS_ADDRESS=https://your-cluster.zillizcloud.com \
+  -e MILVUS_TOKEN=your-zilliz-api-key \
+  -- npx @zilliz/claude-context-mcp@latest</code></pre>
+
+<p>This registers the MCP server in your Claude Code config at <code>~/.claude/settings.json</code>. The <code>npx</code> invocation pulls the latest published version of the server on each Claude Code startup -- no global install required, no version pinning needed unless you hit a regression.</p>
+
+<p><strong>Step 3: Index your codebase</strong></p>
+
+<p>Navigate to your project root and run the indexer:</p>
+
+<pre><code>cd /path/to/your/project
+npx @zilliz/claude-context-mcp@latest index .</code></pre>
+
+<p>The indexer walks your project tree, parses code files with the AST chunker, generates embeddings via OpenAI, and uploads them to your Zilliz Cloud cluster. For a 50K-line project, expect 3-8 minutes on the initial run. The process is resumable -- if it gets interrupted, re-run the same command and it skips already-indexed files.</p>
+
+<p><strong>Step 4: Verify it is working</strong></p>
+
+<p>Start a new Claude Code session in your project directory. Ask something that requires navigating the codebase: "where is the authentication middleware defined?" or "find the function that handles session expiry." If claude-context is active, Claude Code will make MCP tool calls to the claude-context server rather than issuing file reads across your entire src tree. The difference in token consumption is visible in the session summary.</p>
+
+<p>For re-indexing after code changes, run the indexer command again. You can automate this as a post-commit hook by adding it to <code>.git/hooks/post-commit</code>:</p>
+
+<pre><code>#!/bin/sh
+npx @zilliz/claude-context-mcp@latest index . &amp;</code></pre>
+
+<h2>What claude-context does well and where it falls short</h2>
+
+<p>claude-context earns its token savings most clearly on codebases with high surface area -- monorepos with multiple services, projects with complex inheritance chains, or repos where internal naming conventions are inconsistent and grepping for exact text does not reliably surface the right code. Semantic search handles "find code that handles rate limiting" even when the function is named <code>applyThrottle</code> and the word "rate" never appears. That is where grep fails and vector search wins.</p>
+
+<p>For small projects under roughly 5,000 lines of code, the overhead of running the vector database and the indexer likely exceeds the token savings. If your entire codebase fits comfortably in a single Claude Code context load, the benefit is minimal. Same applies to very flat, well-named projects where Claude's default file-reading strategy is already efficient.</p>
+
+<p>The dependency on OpenAI for embeddings is a genuine cost to consider. You need an active OpenAI API key even if you are not using OpenAI for anything else. Embedding generation for initial indexing costs roughly $0.01-0.04 per 50K lines of code using text-embedding-3-small, and incremental updates cost fractions of a cent. Not a budget concern, but it is an external dependency and a separate API credential to manage.</p>
+
+<p>Node 24 compatibility is broken as of the April 2026 release. If you upgraded to Node 24 (which shipped in March 2026), you need to downgrade to Node 22 or use a version manager like <code>nvm</code> to run Node 22 for the indexer. The issue is open on the GitHub repo and has not been resolved at the time of writing.</p>
+
+<p>There is also a community fork by Daniel Bowne (<a href="https://github.com/danielbowne/claude-context">github.com/danielbowne/claude-context</a>) that swaps Zilliz Cloud for LanceDB running locally, eliminating the OpenAI API key dependency and keeping everything on your machine. It is less actively maintained but viable if you want a fully local setup with no external API calls beyond Claude itself.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does claude-context work with tools other than Claude Code?</h3>
+<p>Yes. claude-context is an MCP server and works with any MCP-compatible client. It has been tested with Claude Code, Cursor, Windsurf, and VS Code with MCP extensions. The configuration format differs by tool -- Cursor uses <code>~/.cursor/mcp.json</code>, VS Code uses its own MCP configuration file -- but the server command and required environment variables are identical across all of them.</p>
+
+<h3>Do I need a paid Zilliz Cloud account to use this?</h3>
+<p>No. Zilliz Cloud has a free serverless tier with no time expiry that covers most developer projects. The free tier runs on shared infrastructure and has sufficient capacity to index and query typical codebases without hitting limits. Self-hosted Milvus is also fully supported if you want everything local -- a standard docker-compose setup takes about 5 minutes and runs entirely on your machine, with no data leaving your environment beyond the OpenAI embedding API calls.</p>
+
+<h3>How does claude-context compare to just using grep or ripgrep in Claude Code?</h3>
+<p>Grep finds exact text matches and is fast for known identifiers. claude-context finds semantically related code -- it can surface a function named <code>applyThrottle</code> in response to a query about rate limiting even if those words never appear in the code. For precise symbol lookups where you know the name, grep is often faster. For conceptual queries across a large codebase -- "find all the places we handle authentication errors" -- semantic search consistently surfaces more relevant results with fewer false positives.</p>
+
+<h3>What happens to the index when I add or change files?</h3>
+<p>Run the indexer again: <code>npx @zilliz/claude-context-mcp@latest index .</code>. The incremental update detects changed and new files via content hashes and only re-embeds what changed. For a typical development session with a few files modified, this takes under 30 seconds. You can automate it as a post-commit hook or pre-session script so the index is always current when you start a Claude Code session.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does claude-context work with tools other than Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. claude-context is an MCP server and works with any MCP-compatible client including Claude Code, Cursor, Windsurf, and VS Code with MCP extensions. The server command and required environment variables are identical across all supported tools."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do I need a paid Zilliz Cloud account to use claude-context?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Zilliz Cloud has a free serverless tier with no time expiry that covers most developer projects. Self-hosted Milvus is also fully supported -- a docker-compose setup runs entirely on your machine in about 5 minutes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does claude-context compare to using grep in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Grep finds exact text matches and is fast for known identifiers. claude-context finds semantically related code -- it can surface a function in response to a conceptual query even if the exact words never appear in the code. For large codebases with conceptual queries, semantic search wins."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens to the claude-context index when I add or change files?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run the indexer again: npx @zilliz/claude-context-mcp@latest index . The incremental update detects changes via content hashes and only re-embeds modified files. For typical development changesets, this takes under 30 seconds and can be automated as a post-commit hook."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
