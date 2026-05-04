@@ -1,0 +1,142 @@
+---
+id: openai-symphony-linear-codex-agent-control-plane
+uuid: openai-symphony-linear-codex-agent-control-plane
+slug: openai-symphony-linear-codex-agent-control-plane
+title: "OpenAI Symphony: Linear as a Coding Agent Control Plane"
+excerpt: OpenAI Symphony is an open-source Apache 2.0 orchestrator released April 27, 2026, that maps every active Linear issue to a dedicated Codex agent workspace. It polls Linear every 30 seconds, creates a
+feature_image: null
+featured: false
+published_at: "2026-05-04T03:09:32-07:00"
+updated_at: "2026-05-04T03:09:32-07:00"
+reading_time: 8
+tags: [news, openai, codex, agent-orchestration]
+tag_names: [News, OpenAI, Codex, Agent Orchestration]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "OpenAI Symphony: Linear as a Coding Agent Control Plane"
+meta_description: "OpenAI Symphony maps every active Linear issue to a Codex agent workspace. How the spec works, the 500% PR result, and what builders need to know before deploying."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>OpenAI Symphony: Linear as a Coding Agent Control Plane</h1>
+
+<p class="lede">OpenAI Symphony is an open-source Apache 2.0 orchestrator released April 27, 2026, that maps every active Linear issue to a dedicated Codex agent workspace. It polls Linear every 30 seconds, creates an isolated sandbox per issue, and keeps agents running until each task is done -- no human supervision required. Internal OpenAI teams reported a 500% increase in landed PRs in three weeks.</p>
+
+<p>I've been watching the agent orchestration space for months, and Symphony is the first tool I've seen that systematically solves the "I can only manage three Codex sessions at once before I lose track" problem. Here's what shipped, how the architecture actually works, and the honest caveats before you wire it up to your board.</p>
+
+<h2>What is OpenAI Symphony?</h2>
+<p>Symphony is an open-source spec and reference implementation for autonomous Codex orchestration over Linear. Every open Linear issue in an active state gets its own agent workspace -- Symphony polls your board every 30 seconds, creates an isolated sandbox per issue, launches Codex in app-server mode, and runs the agent until the task completes. Released April 27, 2026, under Apache 2.0.</p>
+
+<p>OpenAI identified the ceiling: engineers could manage roughly 3 to 5 concurrent Codex sessions before context-switching became painful and productivity compounded rather than scaled. Symphony removes that ceiling by treating your issue tracker as an agent command center. You add tasks from anywhere -- a meeting, your phone -- and agents start working without you watching.</p>
+
+<p>OpenAI is explicit: Symphony is not a product they intend to maintain. It's a reference implementation to study, fork, and rebuild. Codex built the Elixir reference implementation in one shot. OpenAI then had Codex rewrite it in TypeScript, Go, Rust, Java, and Python to stress-test the spec and surface ambiguities -- a useful validation technique in itself.</p>
+
+<h2>How does the Linear-to-agent pipeline work?</h2>
+<p>Symphony runs a poll-dispatch-execute loop. Every 30 seconds it queries Linear for issues in configured active states. For each active issue, it creates an isolated workspace directory, launches a Codex app-server process inside it, and sends a session prompt assembled from the issue context plus your WORKFLOW.md. Each agent runs in its own sandbox with no shared state between issues.</p>
+
+<p>The WORKFLOW.md is the central configuration artifact. It uses YAML front matter for settings and Markdown body text as the actual Codex session prompt. You encode your real development process: branch naming convention, test commands, PR template requirements, walkthrough video format. Every agent for every issue reads this file before starting. It's the equivalent of an onboarding doc that every contractor on your team gets on day one.</p>
+
+<p>When an agent finishes, it produces proof of work: CI status, PR link, review feedback, complexity analysis, and optionally a walkthrough video. Symphony auto-restarts crashed agents and auto-picks up new work as issues enter active states. The Elixir reference uses Erlang/OTP process supervision for fault tolerance and supports hot code reloading without stopping active subagents -- specifically useful during early WORKFLOW.md iteration when you're still tuning the prompt.</p>
+
+<h2>What does the 500% PR increase actually mean?</h2>
+<p>OpenAI reported a 500% increase in landed PRs among some internal teams in Symphony's first three weeks. That number is real. It's also the figure most coverage has reprinted without context. Before routing your full Linear board through Symphony, the right question is not whether agents can open PRs at 5x velocity -- it's whether your team can review them at that rate.</p>
+
+<p>The core critique, surfaced by InfoWorld's coverage: generation scales effortlessly, validation does not. If Symphony opens 20 PRs per day and your team can review 5, you've shifted the bottleneck from writing code to reviewing it. You haven't eliminated it. Output volume rises; the burden of review, testing, and governance rises with it. This is a structural property of autonomous agent output at scale, not a design flaw in Symphony.</p>
+
+<p>What OpenAI's teams did gain was speculative capacity. Symphony made it trivial to spin up agents on ideas, refactors, and hypotheses they'd never have prioritized under normal engineering constraints -- then keep only what looked promising. That's a real shift in how you use engineering bandwidth, and it's meaningfully different from the raw PR throughput story that led most headlines.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>How do you set up Symphony?</h2>
+<p>Symphony requires a Linear account, Codex access, and a devbox or always-on server to run the orchestrator. The reference implementation is Elixir; community TypeScript, Go, and Python ports are in early development. Getting the Elixir version running takes roughly 30 minutes with prerequisites in place. The setup sequence from SPEC.md:</p>
+
+<ol>
+<li><strong>Clone the repo:</strong> <code>git clone https://github.com/openai/symphony</code></li>
+<li><strong>Configure Linear:</strong> Set your Linear API key and define which workflow states Symphony treats as active.</li>
+<li><strong>Write WORKFLOW.md:</strong> Encode your team's real development process -- branch naming, test commands, PR requirements, proof-of-work expectations.</li>
+<li><strong>Set a workspace root:</strong> Configure the directory where Symphony creates per-issue sandboxes.</li>
+<li><strong>Start the orchestrator:</strong> Symphony begins polling Linear on the 30-second cadence.</li>
+</ol>
+
+<p>One critical step before enabling Symphony across a full board: verify your Linear workflow state mapping is airtight. Symphony triggers on "active" states -- if issues in design review, blocked, or waiting-for-external are misconfigured as active, agents will start working on tasks that aren't ready. Define your state map explicitly in the WORKFLOW.md front matter before turning Symphony on at scale. This is the most common early misconfiguration.</p>
+
+<h2>What Symphony doesn't handle yet</h2>
+<p>Symphony is a spec and reference implementation, not a managed service. There are four real gaps to plan around: Linear-only backend support, no built-in audit trail, uncapped Codex API costs at high concurrency, and no OpenAI maintenance commitment. Each has practical implications for teams evaluating it for production use.</p>
+
+<p><strong>Linear only.</strong> The shipped code targets Linear. GitHub Issues, Jira, Asana are not supported. The SPEC.md is abstract enough that you could build a different backend adapter, but OpenAI hasn't built them. If your team doesn't use Linear, plan for custom adapter work before any of the orchestration value is accessible.</p>
+
+<p><strong>No structured audit trail.</strong> Symphony requires proof of work (CI status, PR links) but the spec doesn't mandate structured logging or compliance-ready audit records. For regulated environments or teams with traceability requirements, this is a gap you'd need to fill before treating Symphony as a production system rather than an experiment.</p>
+
+<p><strong>Uncapped API costs at scale.</strong> Parallelizing agents across 20 or 30 active issues simultaneously means 20 or 30 concurrent Codex sessions. Each runs a full agent loop. There's no built-in cost cap, rate limiter, or concurrency ceiling in the current spec. At high issue volume, Codex API costs compound fast. Control your Linear state machine carefully to limit how many issues are "active" at once while you're still calibrating.</p>
+
+<p><strong>No OpenAI maintenance commitment.</strong> The announcement was explicit: study it, fork it, rebuild it for your stack. If you build on Symphony and hit edge cases in the Elixir implementation, you're shipping your own fixes. That's a reasonable tradeoff for teams with engineering capacity. Worth knowing upfront if you're a smaller team expecting maintained open-source tooling.</p>
+
+<h2>FAQ</h2>
+<h3>What is OpenAI Symphony?</h3>
+<p>OpenAI Symphony is an open-source Apache 2.0 orchestration spec that turns a Linear project board into a control plane for Codex coding agents. Every active Linear issue gets a dedicated agent workspace that runs until the task is complete. Released April 27, 2026. OpenAI built it as a reference implementation to demonstrate Codex App Server -- not a product with ongoing maintenance.</p>
+
+<h3>Does Symphony work with GitHub Issues or Jira?</h3>
+<p>No -- the current reference implementation targets Linear only. The SPEC.md is abstract enough to support different issue tracker backends, but OpenAI hasn't built adapters for GitHub Issues, Jira, or Asana. Community ports for alternative backends are in early development. If your team uses anything other than Linear, plan for custom integration work before adopting Symphony in any capacity.</p>
+
+<h3>How does Symphony prevent concurrent agents from conflicting?</h3>
+<p>Symphony creates an isolated workspace directory for each active Linear issue -- agents run in separate sandboxes and do not share state. Each workspace has its own Codex app-server process and its own git working tree. The Elixir reference implementation uses Erlang/OTP process supervision to restart crashed agents and manage concurrent issue polling on the 30-second cadence without coordination overhead.</p>
+
+<h3>What did the 500% PR increase actually mean?</h3>
+<p>Among some internal OpenAI teams, landed pull requests increased 500% in Symphony's first three weeks. This reflects Codex implementation capacity unlocked by continuous autonomous agents -- not a 5x gain in reviewer throughput. The bottleneck shifts from writing code to reviewing it. Teams need matching review capacity or the production rate gain stalls at the code review queue.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is OpenAI Symphony?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "OpenAI Symphony is an open-source Apache 2.0 orchestration spec that turns a Linear project board into a control plane for Codex coding agents. Every active Linear issue gets a dedicated agent workspace that runs until the task is complete. Released April 27, 2026. OpenAI built it as a reference implementation to demonstrate Codex App Server -- not a product with ongoing maintenance."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Symphony work with GitHub Issues or Jira?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No -- the current reference implementation targets Linear only. The SPEC.md is abstract enough to support different issue tracker backends, but OpenAI has not built adapters for GitHub Issues, Jira, or Asana. Community ports for alternative backends are in early development. If your team uses anything other than Linear, plan for custom integration work before adopting Symphony."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does Symphony prevent concurrent agents from conflicting?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Symphony creates an isolated workspace directory for each active Linear issue -- agents run in separate sandboxes and do not share state. Each workspace has its own Codex app-server process and its own git working tree. The Elixir reference implementation uses Erlang/OTP process supervision to restart crashed agents and manage concurrent polling on a 30-second cadence."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What did the 500% PR increase actually mean?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Among some internal OpenAI teams, landed pull requests increased 500% in Symphony first three weeks. This reflects Codex implementation capacity unlocked by continuous autonomous agents -- not a 5x gain in reviewer throughput. The bottleneck shifts from writing code to reviewing it. Teams need matching review capacity or the production rate gain stalls at the code review queue."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
