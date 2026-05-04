@@ -6,6 +6,7 @@ import { Footer } from "@/components/ui/Footer";
 import { GpuTierProvider } from "@/components/ui/GpuTierProvider";
 import { ScrollProvider } from "@/components/ui/ScrollProvider";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </ScrollProvider>
         </GpuTierProvider>
         <Analytics />
+        <SpeedInsights />
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
           strategy="afterInteractive"
