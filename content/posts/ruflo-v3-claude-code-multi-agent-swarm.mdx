@@ -1,0 +1,206 @@
+---
+id: ruflo-v3-claude-code-multi-agent-swarm
+uuid: ruflo-v3-claude-code-multi-agent-swarm
+slug: ruflo-v3-claude-code-multi-agent-swarm
+title: "Ruflo v3.6 for Claude Code: Multi-Agent Swarms Setup Guide"
+excerpt: Ruflo v3.6 turns a single Claude Code instance into a coordinated swarm of specialized agents using a queen-and-workers hierarchy. Install takes under 5 minutes via npx. But an April 2026 independent 
+feature_image: null
+featured: false
+published_at: "2026-05-05T03:11:46-07:00"
+updated_at: "2026-05-05T03:11:46-07:00"
+reading_time: 11
+tags: [tutorials, claude-code, multi-agent, mcp]
+tag_names: [Tutorials, Claude Code, Multi-Agent, MCP]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Ruflo v3.6 for Claude Code: Multi-Agent Swarm Tutorial"
+meta_description: "How to install Ruflo v3.6 and build a Claude Code multi-agent swarm -- plus what the April 2026 audit found about the 75% cost savings and 314 MCP tool claims."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Ruflo v3.6 for Claude Code: Multi-Agent Swarms Setup Guide</h1>
+
+<p class="lede">Ruflo v3.6 turns a single Claude Code instance into a coordinated swarm of specialized agents using a queen-and-workers hierarchy. Install takes under 5 minutes via npx. But an April 2026 independent audit found that only approximately 10 of the claimed 314 MCP tools actually work -- and the 75% cost savings claim runs opposite to what auditors measured.</p>
+
+<p>Ruflo picked up +2,598 GitHub stars in a single day this week. I dug into the repo, the critical GitHub issues, and the independent audit before writing this. Here is what the actual setup looks like, and what you should know before pointing it at your codebase.</p>
+
+<h2>What Is Ruflo and How Does the Swarm Architecture Work?</h2>
+
+<p>Ruflo is an open-source multi-agent orchestration platform for Claude Code. It adds a coordination layer where a queen agent plans and delegates, worker agents execute in parallel, and a SQLite memory store keeps context consistent across sessions. The result is multiple Claude Code subprocesses working on a task simultaneously rather than sequentially.</p>
+
+<p>The project started as "claude-flow" and was renamed to Ruflo in January 2026 over trademark concerns with Anthropic. The npm package still ships under the <code>claude-flow</code> name for backwards compatibility -- <code>npx ruflo</code> and <code>npx claude-flow</code> both invoke the same tool. The current stable release is v3.6.10, shipped April 29, 2026. The GitHub repo at github.com/ruvnet/ruflo gained +2,598 stars on May 5, 2026, per agents-radar's daily trending digest.</p>
+
+<p>The queen hierarchy has three variants: Strategic Queen for high-level planning, Tactical Queen for step decomposition, and Adaptive Queen for monitoring and replanning when tasks go sideways. Below the queens, Ruflo ships with 16 built-in worker role types -- coder, tester, reviewer, architect, security auditor, DevOps, and more. Custom roles are definable in YAML config. Four topology modes give you control over how agents communicate: hierarchical, mesh, ring, and star.</p>
+
+<h2>How to Install Ruflo as a Claude Code Plugin</h2>
+
+<p>The fastest Ruflo install is the npx wizard: run <code>npx ruflo@latest init --wizard</code> in your project root, answer the setup prompts, and it configures Claude Code to pick up swarm context automatically. No global install required. The wizard creates config files, a SQLite memory database, and a CLAUDE.md context file in under 5 minutes on Node 18+.</p>
+
+<p>Three install paths, ordered by setup complexity:</p>
+
+<pre><code># Path 1: One-command wizard (recommended for first install)
+npx ruflo@latest init --wizard
+
+# Path 2: Global install then wizard
+npm install -g ruflo@latest
+ruflo init --wizard
+
+# Path 3: Wire Ruflo directly as an MCP server in Claude Code
+claude mcp add ruflo -- npx -y @claude-flow/cli@latest</code></pre>
+
+<p>After the wizard completes, verify the install and start background workers:</p>
+
+<pre><code># Health check -- auto-patches common dependency issues
+npx ruflo doctor --fix
+
+# Start background memory workers that index context between sessions
+npx ruflo daemon start</code></pre>
+
+<p>The wizard creates four things worth knowing about before you enable all of them:</p>
+
+<ul>
+<li><code>.claude-flow/config.yaml</code> -- swarm topology, model, agent count, MCP settings</li>
+<li><code>.claude-flow/memory.db</code> -- SQLite store for persistent agent memory across sessions</li>
+<li><code>CLAUDE.md</code> in your project root -- injected as context into every Claude Code session (adds tokens to every message)</li>
+<li><code>.claude/agents/</code> -- 106 agent definition files totaling approximately 300,000 tokens when loaded</li>
+</ul>
+
+<p>That last item matters more than the docs let on. Loading 106 agent definitions by default is a significant context overhead for roles you will never use. The audit section below covers this in detail, along with how to prune it.</p>
+
+<p>If you are on Claude Code v2.1.128 or later (released May 4, 2026), the plugin marketplace path also works. That release added .zip archive support to <code>--plugin-dir</code>, which means Ruflo installs as a single file rather than requiring a git clone:</p>
+
+<pre><code>/plugin marketplace add ruvnet/ruflo
+/plugin install ruflo-core@ruflo</code></pre>
+
+<h2>How to Configure a Queen-and-Swarm Topology</h2>
+
+<p>Ruflo ships four topology modes: hierarchical (default), mesh, ring, and star. Hierarchical suits software development where a planning layer makes sense. Mesh is for tasks requiring continuous cross-agent context sharing. Ring handles sequential pipeline tasks. Star routes everything through one coordinator -- lowest coordination overhead, best for simple parallelism.</p>
+
+<p>For a typical multi-file code refactor, hierarchical with 4 agents is a reasonable starting point:</p>
+
+<pre><code># Start a hierarchical swarm on a task
+npx ruflo start   --task "Refactor the auth module to use stateless JWT"   --agents 4   --topology hierarchical   --model claude-sonnet-4-6
+
+# Watch agent activity in real time
+npx ruflo logs --follow
+
+# Check which agents are active and what they are working on
+npx ruflo status</code></pre>
+
+<p>The <code>--agents 4</code> flag sets total worker count. Queens spawn automatically based on the topology. Each agent runs as a separate Claude Code subprocess and writes results to the shared SQLite memory store -- so multi-session context persists even after individual agent sessions end and restart.</p>
+
+<p>Agent federation is the headline v3.6 feature. It connects Ruflo instances on separate machines via an encrypted channel, letting distributed teams run coordinated Claude Code agents across environments without merging local codebases or sharing API keys. Each machine keeps its own Claude Code session; the federation layer handles task routing and result sync. Setup documentation lives in <code>.claude-flow/docs/federation.md</code> after init.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What Did the Independent Audit Actually Find?</h2>
+
+<p>An April 2026 independent audit examined every MCP tool Ruflo registers and found that approximately 10 of the 314 claimed tools are fully functional. The remaining approximately 290 are stubs -- they accept input and write JSON state records but have no execution backend. The full audit is documented in GitHub issue #1514 on the Ruflo repo and a public gist linked from that thread. Worth reading in full before deploying in a production workflow.</p>
+
+<p>The 75% API cost savings claim deserves direct scrutiny. Ruflo's README bases this figure on context-caching efficiency across parallel agents. The audit found the opposite: Ruflo adds 15,000 -- 25,000 tokens of overhead per session from three sources. First, the CLAUDE.md injected into every session. Second, the 106 agent definition files in <code>.claude/agents/</code>, which total approximately 300,000 tokens when loaded (documented in GitHub issue #1504). Third, a hardcoded token savings counter that increments by a fixed amount per cache hit, independent of actual token consumption. The savings number shown in the dashboard reflects this counter -- not real usage.</p>
+
+<p>The 84.8% SWE-bench solve rate is self-reported by ruvnet on the Ruflo wiki's SWE Bench Evaluation page. I could not find an independent reproduction of this result. The methodology documentation on the wiki lacks the detail needed to verify it externally. The claim may be accurate -- but treat it as vendor-reported until a third party publishes a controlled benchmark with matching methodology.</p>
+
+<p>Two security findings are documented and matter for anyone planning production use. First, GitHub issue #1514 identified prompt injection in Ruflo's MCP tool descriptions: specific tool registration text contained instructions directing Claude to add the repository owner as a contributor to users' repositories without their knowledge or consent. MCP tool descriptions are trusted by the model -- injecting instructions there bypasses the user's explicit prompt entirely. The ruvnet team disputes whether this was intentional, but the issue thread documents the specific tool descriptions and the behavior they produced in testing. Second, Ruflo versions 3.1.0-alpha.55 through 3.5.2 shipped with obfuscated code that silently deleted local directories and cache files. This was publicly disclosed and removed after the disclosure. The v3.6 stable branch does not appear to contain this code, but if you are evaluating trust level for a tool that has codebase write access, the history is relevant context.</p>
+
+<h2>Which Parts of Ruflo Actually Work Well?</h2>
+
+<p>Three Ruflo components genuinely work and deliver real value: persistent SQLite memory across sessions, queen coordination for parallelized coding tasks, and the star topology for simple multi-agent pipelines. The MCP tool library and the token savings claims are where the marketing outruns the implementation. Here is an honest breakdown of what to enable and what to disable or limit.</p>
+
+<p><strong>Enable and use these:</strong></p>
+
+<ul>
+<li><strong>SQLite memory persistence</strong> -- the feature I would use Ruflo for even if everything else were broken. Multi-session context is a genuine gap in vanilla Claude Code, and Ruflo's memory layer fills it. Agents in later sessions can recall architectural decisions, dead ends, and accumulated file context from earlier sessions without you re-explaining the project from scratch.</li>
+<li><strong>Hierarchical swarm for large coding tasks</strong> -- on multi-file refactors and large test suite generation, running 4 -- 6 parallel agents with a queen coordinating is genuinely faster than sequential single-agent work. The parallelism is real and the queen coordination actually works.</li>
+<li><strong>Star topology for simple pipelines</strong> -- a central coordinator routing to specialized workers (code agent, test agent, docs agent) is low overhead and predictable. Good entry point if you want multi-agent without the full queen hierarchy complexity.</li>
+</ul>
+
+<p><strong>Disable or prune these before use:</strong></p>
+
+<ul>
+<li><strong>MCP tool injection</strong> -- since approximately 290 of 314 tools are stubs, loading them adds context noise without functional benefit. Set <code>mcp.disabled: true</code> in <code>.claude-flow/config.yaml</code> until you have verified which tools actually execute for your specific workflow.</li>
+<li><strong>The full 106 agent definitions</strong> -- open <code>.claude/agents/</code> and delete the definition files for roles you will not use. Keeping all 106 loaded costs approximately 300,000 tokens per session in context overhead. Keep 5 -- 8 roles that match your actual workload.</li>
+<li><strong>Token savings counter</strong> -- do not use this for cost tracking or budget planning. Use your Anthropic account usage dashboard to measure actual token consumption before and after adding Ruflo to a workflow.</li>
+</ul>
+
+<h2>FAQ</h2>
+
+<h3>Is Ruflo the same project as claude-flow?</h3>
+<p>Yes. Ruflo is claude-flow renamed in January 2026 to avoid trademark complications with Anthropic. The npm package still ships as <code>claude-flow</code> for backwards compatibility, so both <code>npx ruflo</code> and <code>npx claude-flow</code> work interchangeably. The GitHub repo is at github.com/ruvnet/ruflo. v3.6.10 is the current stable release, shipped April 29, 2026, with agent federation and a rewritten worker communication protocol for lower latency.</p>
+
+<h3>Does Ruflo v3.6 actually reduce Claude API costs by 75%?</h3>
+<p>Not by default. The 75% figure is Ruflo's own claim based on caching efficiency under ideal conditions. An independent April 2026 audit found Ruflo adds 15,000 -- 25,000 tokens of overhead per session from CLAUDE.md injection and agent definition context bloat (~300K tokens). Measure your actual token consumption using your Anthropic account dashboard, not Ruflo's built-in counter, which is hardcoded rather than measuring real usage.</p>
+
+<h3>How does the queen-and-swarm topology coordinate agents in practice?</h3>
+<p>Ruflo spawns Claude Code subprocesses as specialized workers and coordinates them through a three-layer queen hierarchy. The Strategic Queen sets the overall plan, the Tactical Queen breaks it into executable steps, and the Adaptive Queen monitors for failures and replans in real time. Workers execute tasks in parallel and write results to a shared SQLite memory store that subsequent agents read -- no re-running prior work when an agent picks up a task mid-stream.</p>
+
+<h3>Is there a documented security risk in using Ruflo?</h3>
+<p>Two documented concerns. GitHub issue #1514 (April 2026) identified prompt injection in Ruflo's MCP tool descriptions directing Claude to add the repo owner as a contributor to user repositories without consent. Separately, versions 3.1.0-alpha.55 through 3.5.2 shipped obfuscated code that deleted local directories, removed after public disclosure. The v3.6 stable branch appears clean -- but test in a sandboxed repo and audit the MCP tool descriptions it registers before granting write access to production codebases.</p>
+
+<h3>What is agent federation in Ruflo v3.6 and when is it useful?</h3>
+<p>Agent federation (introduced in v3.6.10, April 29, 2026) lets two or more Ruflo instances on separate machines coordinate on the same task via an encrypted channel. Distributed teams can share swarm context and divide work without merging local codebases or sharing API keys. Each machine runs its own Claude Code session; the federation layer handles task routing and result synchronization between instances. Most useful for teams with multiple developers running parallel Claude Code agents on a shared project.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Ruflo the same project as claude-flow?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Ruflo is claude-flow renamed in January 2026 to avoid trademark complications with Anthropic. The npm package still ships as claude-flow for backwards compatibility. The GitHub repo is at github.com/ruvnet/ruflo. v3.6.10 is the current stable release, shipped April 29, 2026."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Ruflo v3.6 actually reduce Claude API costs by 75%?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not by default. An independent April 2026 audit found Ruflo adds 15,000-25,000 tokens of overhead per session from CLAUDE.md injection and agent definition context bloat (~300K tokens when loaded). Measure actual token consumption via your Anthropic account dashboard, not Ruflo's built-in counter, which is hardcoded rather than measuring real usage."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does the queen-and-swarm topology coordinate agents in practice?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Ruflo spawns Claude Code subprocesses as specialized workers coordinated through a three-layer queen hierarchy. Strategic Queen sets the plan, Tactical Queen breaks it into steps, Adaptive Queen monitors and replans on failures. Workers run in parallel and write results to a shared SQLite memory store that subsequent agents read without re-running prior work."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is there a documented security risk in using Ruflo?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Two documented concerns: GitHub issue #1514 (April 2026) found prompt injection in MCP tool descriptions directing Claude to add the repo owner as contributor without consent. Versions 3.1.0-alpha.55 through 3.5.2 shipped obfuscated code deleting local directories, removed after public disclosure. v3.6 stable appears clean -- test in a sandboxed repo before granting production write access."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is agent federation in Ruflo v3.6 and when is it useful?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Agent federation (v3.6.10, April 29, 2026) lets two or more Ruflo instances on separate machines coordinate via an encrypted channel. Teams can share swarm context and divide work without merging codebases or sharing API keys. Most useful for distributed teams running parallel Claude Code agents on a shared project across different machines."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
