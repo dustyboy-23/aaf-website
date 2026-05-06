@@ -1,0 +1,146 @@
+---
+id: openai-workspace-agents-pricing-review
+uuid: openai-workspace-agents-pricing-review
+slug: openai-workspace-agents-pricing-review
+title: "OpenAI Workspace Agents Just Started Charging: What Builders Actually Get"
+excerpt: OpenAI workspace agents flipped from free to credit-based pricing on May 6, 2026. They are available only on Business ($25/user/month), Enterprise, Edu, and Teachers plans -- not Plus or Pro. They rep
+feature_image: null
+featured: false
+published_at: "2026-05-06T03:06:41-07:00"
+updated_at: "2026-05-06T03:06:41-07:00"
+reading_time: 9
+tags: [reviews, openai, enterprise-ai, chatgpt]
+tag_names: [Reviews, OpenAI, Enterprise AI, ChatGPT]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "OpenAI Workspace Agents Pricing: What Builders Actually Get"
+meta_description: OpenAI workspace agents switched to credit pricing May 6, 2026 -- what they do, who can access them, and how they compare to Claude for Enterprise.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>OpenAI Workspace Agents Just Started Charging: What Builders Actually Get</h1>
+
+<p class="lede">OpenAI workspace agents flipped from free to credit-based pricing on May 6, 2026. They are available only on Business ($25/user/month), Enterprise, Edu, and Teachers plans -- not Plus or Pro. They replace custom GPTs with agents that actually execute tasks rather than just respond to prompts, connecting to Slack, Salesforce, Google Drive, and more.</p>
+
+<p>The meter started running today. If you are on a Business or Enterprise plan and have been using workspace agents in the free trial window, your credits are now being consumed. Here is an honest look at what you are actually paying for -- and how it stacks up against building the same thing on Claude.</p>
+
+<h2>What are OpenAI workspace agents, and how do they differ from custom GPTs?</h2>
+
+<p>Workspace agents are the operational successor to custom GPTs for business accounts. The core difference is execution: custom GPTs respond to prompts; workspace agents act on them. A custom GPT for sales outreach drafts an email you copy-paste manually; the equivalent workspace agent drafts the email, confirms the recipient with you, and hits send. Multi-step autonomous execution is the point.</p>
+
+<p>Custom GPTs will be deprecated for Business, Enterprise, Edu, and Teachers accounts at a future date OpenAI has not announced yet. Individual custom GPTs can continue indefinitely, but org-level deployments are on the migration path. If you are running GPTs in production on a team account, workspace agents are where OpenAI is pointing you.</p>
+
+<p>The agent can run code, take actions across connected tools, operate on a schedule, and be deployed directly in Slack so team members interact with it without leaving their workspace. Setup involves picking a Slack channel, creating a Slack handle for the agent, and configuring shared authentication -- personal connections break team deployments, so that is a migration step to plan for.</p>
+
+<h2>Who can actually access workspace agents?</h2>
+
+<p>Workspace agents are gated behind four paid org tiers only: Business ($25/user/month billed monthly, $20/user/month annually), Enterprise, Edu, and Teachers. Individual plans -- Free, Plus ($20/month), and Pro ($200/month) -- do not have access regardless of spend level. This is a deliberate enterprise product boundary, not an oversight.</p>
+
+<p>The Plus/Pro exclusion is worth flagging. The $200/month Pro plan includes o1 pro mode, advanced voice, and higher usage limits on most features -- but not workspace agents. OpenAI is explicitly positioning these agents as a team-deployment product rather than an individual power-user tool. If you are a solo operator on Pro trying to build autonomous agents, you are looking at the API layer, not workspace agents.</p>
+
+<p>For context on what Business plan seats include alongside workspace agents: standard ChatGPT access, Projects, Company Knowledge, the base ChatGPT Agent, Deep Research, and Codex. Workspace agents sit as the agent-building layer on top of that stack.</p>
+
+<h2>How does the credit pricing model actually work?</h2>
+
+<p>OpenAI workspace agent pricing runs on credits, with cost scaling based on task complexity, number of tool calls made, and execution time. As of May 6, 2026, specific per-action credit rates have not been published. Business seats come with per-seat usage limits; when those limits are exceeded, the workspace draws from a shared credit pool if the account has purchased credits. Credits bought are valid for 12 months from purchase date.</p>
+
+<p>The lack of a published rate card is a real budgeting problem. OpenAI recommended that teams use the free trial window to &quot;establish credit consumption baselines before billing starts&quot; -- useful advice, but it means first bills will be the reveal. If you are running complex agents with several tool calls per run, set workspace spending limits now before you see how fast this compounds.</p>
+
+<p>My expectation: OpenAI will publish a pricing table within 30 days as enterprise finance teams push back on unquantifiable line items. Until then, treat workspace agent credit costs as a variable you measure empirically. Run a sample workflow, check credit consumption in the dashboard, and multiply by expected weekly volume before committing to a credit block purchase.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What integrations do workspace agents actually support?</h2>
+
+<p>Workspace agents currently connect to Slack, Google Drive, Microsoft apps (Word, Excel, OneNote, SharePoint, OneDrive), Salesforce, Notion, and Atlassian Rovo. Authentication for team deployments must use shared workspace credentials -- personal OAuth connections do not carry over to agents running in shared channels. If you configured a workspace agent using personal Google Drive credentials, it will break the moment another team member triggers it.</p>
+
+<p>The Slack deployment is the most useful integration in the stack. You give the agent a Slack handle, drop it into a channel, and team members interact with it via mention -- no need to open ChatGPT. A lead outreach agent in this configuration can research prospects, draft follow-up emails, update Salesforce records, summarize Gong calls, and post deal briefs to a team channel, all triggered from a single Slack mention. That is a workflow custom GPTs could not execute.</p>
+
+<p>The Salesforce integration is the one I would pressure-test before committing. Enterprise sales teams have high-frequency tasks -- lead scoring, pipeline updates, call note filing -- where an autonomous workspace agent theoretically beats a custom GPT. But until per-action credit costs are published, it is difficult to compare total cost against dedicated point solutions like Outreach or Salesloft that already do this natively.</p>
+
+<h2>How do workspace agents compare to Claude for Enterprise?</h2>
+
+<p>Claude held 32% of enterprise LLM workload share by 2025, ahead of OpenAI on that metric, driven by compliance emphasis and long-context performance, per Intuition Labs research. OpenAI leads on coding integration breadth and has a larger ready-to-use app library. For workspace agents specifically, the comparison is less about model quality and more about deployment model and control surface.</p>
+
+<p>Claude for Enterprise deploys agents through the Managed Agents API and Claude Code -- you build against an SDK and deploy to your own infrastructure. OpenAI workspace agents are a managed layer inside the ChatGPT product interface. The OpenAI approach is faster to get a non-technical team running; the Claude approach gives engineering teams tighter control, custom logging, and the ability to build entirely outside the ChatGPT product surface.</p>
+
+<p>OpenAI is separately building OpenAI Frontier -- an end-to-end platform for orchestrating agent fleets across departments and cloud environments, currently in limited enterprise beta with no published pricing or timeline. Frontier will be the closer competitive comparison to Claude Managed Agents when it ships broadly. Workspace agents are the accessible, ChatGPT-native on-ramp; Frontier is where the real enterprise infrastructure play lives.</p>
+
+<p>One concrete differentiator that matters in regulated industries: Claude holds a 200K token context window and documented compliance certifications (SOC 2 Type II, HIPAA-eligible). OpenAI Enterprise has a comparable compliance stack. For agents ingesting large contracts, full codebases, or extended conversation histories, context capacity becomes a meaningful selection criterion rather than a marketing footnote.</p>
+
+<h2>What is still unclear or missing?</h2>
+
+<p>Three gaps matter for builders evaluating workspace agents seriously. First, no published per-action credit rates means no accurate budget modeling -- you are flying partially blind until OpenAI publishes a rate card or your first enterprise invoice arrives. Second, workspace agents are locked to the ChatGPT product surface -- you cannot embed them in a custom web interface or brand them for customer-facing use the way you can with the Assistants API or Responses API. Third, the custom GPT deprecation timeline for org accounts remains unpublished, so teams with GPTs in production have no migration deadline to plan around.</p>
+
+<p>The Slack integration reduces the ChatGPT surface problem somewhat for internal deployments. But any builder who needs agents in their own product -- facing external customers, running in a branded interface, or integrated into a proprietary system -- should be building on the API layer, not workspace agents. Workspace agents are an internal team automation tool. They are not the answer for customer-facing agent deployments.</p>
+
+<h2>FAQ</h2>
+
+<h3>Are workspace agents available on ChatGPT Plus?</h3>
+<p>No. Workspace agents are available only on ChatGPT Business ($25/user/month), Enterprise, Edu, and Teachers plans. The Plus plan ($20/month) and Pro plan ($200/month) do not include workspace agent access. This is an intentional product boundary -- workspace agents are designed for shared team deployment and are not available on individual-tier accounts regardless of price paid.</p>
+
+<h3>How much do workspace agent credits cost?</h3>
+<p>OpenAI has not published specific per-action credit rates as of May 6, 2026. Pricing is credit-based and scales with task complexity, number of tool calls, and execution time. Business plan seats include per-seat usage limits; overflow draws from a shared credit pool if the account has purchased credits. Credits are valid for 12 months after purchase. Set spending limits before deployment.</p>
+
+<h3>What is the difference between workspace agents and custom GPTs?</h3>
+<p>Custom GPTs respond to prompts inside a conversation; workspace agents execute multi-step tasks autonomously. A custom GPT drafts a document and stops; a workspace agent drafts it, confirms with you, sends it, and logs the action in Salesforce. Custom GPTs for org accounts will be deprecated at a future date -- Business and Enterprise users will be expected to migrate to workspace agents.</p>
+
+<h3>Can workspace agents be deployed outside of ChatGPT?</h3>
+<p>Workspace agents can be deployed in Slack via a dedicated agent handle, letting teams trigger them without opening ChatGPT. They cannot be embedded in custom web interfaces or deployed in customer-facing products. For external-facing agent deployments in branded surfaces, OpenAI Assistants API or the Responses API is the correct layer to build on -- not workspace agents.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Are workspace agents available on ChatGPT Plus?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Workspace agents are available only on ChatGPT Business ($25/user/month), Enterprise, Edu, and Teachers plans. The Plus plan ($20/month) and Pro plan ($200/month) do not include workspace agent access. This is an intentional product boundary -- workspace agents are designed for shared team deployment and are not available on individual-tier accounts regardless of price paid."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How much do workspace agent credits cost?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "OpenAI has not published specific per-action credit rates as of May 6, 2026. Pricing is credit-based and scales with task complexity, number of tool calls, and execution time. Business plan seats include per-seat usage limits; overflow draws from a shared credit pool if the account has purchased credits. Credits are valid for 12 months after purchase."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between workspace agents and custom GPTs?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Custom GPTs respond to prompts inside a conversation; workspace agents execute multi-step tasks autonomously. A custom GPT drafts a document and stops; a workspace agent drafts it, confirms with you, sends it, and logs the action in Salesforce. Custom GPTs for org accounts will be deprecated at a future date -- Business and Enterprise users will be expected to migrate to workspace agents."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can workspace agents be deployed outside of ChatGPT?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Workspace agents can be deployed in Slack via a dedicated agent handle, letting teams trigger them without opening ChatGPT. They cannot be embedded in custom web interfaces or deployed in customer-facing products. For external-facing agent deployments in branded surfaces, OpenAI Assistants API or the Responses API is the correct layer to build on -- not workspace agents."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
