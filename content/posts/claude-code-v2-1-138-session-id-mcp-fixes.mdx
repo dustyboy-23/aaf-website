@@ -1,0 +1,148 @@
+---
+id: claude-code-v2-1-138-session-id-mcp-fixes
+uuid: claude-code-v2-1-138-session-id-mcp-fixes
+slug: claude-code-v2-1-138-session-id-mcp-fixes
+title: "Claude Code v2.1.138: The Session ID Env Var Builders Needed"
+excerpt: Claude Code v2.1.138 ships CLAUDE_CODE_SESSION_ID as an environment variable in every Bash subprocess -- the same session_id your hooks already receive. That means hooks and Bash tool calls can finall
+feature_image: null
+featured: false
+published_at: "2026-05-09T03:12:24-07:00"
+updated_at: "2026-05-09T03:12:24-07:00"
+reading_time: 9
+tags: [news, claude-code, mcp, hooks]
+tag_names: [News, Claude Code, MCP, Hooks]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.138: Session ID Env Var and MCP Fixes"
+meta_description: Claude Code v2.1.138 adds session ID to every Bash subprocess, a terminal scrollback mode, and fixes a 10GB MCP memory leak. What builders need to know.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.138: The Session ID Env Var Builders Needed</h1>
+
+<p class="lede">Claude Code v2.1.138 ships CLAUDE_CODE_SESSION_ID as an environment variable in every Bash subprocess -- the same session_id your hooks already receive. That means hooks and Bash tool calls can finally cross-reference session context without routing through a shared file. Plus a screen renderer opt-out and three production-grade bug fixes.</p>
+
+<p>I've been watching the Claude Code changelog closely since v2.1.133. The session ID env var landed in v2.1.138, released at 06:33 UTC on May 9, 2026, and it's the kind of quiet shipping that hooks-heavy teams feel immediately.</p>
+
+<h2>What shipped in Claude Code v2.1.138?</h2>
+<p>Claude Code v2.1.138 adds CLAUDE_CODE_SESSION_ID to every Bash subprocess environment, a CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 opt-out for native terminal scrollback, and a paste progress hint. Bug fixes cover SIGINT graceful shutdown, --resume emoji crashes, plan-mode permission handling, IDE mouse wheel speed, and a 10GB+ MCP stdio memory leak.</p>
+<p>The full release landed at 06:33 UTC on May 9, 2026, per the <a href="https://github.com/anthropics/claude-code/releases/tag/v2.1.138">GitHub releases page</a> and the <a href="https://code.claude.com/docs/en/changelog">official changelog</a>. Anthropic is shipping Claude Code releases daily at this point -- v2.1.133 shipped on May 8. Staying current matters for production teams because features and fixes accumulate fast.</p>
+<p>The v2.1.138 changeset, distilled:</p>
+<ul>
+<li><strong>New:</strong> CLAUDE_CODE_SESSION_ID injected into every Bash subprocess environment</li>
+<li><strong>New:</strong> CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 for native terminal scrollback</li>
+<li><strong>New:</strong> "Pasting..." footer hint during Ctrl+V image paste reads</li>
+<li><strong>Fix:</strong> SIGINT graceful shutdown -- terminal modes restored, --resume hint printed</li>
+<li><strong>Fix:</strong> --resume emoji-surrogate crash</li>
+<li><strong>Fix:</strong> --permission-mode ignored when resuming plan-mode sessions</li>
+<li><strong>Fix:</strong> Mouse wheel scrolling speed in Cursor and VS Code 1.92-1.104</li>
+<li><strong>Fix:</strong> Unbounded memory growth (10GB+) from MCP stdio servers writing non-protocol stdout</li>
+<li><strong>Fix:</strong> Unauthorized MCP connectors show "needs auth" instead of "failed"</li>
+</ul>
+
+<h2>What does CLAUDE_CODE_SESSION_ID actually unlock?</h2>
+<p>CLAUDE_CODE_SESSION_ID in Bash subprocesses closes a gap that's been annoying hooks-heavy builders since the hooks system shipped. Before v2.1.138, hooks received session_id in their JSON stdin payload but the Bash tool itself had no programmatic way to read it. Now every subprocess gets it automatically -- enabling session-scoped logging, cache directories, and multi-agent coordination without file-based workarounds.</p>
+<p>Before this fix, I was routing around the gap by having hooks write the session ID to a temp file at startup and reading it back in Bash scripts. It worked, but it introduced race conditions when two hooks fired close together and required manual temp file cleanup. The env var approach eliminates all of that.</p>
+<p>Here's what this unlocks in practice:</p>
+<p><strong>Session-scoped audit logs.</strong> A PostToolUse hook can write to <code>~/.claude/logs/$CLAUDE_CODE_SESSION_ID.log</code> without any coordination overhead. Any Bash script invoked later in the same session can append to the same file. No shared state protocol needed between hook and script.</p>
+<p><strong>Cache directories by session.</strong> If you build scripts that cache intermediate results -- expensive API calls, parsed ASTs, file indexes -- scope the cache directory to <code>$CLAUDE_CODE_SESSION_ID</code>. The cache stays isolated per session and you can clean up by session ID when the session ends, with no risk of cross-session cache poisoning.</p>
+<p><strong>Multi-agent coordination.</strong> Teams running parallel Claude Code sessions -- CI pipelines, orchestrated agent swarms -- can route subprocess output back to the correct session context without guessing or building external session registries. Each agent's subprocesses know which session they belong to.</p>
+<p>The <a href="https://code.claude.com/docs/en/hooks">hooks reference</a> documents 12 lifecycle events Claude Code exposes: PreToolUse, PostToolUse, Notification, Stop, SubagentStop, SessionStart, PreCompact, and more. Each hook receives session_id in its JSON stdin context. Now every Bash subprocess spawned within those hooks -- or directly by Claude Code -- also carries the session identifier.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>Who should enable CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1?</h2>
+<p>Claude Code's default renderer uses the terminal's alternate screen -- the same mode used by vim, less, and htop. This gives you a clean full-screen UI but loses scrollback history when you exit. Set CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 and Claude Code stays in the normal terminal buffer, so everything scrolls and persists in your terminal emulator's native history.</p>
+<p>Three cases where this is the right call:</p>
+<p><strong>Headless CI/CD.</strong> Running Claude Code in a GitHub Actions runner, Jenkins agent, or any automated environment? Alternate screen mode produces ANSI escape sequences that log pipelines interpret as noise. Native scrollback mode gives you clean stdout that log parsers, artifact viewers, and alert systems handle correctly.</p>
+<p><strong>Shared tmux or screen sessions.</strong> If you pair program over tmux or share terminal sessions via screen, alternate screen mode means your collaborator loses context when Claude Code exits. Native scrollback keeps the full conversation visible in the scrollback buffer.</p>
+<p><strong>Log capture pipelines.</strong> Piping <code>claude</code> output through <code>tee</code> or redirecting stdout to a file? Alternate screen escape sequences corrupt the log file. Native scrollback mode gives you clean, parseable output.</p>
+<p>Set it once in your shell profile for permanent effect:</p>
+<pre><code>export CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1</code></pre>
+<p>Or prefix specific runs without changing the global config:</p>
+<pre><code>CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1 claude</code></pre>
+<p>The trade-off: Claude Code's interactive diff viewer and multi-panel displays won't render correctly without the alternate screen buffer. If you use those features in interactive development sessions, keep the default for those contexts and use the env var prefix for CI runs.</p>
+
+<h2>The bug fixes that matter for production teams</h2>
+<p>Three fixes in v2.1.138 address real production pain: SIGINT graceful shutdown restores terminal state on any external interrupt, the MCP stdio memory buffer is now capped after hitting 10GB+ in long sessions, and MCP auth status shows "needs auth" instead of "failed" so you debug in the right direction from the start.</p>
+<p><strong>SIGINT graceful shutdown.</strong> Before this fix, an external interrupt -- an IDE stop button, a <code>kill -INT</code> from another process, a Kubernetes pod termination signal -- could leave the terminal in raw mode. You'd need to type <code>reset</code> or open a new terminal session to recover. The fix runs the full shutdown sequence on SIGINT: terminal modes are restored and the --resume hint is printed. Source: <a href="https://github.com/anthropics/claude-code/issues/29096">GitHub issue #29096</a> and the <a href="https://releasebot.io/updates/anthropic/claude-code">May 2026 Releasebot digest</a>.</p>
+<p><strong>MCP stdio memory leak (the 10GB+ fix).</strong> MCP servers using stdio transport communicate through subprocess stdin/stdout. The problem: if an MCP server writes anything to stdout that isn't valid MCP JSON-RPC -- a startup banner, debug log output, a progress message -- Claude Code was accumulating it in an unbounded buffer. In long sessions with verbose servers, this buffer grew past 10GB before the process crashed or was killed by the OS. This is especially common with Python MCP servers where developers don't explicitly suppress stdout logging. The fix caps the non-protocol buffer. If you run any MCP servers that might write diagnostic output to stdout, update to v2.1.138 immediately.</p>
+<p><strong>MCP auth display fix.</strong> Unauthorized MCP connectors -- OAuth-gated services like Jira, Linear, Notion, Azure DevOps, or any MCP server that requires an auth token -- previously showed "failed" in the <code>/mcp</code> status view. That looks identical to a server error. The correct message is "needs auth," which tells you exactly what to do: run the authentication flow. This single word change shifts the debug path from "is my MCP server down?" to "do I need to authenticate?" and eliminates minutes of misdirected troubleshooting per incident.</p>
+
+<h2>What's still missing after v2.1.138?</h2>
+<p>CLAUDE_CODE_SESSION_ID solves cross-process session correlation but doesn't add session enumeration or programmatic metadata querying. You can read the current session ID from the env var, but there's no API to list active sessions, inspect their state, or route output to a specific session from outside Claude Code.</p>
+<p>A few open gaps worth knowing:</p>
+<p><strong>No session listing API.</strong> You can read <code>$CLAUDE_CODE_SESSION_ID</code> from within a session, but there's no way to enumerate all running sessions from an external script. Teams running multiple parallel Claude Code agents in CI still need an external registry or shared state file for cross-session coordination at the orchestrator level.</p>
+<p><strong>CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN has no auto-detection.</strong> A hook or script that wants to format output differently based on the current render mode has to check the env var itself. There's no Claude Code API call to query whether alternate screen is active.</p>
+<p><strong>The MCP memory fix is stdio-only.</strong> HTTP-transport MCP servers communicate over the network, not through subprocess stdout, so this fix doesn't apply to remote MCP servers. Remote MCP server buffering issues would require separate fixes in a different part of the stack.</p>
+<p>None of these are blockers for most production builds. The session ID env var specifically feels like infrastructure -- the kind of primitive that unlocks a category of tooling. I expect hook libraries and agent frameworks to start using <code>$CLAUDE_CODE_SESSION_ID</code> as a standard correlation key within weeks.</p>
+
+<h2>FAQ</h2>
+<h3>How do I access CLAUDE_CODE_SESSION_ID in a hook script?</h3>
+<p>CLAUDE_CODE_SESSION_ID is a standard environment variable available in every Bash subprocess spawned by Claude Code after v2.1.138. In shell scripts, read it with <code>$CLAUDE_CODE_SESSION_ID</code>. In Python scripts, use <code>os.environ['CLAUDE_CODE_SESSION_ID']</code>. Hooks also receive session_id in their JSON stdin payload -- the env var gives the same value to scripts that run within the session but aren't hooks themselves.</p>
+
+<h3>What breaks if I set CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1?</h3>
+<p>The interactive diff viewer and multi-panel displays won't render correctly without the alternate screen buffer -- they rely on cursor-addressed output to position content on screen. The core conversation flow, tool use, and text output all work fine in native scrollback mode. For CI, log capture, and pair programming over tmux, disabling alternate screen is the right trade-off. For interactive local development where you use the diff viewer regularly, keep the default.</p>
+
+<h3>Does the MCP memory leak fix apply to all MCP server types?</h3>
+<p>The fix applies only to stdio transport MCP servers -- local servers that run as subprocesses communicating via stdin/stdout. HTTP-transport remote MCP servers are unaffected by this fix. If your Python or Node MCP server writes startup banners, debug logs, or progress messages to stdout instead of stderr, this fix caps that buffer before it exhausts memory. The safest practice regardless: redirect all MCP server logging to stderr explicitly in your server code.</p>
+
+<h3>How do I update Claude Code to v2.1.138?</h3>
+<p>Run <code>npm update -g @anthropic-ai/claude-code</code> if you installed via npm. Verify with <code>claude --version</code>. For CI environments that pin the version in package.json, update the pin to 2.1.138 or later and run a fresh install. The <a href="https://github.com/anthropics/claude-code/releases">GitHub releases page</a> lists all versions with full changelogs so you can audit what changed before updating pinned installs.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "How do I access CLAUDE_CODE_SESSION_ID in a hook script?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "CLAUDE_CODE_SESSION_ID is a standard environment variable available in every Bash subprocess spawned by Claude Code after v2.1.138. In shell scripts, read it with $CLAUDE_CODE_SESSION_ID. In Python scripts, use os.environ['CLAUDE_CODE_SESSION_ID']. Hooks also receive session_id in their JSON stdin payload -- the env var gives the same value to scripts that run within the session but are not hooks themselves."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What breaks if I set CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The interactive diff viewer and multi-panel displays won't render correctly without the alternate screen buffer. The core conversation flow, tool use, and text output all work fine in native scrollback mode. For CI, log capture, and pair programming over tmux, disabling alternate screen is the right trade-off."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the MCP memory leak fix apply to all MCP server types?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The fix applies only to stdio transport MCP servers -- local servers that run as subprocesses communicating via stdin/stdout. HTTP-transport remote MCP servers are unaffected. If your Python or Node MCP server writes anything to stdout instead of stderr, this fix caps that buffer before it exhausts memory."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I update Claude Code to v2.1.138?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run npm update -g @anthropic-ai/claude-code if you installed via npm. Verify with claude --version. For CI environments that pin the version, update the pin to 2.1.138 or later and run a fresh install. The GitHub releases page at github.com/anthropics/claude-code/releases lists all versions with full changelogs."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>

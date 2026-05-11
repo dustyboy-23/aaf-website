@@ -1,0 +1,146 @@
+---
+id: anthropic-dreaming-claude-agents
+uuid: anthropic-dreaming-claude-agents
+slug: anthropic-dreaming-claude-agents
+title: "How Anthropic's Dreaming Lets Claude Agents Fix Their Own Mistakes"
+excerpt: "Anthropic's Dreaming feature -- announced May 6, 2026 -- lets Claude agents asynchronously review past session transcripts, extract cross-session patterns, and rewrite their own memory stores between "
+feature_image: null
+featured: false
+published_at: "2026-05-11T03:12:47-07:00"
+updated_at: "2026-05-11T03:12:47-07:00"
+reading_time: 9
+tags: [news, claude, managed-agents, anthropic]
+tag_names: [News, Claude, Managed Agents, Anthropic]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Anthropic Dreaming: How Claude Agents Learn Between Sessions"
+meta_description: "Anthropic's Dreaming feature lets Claude agents learn from past sessions -- no weight changes. Harvey saw 6x task completion. Here's what builders need to know."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How Anthropic's Dreaming Lets Claude Agents Fix Their Own Mistakes</h1>
+
+<p class="lede">Anthropic's Dreaming feature -- announced May 6, 2026 -- lets Claude agents asynchronously review past session transcripts, extract cross-session patterns, and rewrite their own memory stores between sessions. Model weights stay unchanged. Harvey saw task completion rates increase roughly 6x after implementing it. Wisedocs cut medical document review time by 50%.</p>
+
+<p>This is the most useful infrastructure Anthropic has shipped for builders this year. Not because it's flashy -- the implementation is quiet. It fixes the most persistent problem in production agent deployments: every session starts cold, rediscovering what the agent figured out yesterday.</p>
+
+<h2>What Exactly Is Anthropic's Dreaming Feature?</h2>
+
+<p>Dreaming is a scheduled, asynchronous job that reads an agent's past session transcripts -- up to 100 at a time -- alongside its existing memory store, extracts cross-session patterns, and produces a new reorganized memory store. The original memory is never modified. The output is a separate, inspectable artifact developers can review before deploying it to production.</p>
+
+<p>Anthropic announced Dreaming on May 6, 2026 at the Code with Claude developer conference, alongside two companion features: Outcomes (a rubric-based evaluation system) and native multi-agent orchestration. Current status is Research Preview -- access requires submitting a request form to Anthropic. Supported models are <code>claude-opus-4-7</code> and <code>claude-sonnet-4-6</code>. Two beta headers are required: <code>managed-agents-2026-04-01</code> and <code>dreaming-2026-04-21</code>.</p>
+
+<p>Here's what the output looks like in practice. A dream runs against 50 session transcripts from a legal review agent, spots a recurring PDF parsing edge case the agent hits in every session, identifies the workaround that produced the best outcomes across multiple runs, and writes that knowledge into the new memory store. The next session starts with it already built in -- no manual prompt engineering required, no developer intervention between runs.</p>
+
+<h2>How Does the Dreaming Process Work Technically?</h2>
+
+<p>Dreaming processes session history in three phases: scanning transcripts for recurring patterns, consolidating the memory store (merging duplicates, replacing contradicted entries with the most recent value, surfacing new cross-session insights), then writing a new output store while leaving the original untouched. A typical run takes minutes to tens of minutes depending on input volume, billed at standard Claude API token rates scaling linearly with session count and length.</p>
+
+<p>The status lifecycle moves through <code>pending</code>, <code>running</code>, and either <code>completed</code>, <code>failed</code>, or <code>canceled</code>. Dreams in pending or running state can be canceled. Anthropic caps input at 100 sessions per dream run and 4,096 characters for the instructions defining the dream's behavioral scope. Once a dream reaches a terminal state, it can be archived.</p>
+
+<p>Anthropic's developer relations lead Alex Albert was explicit about what Dreaming is not: "We're not changing the model itself through dreaming -- it's not doing updates to the weights or anything like that." The output is plain-text notes and structured playbooks stored externally to the model. Readable, auditable, modifiable, and rollback-able -- which matters considerably when you're running legal, medical, or financial workflows where audit trails aren't optional.</p>
+
+<h2>What Results Are Early Adopters Actually Seeing?</h2>
+
+<p>Harvey, the legal AI company, saw task completion rates increase roughly 6x after implementing Dreaming with memory persistence (Anthropic, May 2026). Wisedocs, a medical document review company, cut review time by 50% using Outcomes alongside the dreaming memory framework (Anthropic, May 2026). Netflix now processes logs from hundreds of simultaneous builds using the multi-agent orchestration layer that shipped at the same event.</p>
+
+<p>Harvey's case illustrates the core problem Dreaming solves. Their agents handle long-form legal drafting and document creation -- tasks with many tool-specific edge cases. Before dreaming, every session started from scratch on those workarounds. With it enabled, the memory store accumulated lessons across sessions, and independent agent instances running different user workflows converged on the same efficient patterns without being explicitly programmed to. Spiral uses Dreaming alongside Outcomes to enforce writing quality standards through their API and CLI.</p>
+
+<p>Netflix's use case involves the multi-agent orchestration layer. Their platform engineering team needed to process logs from hundreds of simultaneous builds -- too much data to handle sequentially, too noisy to surface signal manually. A coordinator agent routes batches to specialist subagents running in parallel on a shared filesystem, each with isolated context. Recurring patterns worth acting on surface automatically. Multi-agent orchestration makes that coordination native to Anthropic's platform -- no external framework required.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>How Is Dreaming Different From Fine-Tuning or RLHF?</h2>
+
+<p>The core distinction is runtime learning versus training-time learning. Fine-tuning and RLHF permanently modify model weights during a training run -- changes baked into the model that cannot be inspected or selectively reversed. Dreaming modifies external memory stores between sessions, leaving model weights entirely untouched. It's non-parametric learning: lessons stay external, remain inspectable and editable, and can be reviewed or rejected before deployment.</p>
+
+<p>A fine-tuned model integrates its training signal directly into weights. That signal is not readable or independently auditable. It cannot be selectively rolled back or reviewed by domain experts before it affects production. A dreamed memory store is a plain-text file. You can read it, modify specific entries, diff two versions to understand exactly what changed between dream runs, and gate any promotion to a trusted store behind a human review step. For regulated industries -- legal, medical, financial -- that auditability is required, not optional.</p>
+
+<p>The security dimension deserves attention. Anthropic's documentation notes that memory stores can become "long-lived influence channels" -- a vector for prompt injection attacks to persist across sessions if memory writes aren't carefully controlled. Anthropic's recommended production architecture uses three tiers: a read-only organization store (stable company standards), a read-only project store (verified project facts), and a read-write working store where session lessons accumulate. Dreams run against the working store, and outputs require human review gates before promotion to either trusted tier.</p>
+
+<h2>What Is the Outcomes Feature and How Does It Complement Dreaming?</h2>
+
+<p>Outcomes is a rubric-based evaluation system where you define success criteria and a separate grader agent -- running in its own isolated context window -- evaluates each output independently, then specifies corrections when the output falls short. Grader isolation prevents the main agent from gaming the rubric during reasoning. Anthropic's testing showed Outcomes improved task success rates by up to 10 percentage points over standard prompting loops.</p>
+
+<p>The performance data breaks down by output type: +8.4% improvement on Word (.docx) document generation, +10.1% on PowerPoint (.pptx) generation, with the largest gains on the most complex and detail-intensive tasks (Anthropic internal benchmarks, May 2026). The grader's independent context window is the key design decision -- it prevents the main agent from reverse-engineering what "good" looks like by observing its own evaluation.</p>
+
+<p>Wisedocs' 50% time reduction came primarily from Outcomes, not Dreaming directly. They defined rubrics against their internal medical review guidelines, and the grader enforced them automatically with no human in the loop for standard reviews. Dreaming adds the second layer: the agent accumulates knowledge of which document types consistently need extra attention, learns from patterns in previous reviewer corrections, and starts each session calibrated against the edge cases that actually matter.</p>
+
+<h2>What Does This Mean for Builders Right Now?</h2>
+
+<p>Dreaming is Research Preview -- access requires submitting a request to Anthropic. Multi-agent orchestration and Outcomes are in public beta for all developers under the <code>managed-agents-2026-04-01</code> beta header. Managed Agents is priced at $0.08 per session-hour plus standard Claude token costs. Rate limits are 300 requests/minute for create operations and 600/minute for read operations per organization. If you're losing session state today, Outcomes and multi-agent orchestration are available right now. Dreaming is the part to get on the waitlist for.</p>
+
+<p>The Anthropic-native path for multi-agent systems is now a serious alternative to LangChain or CrewAI wrappers for teams already committed to Claude. You get safety properties and prompt caching built into the orchestration layer -- not bolted on. The infrastructure behind these features is substantial. Anthropic's annualized run-rate hit $30 billion in April 2026, up from $9 billion at end of 2025 -- a 3.3x increase in under five months (VentureBeat, April 2026). They secured a deal with Amazon for up to 5 gigawatts of dedicated compute (Anthropic, April 2026), and formed a $1.5 billion enterprise AI services company with Blackstone, Goldman Sachs, and Hellman and Friedman in May 2026 (CNBC, May 2026).</p>
+
+<p>The framework decision for a new Claude agent deployment comes down to one question: do you need multi-provider model flexibility? If yes, LangGraph or CrewAI still make sense. If you're committed to Claude -- and Harvey, Wisedocs, Notion, Rakuten, and Asana clearly are -- the native Managed Agents stack now gives you Dreaming for accumulated session learning, Outcomes for automated quality grading, and multi-agent orchestration for parallel specialist workflows. All in one integrated platform with predictable session-hour pricing and a memory architecture you can audit.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is Anthropic Dreaming available to all Claude developers?</h3>
+<p>Dreaming is in Research Preview and requires requesting access through Anthropic's form. Multi-agent orchestration and Outcomes are in public beta under the <code>managed-agents-2026-04-01</code> beta header, available to all developers immediately. Dreaming additionally requires the <code>dreaming-2026-04-21</code> beta header and currently supports only <code>claude-opus-4-7</code> and <code>claude-sonnet-4-6</code>.</p>
+
+<h3>Does Anthropic Dreaming modify the underlying Claude model weights?</h3>
+<p>No. Dreaming is explicitly non-parametric -- it modifies external memory stores between sessions, not model weights. The original memory store is never changed. Dreaming produces a separate output store that developers can inspect, modify, and approve before deploying it to production. Alex Albert of Anthropic confirmed: "We're not changing the model itself through dreaming -- it's not doing updates to the weights or anything like that."</p>
+
+<h3>How much does Anthropic Managed Agents infrastructure cost?</h3>
+<p>Managed Agents adds $0.08 per session-hour on top of standard Claude API token pricing. Dreaming costs are billed at standard token rates applied to the session transcripts being processed, scaling roughly linearly with session count (capped at 100 sessions per dream run) and session length. Rate limits are 300 requests/minute for create operations and 600 requests/minute for read operations per organization.</p>
+
+<h3>What is the difference between memory and dreaming in Claude agents?</h3>
+<p>Memory is in-session: the agent captures context and writes notes to the memory store in real-time as it works. Dreaming is between-sessions: after sessions end, it reads across multiple past session transcripts, surfaces patterns no single session could detect (recurring failures, workflows multiple agents independently converged on, team-wide preferences), then rewrites the memory store with consolidated and deduplicated knowledge. Memory feeds individual sessions. Dreaming improves all future sessions.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Anthropic Dreaming available to all Claude developers?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Dreaming is in Research Preview and requires requesting access through Anthropic's form. Multi-agent orchestration and Outcomes are in public beta under the managed-agents-2026-04-01 beta header, available to all developers immediately. Dreaming additionally requires the dreaming-2026-04-21 beta header and currently supports only claude-opus-4-7 and claude-sonnet-4-6."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Anthropic Dreaming modify the underlying Claude model weights?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Dreaming is explicitly non-parametric -- it modifies external memory stores between sessions, not model weights. The original store is never changed. Dreaming produces a separate output store developers can inspect and approve before deploying. Alex Albert of Anthropic stated: 'We are not changing the model itself through dreaming -- it is not doing updates to the weights or anything like that.'"
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How much does Anthropic Managed Agents infrastructure cost?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Managed Agents adds $0.08 per session-hour on top of standard Claude API token pricing. Dreaming costs are billed at standard token rates applied to the session transcripts processed, scaling roughly linearly with session count (capped at 100 per dream run) and session length. Rate limits are 300 requests per minute for create operations and 600 per minute for read operations per organization."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between memory and dreaming in Claude agents?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Memory is in-session: the agent captures context and writes notes to the memory store in real-time as it works. Dreaming is between-sessions: after sessions end, it reads across multiple past session transcripts, surfaces patterns no single session could detect, then rewrites the memory store with consolidated and deduplicated knowledge. Memory feeds individual sessions. Dreaming improves all future sessions."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
