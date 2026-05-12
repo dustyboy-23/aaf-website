@@ -1,0 +1,197 @@
+---
+id: claude-code-goal-command-tutorial
+uuid: claude-code-goal-command-tutorial
+slug: claude-code-goal-command-tutorial
+title: "How to Use Claude Code's /goal for Autonomous Multi-Turn Tasks"
+excerpt: Claude Code v2.1.139, released May 11, 2026, adds a /goal command that sets a completion condition and keeps Claude working across turns until that condition is met. After every turn, a separate evalu
+feature_image: null
+featured: false
+published_at: "2026-05-12T03:11:37-07:00"
+updated_at: "2026-05-12T03:11:37-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, automation, agent-tools]
+tag_names: [Tutorials, Claude Code, Automation, Agent Tools]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code /goal Command Tutorial: Autonomous Tasks 2026"
+meta_description: "Learn how to use Claude Code's /goal command to run autonomous multi-turn tasks without babysitting. Set a completion condition, let Haiku evaluate, and ship."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Use Claude Code's /goal for Autonomous Multi-Turn Tasks</h1>
+
+<p class="lede">Claude Code v2.1.139, released May 11, 2026, adds a /goal command that sets a completion condition and keeps Claude working across turns until that condition is met. After every turn, a separate evaluator model -- defaulting to Haiku -- checks whether your condition holds. If not, Claude keeps going. If yes, the goal clears and you get control back. No prompting each step.</p>
+
+<p>I've been working with Claude Code daily for months. The multi-turn capability was always there, but driving it to an actual completion condition without babysitting required a mix of hooks, Stop triggers, and manual re-prompting. /goal makes that loop native and first-class in the CLI.</p>
+
+<h2>What does the /goal command actually do?</h2>
+
+<p>The /goal command creates a session-scoped execution loop: Claude works a turn, then a small fast evaluator model checks whether your stated condition is satisfied based on the conversation transcript. A "no" sends Claude another turn with the evaluator's reason included as guidance. A "yes" clears the goal, logs an "achieved" entry in the transcript, and returns control to you.</p>
+
+<p>The design decision that matters here is the separate evaluator. The model judging completion is not the same model doing the work -- that's an important distinction. Claude Haiku is the default evaluator (per <a href="https://code.claude.com/docs/en/goal" target="_blank" rel="noopener">the official /goal docs</a>), and it reads the conversation transcript rather than accessing the filesystem independently. This means two things: evaluation is cheap, and your completion conditions need to be written as things Claude can demonstrate through its output -- not as silent filesystem assertions.</p>
+
+<p>While a goal is running, an overlay panel in the terminal shows live elapsed time, turn count, and current token usage. You can watch the loop or switch to Agent View and let it run in the background. The goal persists across terminal detach if you're using Remote Control mode.</p>
+
+<h2>How do you set a goal in interactive mode?</h2>
+
+<p>In an active Claude Code session, type /goal followed by your completion condition in plain language. Claude starts working immediately -- the condition text serves as the directive for the first turn. No additional prompt needed.</p>
+
+<p>Examples that work well in interactive mode:</p>
+
+<pre><code>/goal find and fix the flaky auth tests
+/goal CHANGELOG.md has an entry for every PR merged this week
+/goal every TODO comment in src/ has been converted to a tracked issue
+/goal the payments module compiles clean and all existing tests pass</code></pre>
+
+<p>Write the condition as a verifiable end state. "Migrate the payments module to the new API until every call site compiles and tests pass" gives the evaluator something to judge. "Improve the code" gives it nothing. The evaluator returns a short reason with each yes/no decision -- that reason is included in the next turn's context when Claude continues, so good condition language compounds: the more specific you are, the better Claude's corrections on failed turns.</p>
+
+<p>To stop a goal mid-run: /goal clear. The transcript preserves what Claude has done so far. You can also bound the run with a clause inside the condition itself: "/goal process the open issue backlog, max 20 turns" -- the evaluator judges both task state and turn count from the transcript. The most recent evaluator reason shows in the status overlay and in the full transcript.</p>
+
+<h2>How do you run /goal in headless (-p) mode?</h2>
+
+<p>The /goal command works in headless mode via the -p flag. Pass your goal directly as the prompt text and Claude runs the entire loop to completion in a single invocation -- no terminal session required.</p>
+
+<p>Basic headless invocation:</p>
+
+<pre><code>claude -p "/goal CHANGELOG.md has an entry for every PR merged this week"</code></pre>
+
+<p>With a token budget cap:</p>
+
+<pre><code>claude -p "/goal --tokens 250K do deep research and build the full prototype"</code></pre>
+
+<p>The --tokens flag sets a hard token ceiling for the entire goal loop. When the budget is exhausted, the goal stops and logs the partial result. This is the right pattern for cron jobs and CI pipelines where you want bounded compute costs -- Claude Code sessions typically run 10,000 to 50,000 input tokens depending on tool usage (<a href="https://shipyard.build/blog/claude-code-track-usage/" target="_blank" rel="noopener">Shipyard analytics</a>), but unbounded goal loops against complex codebases can run significantly higher.</p>
+
+<p>For CI/CD integration, pair it with --output-format json to get structured output:</p>
+
+<pre><code>claude -p "/goal all failing tests in the auth/ directory are fixed" --output-format json</code></pre>
+
+<p>The JSON output includes the final transcript, goal status (achieved or stopped), turn count, and token totals -- parseable by downstream pipeline steps.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How do you write completion conditions that actually work?</h2>
+
+<p>The evaluator reads only what Claude has surfaced in the conversation -- it doesn't run commands or read files independently. Write conditions as things Claude can demonstrate through its output: reported test results, listed file changes, logged counts, or explicit confirmation statements. If the end state requires checking the filesystem, tell Claude to check and report in its turn.</p>
+
+<p>Conditions that work well:</p>
+
+<ul>
+<li><strong>Test-based:</strong> "All tests in the auth module pass" -- Claude runs the tests and reports results each turn; the evaluator reads those results.</li>
+<li><strong>Count-based:</strong> "The backlog queue is empty" -- Claude processes items and reports the remaining count.</li>
+<li><strong>Audit-based:</strong> "Every function in payments.py has a docstring" -- Claude reads the file, reports what's missing, fixes it, confirms completion.</li>
+<li><strong>Document-based:</strong> "CHANGELOG.md has an entry for every PR merged since Monday" -- Claude queries git log, checks the CHANGELOG, adds missing entries, and confirms.</li>
+</ul>
+
+<p>Conditions that fail reliably:</p>
+
+<ul>
+<li>Vague outcomes ("the code is clean", "tests are better") -- the evaluator can't make a yes/no call.</li>
+<li>Pure filesystem assertions without a reporting step ("the file exists") -- the evaluator can't see the filesystem.</li>
+<li>Conditions requiring external system checks ("the deploy is live on Heroku") -- unless Claude is told to check and report the result.</li>
+</ul>
+
+<p>One pattern that works well: build the verification step into the condition. "All failing tests pass -- confirmed by running pytest and reporting the output" tells Claude exactly what to do at the end of each turn to give the evaluator something to judge.</p>
+
+<h2>How does Agent View work alongside /goal?</h2>
+
+<p>Agent View, also released in v2.1.139 as a Research Preview (<a href="https://code.claude.com/docs/en/agent-view" target="_blank" rel="noopener">official docs</a>), is a full-terminal dashboard that lists every Claude Code session -- running, blocked, or done -- in a single view. Sessions are grouped by state, with those needing your attention pinned at the top.</p>
+
+<p>The practical workflow: start a /goal loop in one session, switch to Agent View, and dispatch other sessions while the goal runs in the background. When the goal finishes or needs you (for a permission prompt or a blocked state), Agent View surfaces it. You navigate with arrow keys, press Space to see session state, and type a reply + Enter to respond without leaving the dashboard.</p>
+
+<p>Agent View works with any Claude Code session, not just /goal runs. Long-running agents, scheduled tasks, and standard interactive sessions all appear in the list. Each row shows the session name, current activity, and how long ago it last changed. Sessions keep running without a terminal attached -- you can close the dashboard and reopen it to check status.</p>
+
+<p>Agent View is available on Pro, Max, Team, Enterprise, and Claude API plans as of v2.1.139. The Research Preview label means the UI and session management features may change -- Anthropic has flagged this as an evolving surface in the <a href="https://claude.com/blog/agent-view-in-claude-code" target="_blank" rel="noopener">Agent View announcement</a>.</p>
+
+<h2>What are the limits and known constraints?</h2>
+
+<p>The /goal command has four practical constraints to plan around: the evaluator reads only the conversation transcript (not files directly), goals don't survive process kills, token costs compound with each additional turn as history grows, and Agent View is a Research Preview with a UI that may change. All four are manageable with the right patterns.</p>
+
+<p><strong>Evaluator reads transcripts, not files.</strong> If Claude modifies a file but doesn't report the change in the conversation, the evaluator may not detect it. Build explicit reporting into your conditions or use Claude's output to confirm state changes each turn.</p>
+
+<p><strong>Goals don't survive process kills.</strong> If the Claude Code process is killed mid-goal (SIGKILL, OOM), the goal state is lost. The transcript up to that point is preserved in the session, but the loop won't resume automatically. For long-running jobs, the Remote Control mode + headless -p invocation is more reliable than interactive /goal.</p>
+
+<p><strong>Token costs compound across turns.</strong> Each turn re-sends the growing conversation history. A 20-turn goal against a large codebase can hit 200,000 tokens or more. Use the --tokens flag to cap it, and use /compact mid-goal to manage context growth. The live token counter in the status overlay makes this visible in real time.</p>
+
+<p><strong>Agent View is a Research Preview.</strong> The session management API, keyboard shortcuts, and display format are still being iterated. Stable production workflows should treat the underlying goal loop as durable and the Agent View UI as subject to change.</p>
+
+<h2>FAQ</h2>
+
+<h3>What model evaluates the /goal completion condition?</h3>
+<p>The evaluator defaults to your configured small fast model, which is Claude Haiku by default. Haiku reads the conversation transcript after each turn and returns a yes/no decision plus a short reason. The reason is included in Claude's next turn as guidance when the condition isn't met yet. You can change the evaluator model in Claude Code's model configuration settings.</p>
+
+<h3>Can /goal run in a CI/CD pipeline without a terminal?</h3>
+<p>Yes. Run it with the -p flag in headless mode: <code>claude -p "/goal condition here"</code>. The full goal loop runs to completion in a single invocation with no interactive terminal required. Add --output-format json for structured output parseable by downstream pipeline steps. Use --tokens to cap compute costs for predictable CI billing.</p>
+
+<h3>How is /goal different from writing a CLAUDE.md instruction to keep working?</h3>
+<p>CLAUDE.md instructions set session-level behavior but don't create a separate evaluator loop. With /goal, a distinct model judges completion after every turn independently -- Claude doesn't decide for itself when to stop. That separation means the completion check is unbiased. CLAUDE.md instructions for behavior (tools, permissions, style) still apply during a /goal run.</p>
+
+<h3>What happens if a goal runs indefinitely?</h3>
+<p>Use the --tokens flag to set a hard ceiling: <code>/goal --tokens 250K [condition]</code>. You can also write a turn limit into the condition itself: "complete the task, max 15 turns." The evaluator tracks the turn count from the transcript and stops the loop when the limit is reached. Without any limit, the goal runs until the condition is met or you run /goal clear manually.</p>
+
+<h3>Is Agent View available on all Claude Code plans?</h3>
+<p>Agent View is available as a Research Preview on Pro, Max, Team, Enterprise, and Claude API plans as of v2.1.139. It requires Claude Code version 2.1.139 or later. The feature is not available on the free Claude.ai tier as of the May 11, 2026 release.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What model evaluates the /goal completion condition?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The evaluator defaults to your configured small fast model, which is Claude Haiku by default. Haiku reads the conversation transcript after each turn and returns a yes/no decision plus a short reason. The reason is included in Claude's next turn as guidance when the condition is not yet met. You can change the evaluator model in Claude Code's model configuration settings."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can /goal run in a CI/CD pipeline without a terminal?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Run it with the -p flag in headless mode: claude -p '/goal condition here'. The full goal loop runs to completion in a single invocation with no interactive terminal required. Add --output-format json for structured output parseable by downstream pipeline steps. Use --tokens to cap compute costs for predictable CI billing."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How is /goal different from writing a CLAUDE.md instruction to keep working?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "CLAUDE.md instructions set session-level behavior but do not create a separate evaluator loop. With /goal, a distinct model judges completion after every turn independently -- Claude does not decide for itself when to stop. That separation means the completion check is unbiased. CLAUDE.md instructions for behavior still apply during a /goal run."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens if a goal runs indefinitely?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Use the --tokens flag to set a hard ceiling: /goal --tokens 250K [condition]. You can also write a turn limit into the condition itself: complete the task, max 15 turns. The evaluator tracks the turn count from the transcript and stops the loop when the limit is reached. Without any limit, the goal runs until the condition is met or you run /goal clear manually."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is Agent View available on all Claude Code plans?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Agent View is available as a Research Preview on Pro, Max, Team, Enterprise, and Claude API plans as of v2.1.139. It requires Claude Code version 2.1.139 or later. The feature is not available on the free Claude.ai tier as of the May 11, 2026 release."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
