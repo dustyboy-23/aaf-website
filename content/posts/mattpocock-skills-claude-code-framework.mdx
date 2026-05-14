@@ -1,0 +1,136 @@
+---
+id: mattpocock-skills-claude-code-framework
+uuid: mattpocock-skills-claude-code-framework
+slug: mattpocock-skills-claude-code-framework
+title: "Claude Code Skills: How to Use mattpocock's 80K-Star Repo"
+excerpt: mattpocock/skills is a collection of 21 markdown files that enforce engineering discipline on Claude Code agents. No freestyle coding -- just structured workflows. The repo hit 80,500 GitHub stars and
+feature_image: null
+featured: false
+published_at: "2026-05-14T03:07:55-07:00"
+updated_at: "2026-05-14T03:07:55-07:00"
+reading_time: 8
+tags: [tutorials, claude-code, skills, developer-tools]
+tag_names: [Tutorials, Claude Code, Skills, Developer Tools]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Skills: mattpocock's 80K-Star Framework"
+meta_description: "mattpocock/skills hit 80,500 GitHub stars solving Claude Code's discipline problem. Here's how grill-me, tdd, diagnose, and caveman work in your workflow."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Skills: How to Use mattpocock's 80K-Star Repo</h1>
+
+<p class="lede">mattpocock/skills is a collection of 21 markdown files that enforce engineering discipline on Claude Code agents. No freestyle coding -- just structured workflows. The repo hit 80,500 GitHub stars and went #1 trending by solving a real problem: Claude doing technically correct work that completely misses the actual goal.</p>
+
+<p>I've been running a similar discipline layer inside our own Claude Code setup for months. When Matt Pocock dropped his public version, it went from zero to 22,000 stars in 24 hours. That kind of traction usually means someone named a real problem clearly -- and that's exactly what happened here.</p>
+
+<h2>What problem does the skills framework actually solve?</h2>
+<p>Without skills, Claude Code defaults to freestyle -- it reads your prompt and starts generating. The output is often technically correct and functionally wrong. Skills are markdown files that force a structured process: explore the codebase first, propose approaches, wait for approval, write tests, then implement. They don't slow Claude down; they stop it from doing the wrong thing at full speed.</p>
+<p>Matt Pocock's framing is direct: "Skills for Real Engineers. Not vibe coding." His argument is that AI doesn't replace software fundamentals -- it amplifies them. Every mistake Claude makes without structure is a faster version of a mistake a junior developer makes without guidance. Speed without discipline is just faster failure.</p>
+<p>The failure modes skills address are specific. Solving the wrong problem entirely -- your description was incomplete and Claude filled the gap with assumptions. Generating verbose responses that eat tokens without adding clarity. Jumping straight to code without reading existing architecture. Introducing drift over long sessions where Claude forgets earlier decisions. Skills create gates that a senior engineer would impose naturally but an AI skips by default.</p>
+
+<h2>What are the five core skills in mattpocock/skills?</h2>
+<p>The five core skills cover the full engineering lifecycle -- from stress-testing plans before a line of code is written to compressing token usage mid-session. grill-me handles planning interrogation, grill-with-docs grounds plans in your actual architecture, tdd enforces disciplined implementation, diagnose structures debugging, and caveman cuts verbosity. Pocock also ships 16 additional skills across planning, quality, and productivity categories in the same repo.</p>
+
+<p><strong>grill-me</strong> is the one that went viral first, hitting 9,000 stars before the rest of the collection caught up. It tells Claude to relentlessly interview you about your plan until every branch of the decision tree is resolved. Pocock's own note: "I use it even outside of coding." The idea is that the hardest bugs are the ones you didn't think to prevent -- grill-me surfaces those before implementation starts.</p>
+
+<p><strong>grill-with-docs</strong> runs the same interrogation but grounds it against your existing domain model. It challenges your plan against current architecture and auto-updates CONTEXT.md and ADRs inline. This is the gap between a good idea and a good idea that actually fits your system. Most mid-session architectural drift happens because Claude proposes something reasonable that contradicts an earlier decision it has forgotten. grill-with-docs keeps it anchored.</p>
+
+<p><strong>tdd</strong> enforces test-driven development at the agent level: red-green-refactor loop, one vertical slice at a time. Claude doesn't write the implementation until the test is red. Not pseudocode tests -- real failing tests. Not tests written to match already-written code. The loop is the discipline.</p>
+
+<p><strong>diagnose</strong> wraps debugging best practices into a structured loop. Instead of "Claude, why is this broken?" you get a systematic investigation: reproduce, isolate, hypothesize, test, fix. Claude can't skip from "I see a bug" to "here's my fix" without working through the middle steps.</p>
+
+<p><strong>caveman</strong> is the token-compression skill. The numbers on this one are worth a separate section below.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How do you install Claude Code skills?</h2>
+<p>Three installation paths, each with different scope. The built-in plugin system -- type /plugin in Claude Code, browse the Discover tab -- gets you marketplace skills with one click. The curl method pulls skills into ~/.claude/skills/ so they're available across every project on your machine. For project-specific skills, drop .md files into a .claude/skills/ folder inside the repo. No restart needed -- Claude Code watches the skill directories and picks up changes immediately.</p>
+
+<p>Scope resolution goes enterprise &gt; personal &gt; project. When two skills share a name, the higher scope wins. This matters when you're on a team with organization-level skills that you want to extend or override locally without breaking the shared baseline. Drop your override in .claude/skills/ at the project level and it takes precedence for that repo only.</p>
+
+<p>To invoke a skill, type the slash command in your Claude Code session: /grill-me, /tdd, /diagnose, /caveman, /grill-with-docs. Writing your own skill is the same format -- a markdown file with two YAML frontmatter fields (name and description) followed by whatever instructions you want to enforce. The mattpocock/skills source files are readable; studying how he structured grill-me is the fastest way to understand what a well-written skill looks like.</p>
+
+<h2>What does caveman mode actually do to your token usage?</h2>
+<p>Caveman mode strips output verbosity without touching reasoning. Claude drops articles ("the", "a"), pleasantries, problem restatements, unsolicited explanations, and sign-offs -- keeping full technical accuracy while cutting filler. Benchmarked across 11 real dev tasks, caveman averages 294 output tokens per response versus 1,214 in normal mode -- a 65% reduction in output token spend. That benchmark comes from independent testing, not Anthropic or Pocock's own numbers.</p>
+
+<p>The key distinction: caveman only affects output tokens. Thinking and reasoning tokens are untouched. The brain stays the same size; the mouth gets smaller. Quality of decisions doesn't degrade -- just the verbosity around them. On Claude API pricing, output tokens cost more than input tokens, so targeting them specifically is the right lever to pull.</p>
+
+<p>You trigger it with /caveman in your session, or in plain English: "caveman mode" or "less tokens please" both work. It's session-scoped -- stays active until you start a new session or explicitly disable it. On long coding sessions running dozens of turns, the cumulative savings matter. If you're running Claude Code on API credits with billing by token, caveman pays for itself quickly on sessions over an hour.</p>
+
+<h2>Does this work outside TypeScript projects?</h2>
+<p>Yes. The skills are language-agnostic -- they enforce process, not syntax. The tdd skill doesn't care whether you're writing Python, Go, or TypeScript. The grill-with-docs skill works with any codebase that has documentation. Matt Pocock built these from his TypeScript background, but engineering discipline transfers across stacks. The problem of an undisciplined AI agent isn't a TypeScript problem.</p>
+
+<p>The 80,500-star traction and 6,900 forks back this up. The TypeScript community is large but not that large. Developers from every stack reached the same conclusion: the underlying failure mode (Claude doing the wrong thing at full speed) is universal. The skills address the agent behavior, not the language.</p>
+
+<p>Where setup matters more than language: the tdd skill assumes your project has a runnable test suite that Claude can invoke. grill-with-docs works best when you have existing documentation -- CONTEXT.md, ADRs, a README with architecture notes. A brand-new project with no docs gives it less to anchor to. That's not a skills limitation -- it's a signal that you should document your architecture before asking an AI agent to respect it.</p>
+
+<h2>FAQ</h2>
+<h3>Are Claude Code skills the same as custom system prompt instructions?</h3>
+<p>No. Custom system prompt instructions are global and apply to every interaction. Claude Code skills are on-demand -- you invoke them with a slash command when you want that specific workflow. Skills support complex multi-step processes, referenced files, and project-scoped vs. global scoping. System prompts set defaults; skills override them for specific, structured tasks where you need a defined process.</p>
+
+<h3>How is /tdd different from telling Claude to write tests first in a regular message?</h3>
+<p>Telling Claude "write tests first" in a one-off message often produces tests written simultaneously with implementation, or tests written post-hoc to match existing code. The /tdd skill enforces a loop: write a failing test, stop, confirm it's red, implement the minimum code to make it pass, then refactor. The discipline is in the enforced loop structure, not the instruction alone.</p>
+
+<h3>Can I write my own skills, and are there community skill repositories?</h3>
+<p>Yes to both. A skill is a markdown file with two YAML frontmatter fields -- name and description -- followed by your instructions. Drop it into ~/.claude/skills/ for personal use or .claude/skills/ for a project. The mattpocock/skills repo is the highest-starred collection as of May 2026 with 80,500 stars, but the Claude Code plugin marketplace and community GitHub repos (search "claude-code-skills") have hundreds of additional contributed skills across domains.</p>
+
+<h3>Who is Matt Pocock and why should I trust his engineering workflow?</h3>
+<p>Matt Pocock created Total TypeScript, the largest TypeScript course series for working engineers. He was previously a Vercel developer advocate and XState core team member -- tools built for real production use. He's a working engineer, not a researcher or tool vendor. The skills framework came from his actual daily production workflow, which is why it maps to real failure modes rather than theoretical best practices.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Are Claude Code skills the same as custom system prompt instructions?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Custom system prompt instructions are global and apply to every interaction. Claude Code skills are on-demand -- you invoke them with a slash command when you want that specific workflow. Skills support complex multi-step processes, referenced files, and project-scoped vs. global scoping. System prompts set defaults; skills override them for specific, structured tasks where you need a defined process."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How is /tdd different from telling Claude to write tests first in a regular message?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Telling Claude 'write tests first' in a one-off message often produces tests written simultaneously with implementation, or tests written post-hoc to match existing code. The /tdd skill enforces a loop: write a failing test, stop, confirm it's red, implement the minimum code to make it pass, then refactor. The discipline is in the enforced loop structure, not the instruction alone."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I write my own Claude Code skills?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. A skill is a markdown file with two YAML frontmatter fields -- name and description -- followed by your instructions. Drop it into ~/.claude/skills/ for personal use or .claude/skills/ for a project. The mattpocock/skills repo is the highest-starred collection as of May 2026 with 80,500 stars, but the Claude Code plugin marketplace and community GitHub repos have hundreds of additional contributed skills."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Who is Matt Pocock?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Matt Pocock created Total TypeScript, the largest TypeScript course series for working engineers. He was previously a Vercel developer advocate and XState core team member. He's a working engineer, not a researcher or tool vendor. The skills framework came from his actual daily production workflow, which is why it maps to real failure modes rather than theoretical best practices."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
