@@ -1,0 +1,146 @@
+---
+id: google-io-2026-agent-builders-preview
+uuid: google-io-2026-agent-builders-preview
+slug: google-io-2026-agent-builders-preview
+title: "Google I/O 2026: What Agent Builders Need to Watch Tomorrow"
+excerpt: "Google I/O 2026 opens May 19 at 10am PT. For builders, four things matter: a new Gemini model with a reported 2M-token context window, Gemini Spark (persistent cross-app agent), Jitro (Jules V2 with g"
+feature_image: null
+featured: false
+published_at: "2026-05-18T03:09:52-07:00"
+updated_at: "2026-05-18T03:09:52-07:00"
+reading_time: 9
+tags: [news, google, gemini, ai-agents]
+tag_names: [News, Google, Gemini, AI Agents]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Google I/O 2026 Preview: What AI Builders Need to Know"
+meta_description: "Google I/O 2026 opens May 19 at 10am PT. Builder preview: Gemini Spark, Jitro coding agent, 2M-token context, ADK Skills -- what matters for agent builders."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Google I/O 2026: What Agent Builders Need to Watch Tomorrow</h1>
+
+<p class="lede">Google I/O 2026 opens May 19 at 10am PT. For builders, four things matter: a new Gemini model with a reported 2M-token context window, Gemini Spark (persistent cross-app agent), Jitro (Jules V2 with goal-based coding execution), and Google ADK Skills updates. Here is what is confirmed, what is still rumor, and what it means for the stack you are building on today.</p>
+
+<p>I have been tracking the pre-I/O leaks and session drops for two weeks. There is real signal buried in the noise. Here is what to actually pay attention to before the keynote drops tomorrow.</p>
+
+<h2>What is confirmed vs. what is still rumor?</h2>
+
+<p>Google has officially confirmed I/O 2026 runs May 19-20 at Shoreline Amphitheatre in Mountain View. The opening keynote starts at 10am PT; the developer keynote follows at 1pm PT. From official session titles at io.google, these four areas are confirmed: agent-first workflows, ADK with Skills support, agentic coding in at least three separate sessions, and Firebase evolving into an agent-native platform. The model version number -- whether Gemini 4.0 or another 3.x update -- is not officially confirmed by Google.</p>
+
+<p><a href="https://www.techtimes.com/articles/316755/20260517/google-i-o-2026-keynote-opens-tuesday-new-gemini-lands-behind-mythos-gpt-55.htm">TechTimes reported on May 17</a> that "New Gemini lands behind Mythos and GPT-5.5" -- which could mean this is a competitive 3.x update positioned as incremental rather than a flagship leap. <a href="https://www.androidauthority.com/what-to-expect-from-google-io-2026-3664979/">Android Authority</a> reports the context window is expected to hit 2M tokens, though some I/O session descriptions hint at longer-term 10M-token ambitions that would be a multi-year roadmap item, not a day-one ship.</p>
+
+<p>One thing definitively confirmed: the developer keynote already has a published Google Codelabs walkthrough titled "Building ADK Agents with Skills and Tools." That means ADK Skills are shipping tomorrow -- not just being previewed. Three separate I/O sessions are dedicated to agentic coding workflows, making it the highest session count for any single technical theme at this year's event.</p>
+
+<h2>What is Gemini Spark and why does it matter for builders?</h2>
+
+<p>Gemini Spark is a persistent AI agent layer built into Gemini -- a dedicated Agent tab separate from Chat. Users create recurring skills (automated task templates), schedule workflows to run without manual input, and let the agent operate across Gmail, Calendar, and browser sessions without being prompted. It is designed to run around the clock, not just when a chat window is open.</p>
+
+<p>For builders, Spark is Google's answer to persistent proactive execution -- the same category of problem Anthropic's dreaming feature addressed in early May 2026. Dreaming gives Claude agents scheduled memory consolidation between sessions; Harvey saw a 6x task completion improvement after implementation. Spark goes further at the consumer layer: it acts across connected apps autonomously on a schedule. <a href="https://www.testingcatalog.com/google-prepares-gemini-spark-ai-agent-ahead-of-i-o-launch/">TestingCatalog</a> reports Spark draws context from "Connected Apps, skills, chat history, scheduled tasks, websites the user is signed into, Personal Intelligence signals, and location."</p>
+
+<p>The enterprise version is already partially disclosed. The <a href="https://pasqualepillitteri.it/en/news/1311/gemini-enterprise-agent-platform-google-next-2026">Gemini Enterprise Agent Platform announced at Google Next '26</a> includes an Agent Runtime for multi-day workflows with persistent state and a Memory Bank for long-term context. The open question for builders: does Spark become a developer primitive accessible via ADK, or does it stay locked inside the Gemini end-user product? That answer should come in the 1pm developer keynote.</p>
+
+<h2>What is Jitro and how does it compare to Claude Code?</h2>
+
+<p>Jitro is Google's internal codename for Jules V2 -- the next generation of its autonomous coding agent. Unlike current Jules (prompt-and-execute: you describe a task, it returns a plan and diff), Jitro is goal-based. <a href="https://devops.com/googles-next-coding-agent-could-change-how-developers-think-about-their-work/">DevOps.com reports</a> it is designed around "KPI-driven development, where the agent autonomously identifies what needs to change in a codebase to move a metric in the right direction," with a persistent workspace for listing goals, tracking insights, and configuring tool integrations -- continuity that prompt-based coding agents do not offer by default.</p>
+
+<p>The current Jules is already out of beta and available across free and paid tiers, integrated into Google AI Pro and Ultra subscriptions. It runs asynchronously: hand it a task, it processes in the background, then returns a plan and code diff. Jitro extends this with goal awareness and persistence across sessions -- which is genuinely different behavior, not just a capability increment.</p>
+
+<p>Against Claude Code: Claude Code already ships Agent View, background sessions, the /goal command for outcome-based tasks, and Routines for scheduled coding automation. If Jitro ships tomorrow with all the capabilities described, it closes that gap significantly. If it ships as a closed beta or developer preview, Claude Code retains the practical lead for production agentic coding. The honest answer is we will know by 2pm PT tomorrow.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What does Google ADK look like and how does it stack up?</h2>
+
+<p>Google's Agent Development Kit is already live as open-source at <a href="https://google.github.io/adk-docs/">google.github.io/adk-docs</a>. It supports Python and Java, handles multi-agent composition natively, and includes a tool integration layer for connecting third-party APIs and custom code. The developer keynote has a confirmed Codelabs walkthrough for "Building ADK Agents with Skills and Tools" -- which means ADK Skills are shipping tomorrow, mirroring what the open-source community built independently over the past six months.</p>
+
+<p>ADK vs. Anthropic's Agent SDK: ADK is framework-agnostic and model-agnostic -- you can point it at any Gemini variant or a self-hosted model. Anthropic's Agent SDK is tighter on Claude integration and currently leads on agent memory features. If you are already in GCP infrastructure and want first-party Google tooling, ADK is worth serious consideration now. If you want the deepest memory and session continuity features available today, Claude's managed agent stack is ahead on that specific axis.</p>
+
+<p>Firebase's agentic evolution is the underreported angle here. If Firebase adds first-party hosting for ADK agents -- similar to how Vercel deploys Next.js -- it removes the biggest deployment friction point for Google-native agent infrastructure. There are dedicated Firebase sessions at I/O. If you are building on GCP, those sessions are worth queuing alongside the developer keynote.</p>
+
+<h2>Where does the new Gemini model fit in the benchmark landscape?</h2>
+
+<p>Each frontier model currently leads a different benchmark category. <a href="https://gitautoreview.com/blog/claude-vs-gemini-vs-chatgpt-code-review">GitAutoReview's SWE-bench analysis</a> shows Claude Mythos leads coding at 93.9% SWE-bench Verified. <a href="https://www.mindstudio.ai/blog/gpt-5-5-review-developers-builders">MindStudio's benchmark breakdown</a> shows GPT-5.5 leads agentic orchestration at 84.9% GDPval. Gemini 3.1 Pro currently leads on long-context reasoning at 77.1% ARC-AGI-2 and 94.3% GPQA Diamond -- and holds the widest context window at 1-2M tokens.</p>
+
+<p>If the new Gemini "lands behind Mythos and GPT-5.5" as TechTimes reports, it is competitive across the board but does not take the top spot in any single category benchmarks measure. The 2M-token context window remains the structural differentiator -- neither Mythos nor GPT-5.5 matches that at scale. For builders doing whole-codebase analysis, long-document pipelines, or injecting large knowledge bases at inference time, Gemini's context capacity is a real advantage that standard benchmark tables do not capture.</p>
+
+<p>My read: Gemini will own "longest context, best for document-heavy agents." Mythos holds the coding lead. GPT-5.5 holds the agentic orchestration lead. For production builders, multi-model routing remains the right answer -- use the model that wins in your specific task category. Both ADK and Claude's Agent SDK support this pattern.</p>
+
+<h2>What to watch and what to skip</h2>
+
+<p>Four things worth your attention at I/O tomorrow: (1) Does Jitro ship an accessible API or stay in closed preview? (2) What is the confirmed model version and context window -- and does pricing change from Gemini 3.1 Pro? (3) Does Firebase get first-party ADK agent hosting? (4) Is Gemini Spark API-accessible for developers or locked to end-user Gemini products only?</p>
+
+<p>Skip if you are a builder: the XR glasses demo, most of the Android 17 walkthrough, and the Omni video generator preview unless you are specifically building in those spaces. These will eat 40+ minutes without giving you actionable developer information. Queue the developer keynote at 1pm PT; that is where the real technical signal lives for agent builders.</p>
+
+<p>One broader point worth stating plainly: Google has a track record of announcing agentic features and shipping them slowly or quietly stepping back from them. Duplex barely shipped in three cities. Bard's Browse was pulled after launch. SGE became AI Overviews at reduced scope. The ADK Codelabs confirmation and Jitro's architecture are real signals -- but I will form my actual judgment on what ships in the 30 days after the keynote, not what gets announced on stage tomorrow.</p>
+
+<h2>FAQ</h2>
+
+<h3>When does Google I/O 2026 start?</h3>
+<p>Google I/O 2026 opens May 19, 2026 at 10am PT at Shoreline Amphitheatre in Mountain View, California. The opening keynote covers consumer Gemini updates and Android announcements. The developer keynote follows at 1pm PT and covers ADK, agentic coding, and Firebase agent infrastructure -- the more relevant stream for builders focused on agent development.</p>
+
+<h3>What is Gemini Spark?</h3>
+<p>Gemini Spark is Google's persistent cross-app AI agent expected to be announced at I/O 2026. It adds a dedicated Agent tab to the Gemini interface, lets users create automated skills that run on a schedule, and draws context from Gmail, Calendar, browser history, and location data to act proactively without waiting for user input. Whether it will be API-accessible for developers is unconfirmed pre-keynote.</p>
+
+<h3>What is the difference between Jules and Jitro?</h3>
+<p>Jules is Google's current autonomous coding agent, already out of beta and available in Google AI Pro and Ultra subscriptions. It runs tasks asynchronously and returns a plan and code diff. Jitro is the codename for Jules V2 -- a goal-based agent where developers set high-level objectives and the agent autonomously identifies what code changes are needed to reach those goals, with a persistent workspace maintained across sessions.</p>
+
+<h3>Does the new Gemini model beat Claude Mythos on coding benchmarks?</h3>
+<p>Based on pre-I/O reports, the new Gemini model is expected to land below Claude Mythos on coding benchmarks -- Mythos leads at 93.9% SWE-bench Verified -- and below GPT-5.5 on agentic orchestration benchmarks at 84.9% GDPval. Gemini's structural advantage is context window, reportedly 2M tokens, which neither Mythos nor GPT-5.5 currently matches for large codebase ingestion and long-document analysis at scale.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "When does Google I/O 2026 start?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Google I/O 2026 opens May 19, 2026 at 10am PT at Shoreline Amphitheatre in Mountain View, California. The opening keynote covers consumer Gemini updates and Android announcements. The developer keynote follows at 1pm PT and covers ADK, agentic coding, and Firebase agent infrastructure."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is Gemini Spark?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Gemini Spark is Google's persistent cross-app AI agent expected at I/O 2026. It adds a dedicated Agent tab to Gemini, lets users create automated skills that run on a schedule, and draws context from Gmail, Calendar, browser history, and location to act proactively without waiting for user prompts."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between Jules and Jitro?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Jules is Google's current autonomous coding agent, available in Google AI Pro and Ultra subscriptions. Jitro is the codename for Jules V2, a goal-based agent where developers set high-level objectives and the agent autonomously identifies what code changes are needed to reach them, with a persistent workspace across sessions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the new Gemini model beat Claude Mythos on coding benchmarks?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Based on pre-I/O reports, the new Gemini model is expected to land below Claude Mythos on coding benchmarks (Mythos leads at 93.9% SWE-bench Verified) and below GPT-5.5 on agentic orchestration (84.9% GDPval). Gemini's advantage is context window, reportedly 2M tokens, which neither Mythos nor GPT-5.5 currently matches."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
