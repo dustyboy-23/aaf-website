@@ -1,0 +1,274 @@
+---
+id: cross-platform-agent-skills-skill-md
+uuid: cross-platform-agent-skills-skill-md
+slug: cross-platform-agent-skills-skill-md
+title: How to Write Agent Skills That Work on Claude Code, Codex, and Gemini CLI
+excerpt: "A SKILL.md file is a plain-text instruction module that gives AI coding agents reusable domain expertise. Write it once, drop it into the agent's skills directory, and it activates on demand. As of Ma"
+feature_image: null
+featured: false
+published_at: "2026-05-19T03:11:20-07:00"
+updated_at: "2026-05-19T03:11:20-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, agent-skills, skill-md, codex-cli]
+tag_names: [Tutorials, Claude Code, Agent Skills, SKILL.md, Codex CLI]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: How to Write Cross-Platform Agent Skills (SKILL.md)
+meta_description: SKILL.md is the cross-platform standard for AI agent skills. Write it once and run it on Claude Code, Codex CLI, and Gemini CLI. Full tutorial with real code.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Write Agent Skills That Work on Claude Code, Codex, and Gemini CLI</h1>
+
+<p class="lede">A SKILL.md file is a plain-text instruction module that gives AI coding agents reusable domain expertise. Write it once, drop it into the agent's skills directory, and it activates on demand. As of May 2026, the format runs on 19 platforms -- Claude Code, Codex CLI, Gemini CLI, Cursor, and more -- with zero modifications between them.</p>
+
+<p>I have been running custom skills in Claude Code for months. The moment I tested the same file unmodified in Codex CLI and Gemini CLI and it worked identically, the approach clicked -- one set of instructions, every agent you touch.</p>
+
+<h2>What is a SKILL.md file?</h2>
+
+<p>A SKILL.md file is a structured instruction document stored in a named folder inside your agent's skills directory. It has two parts: a YAML frontmatter block at the top with <code>name</code> and <code>description</code> fields, and a markdown body with the actual instructions. The agent reads the description to decide when to load the skill, then follows the body when it does. It is the functional equivalent of a reusable playbook the agent picks up when the task fits.</p>
+
+<p>Here is a minimal example -- a code review skill:</p>
+
+<pre><code>---
+name: code-review
+description: Review changed code for quality, security issues, and performance problems. Use when the user asks for a code review, PR review, or wants feedback on changes.
+---
+
+# Code Review
+
+1. Run git diff to read all changed files
+2. Check for security vulnerabilities: SQL injection, XSS, unvalidated input
+3. Flag performance problems with specific line numbers
+4. Output a summary: what works, what needs a fix, what is optional cleanup
+</code></pre>
+
+<p>The <code>description</code> field is the activation trigger. The agent pattern-matches your request against this text. "Use when the user asks for a code review" is better than just "does code review" -- explicit conditions reduce false activations and missed ones.</p>
+
+<p>The format was pioneered by Anthropic for Claude Code and spread fast. On January 13, 2026, <a href="https://blog.devgenius.io/google-antigravity-adds-skills-04ab11d8497c" target="_blank" rel="noopener">Google formalized support in its Antigravity platform</a>. A week later, Vercel launched <a href="https://vercel.com/changelog/introducing-skills-the-open-agent-skills-ecosystem" target="_blank" rel="noopener">skills.sh</a> as the first dedicated registry -- it hit 20,000 installs within six hours of launch. By March 2026, <a href="https://arxiv.org/abs/2602.08004" target="_blank" rel="noopener">a data-driven analysis of 40,285 listed skills</a> found over 490,000 skills across three major marketplaces, with an 18.5x growth rate from January to February alone.</p>
+
+<h2>Which platforms support the SKILL.md format in 2026?</h2>
+
+<p>As of May 2026, SKILL.md runs natively on at least 19 platforms including Claude Code, OpenAI Codex CLI, Gemini CLI, Cursor, GitHub Copilot, Windsurf, Aider, Kiro, and Google Antigravity. The file format is identical on every platform -- the only difference is the directory where you place the skill folder. Nothing in the SKILL.md itself needs to change between agents.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Platform</th>
+      <th>Global skills path</th>
+      <th>Project-scoped path</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Claude Code</td>
+      <td><code>~/.claude/skills/</code></td>
+      <td><code>.claude/skills/</code></td>
+    </tr>
+    <tr>
+      <td>Codex CLI</td>
+      <td><code>~/.codex/skills/</code></td>
+      <td><code>.codex/skills/</code></td>
+    </tr>
+    <tr>
+      <td>Gemini CLI</td>
+      <td><code>~/.gemini/skills/</code></td>
+      <td><code>.gemini/skills/</code></td>
+    </tr>
+    <tr>
+      <td>Cursor</td>
+      <td><code>~/.cursor/skills/</code></td>
+      <td><code>.cursor/skills/</code></td>
+    </tr>
+    <tr>
+      <td>Antigravity</td>
+      <td><code>~/.gemini/antigravity/skills/</code></td>
+      <td><code>.agent/skills/</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Project-scoped paths work well for skills specific to one repo -- a deployment checklist for a particular stack, or a style guide for a specific client. Global paths are for skills you want available in every session regardless of working directory.</p>
+
+<h2>How do you write a SKILL.md from scratch?</h2>
+
+<p>A working SKILL.md takes 10-15 minutes to write. The structure is always the same: a folder named after the skill, a SKILL.md file inside it with YAML frontmatter and markdown instructions, and optionally a <code>scripts/</code> directory for any shell scripts the skill calls. No special syntax beyond standard YAML and markdown. The hard part is writing a description specific enough to trigger reliably.</p>
+
+<p><strong>Step 1: Create the skill directory</strong></p>
+
+<pre><code>mkdir -p ~/.claude/skills/my-skill
+cd ~/.claude/skills/my-skill
+</code></pre>
+
+<p><strong>Step 2: Write the SKILL.md</strong></p>
+
+<pre><code>---
+name: my-skill
+description: [Write what this skill does and WHEN to use it. The agent matches requests against this text. Be explicit: "Use when the user asks to..." or "Activates on requests involving..."]
+---
+
+# My Skill Name
+
+## What This Does
+
+[One paragraph. What problem does this skill solve?]
+
+## Steps
+
+1. [First action -- be concrete and specific]
+2. [Second action]
+3. [Third action]
+
+## Output
+
+[What should the result look like? Format, length, headings if relevant.]
+</code></pre>
+
+<p><strong>Step 3: Verify it loaded</strong></p>
+
+<p>In Claude Code, type <code>/skills</code> at the prompt. Your skill should appear with its name and description. In Codex CLI and Gemini CLI, skills are listed in the system context at session start. If yours is missing, double-check the path -- the most common issue is a <code>skills/</code> subdirectory placed one level too deep inside the project directory.</p>
+
+<p><strong>Step 4: Test the activation trigger</strong></p>
+
+<p>Send a request that matches your description. If the skill does not activate, the description is probably too vague. Add "Use when [exact phrase]" to make the trigger explicit. Specificity beats brevity here.</p>
+
+<p>One practical note before you start writing long skills: according to <a href="https://huggingface.co/blog/zhongshsh/agent-skills-analysis" target="_blank" rel="noopener">a HuggingFace analysis of the skills ecosystem</a>, the average published skill is 1,900 tokens, but the top 1% exceed 100,000 tokens and can consume a model's entire context window before a single task runs. Write instructions, not documentation. Keep each skill focused on one job.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How do you deploy one skill to every agent at once?</h2>
+
+<p>Once your SKILL.md is working in one agent, deploying it to the others is a copy-paste operation. Put the same folder into each agent's global skills directory. The markdown instructions contain no platform-specific syntax, so nothing needs rewriting. You can also use the project-scoped paths to deploy a skill to a single repo without affecting your global setup.</p>
+
+<p>Here is the deployment script I use:</p>
+
+<pre><code>#!/bin/bash
+# deploy-skill.sh -- sync a skill to all supported agents
+SKILL_NAME="$&#123;1:?Usage: ./deploy-skill.sh skill-name&#125;"
+SKILL_SRC="$HOME/.claude/skills/$SKILL_NAME"
+
+if [ ! -d "$SKILL_SRC" ]; then
+  echo "Skill not found: $SKILL_SRC"
+  exit 1
+fi
+
+for TARGET in   "$HOME/.codex/skills"   "$HOME/.gemini/skills"   "$HOME/.cursor/skills"; do
+  mkdir -p "$TARGET"
+  cp -r "$SKILL_SRC" "$TARGET/"
+  echo "Deployed $SKILL_NAME to $TARGET"
+done
+</code></pre>
+
+<p>Run it as <code>./deploy-skill.sh my-skill</code>. When you update the SKILL.md, re-run it to sync. I keep this in my dotfiles so any machine I set up gets it automatically.</p>
+
+<p>If you are building skills to ship to a team or publish publicly, the <a href="https://github.com/VoltAgent/awesome-agent-skills" target="_blank" rel="noopener">VoltAgent/awesome-agent-skills repo</a> is the structural model to follow. It has 1,000+ community skills organized for Claude Code, Codex CLI, Gemini CLI, and Cursor, with each skill folder containing a README, the SKILL.md, and activation tests verifying the trigger works correctly.</p>
+
+<h2>Where do you find pre-built skills worth installing?</h2>
+
+<p>The three main sources for agent skills in 2026 are <a href="https://www.skills.sh/" target="_blank" rel="noopener">skills.sh</a> (Vercel's official registry, 19 supported agents), <a href="https://www.awesomeskills.dev/en" target="_blank" rel="noopener">awesomeskills.dev</a> (12,242 curated skills across 14 category collections), and GitHub repos from specific tool maintainers. The practical starting move is to install find-skills first -- a meta-skill that searches the registry from inside your agent -- which has accumulated 579,000+ installs on skills.sh.</p>
+
+<pre><code># Install find-skills to browse the registry from inside your agent
+npx skills add find-skills
+
+# Browse the registry manually from the terminal:
+npx skills find "code review"
+npx skills find "deployment"
+npx skills find "security audit"
+</code></pre>
+
+<p>Once find-skills is installed, you can ask your agent directly "find me a skill for React testing" and it will query the registry and suggest installs without switching context or opening a browser.</p>
+
+<p>awesomeskills.dev is better for category browsing before committing to installs. It separates official skills (Anthropic, OpenAI, Microsoft Azure) from community contributions, and flags skills that have been independently reviewed. The <a href="https://github.com/TheQtCompanyRnD/agent-skills" target="_blank" rel="noopener">Qt Company's official agent-skills repo</a> is a good example of a verified, production-grade skill set -- built and maintained by the tool's engineering team, compatible with Claude Code, Codex, and Copilot.</p>
+
+<h2>What are the real risks with agent skills?</h2>
+
+<p>Two problems matter before you install skills from unknown sources: token bloat and security. A <a href="https://huggingface.co/blog/zhongshsh/agent-skills-analysis" target="_blank" rel="noopener">2026 analysis of 40,285 publicly listed skills</a> found 13.4% contained at least one critical-level security issue -- prompt injection attacks, malware payloads, or exposed credentials. Separately, 52% of tokens across the ecosystem are waste, and the worst skills consume a model's entire context window before any actual work starts.</p>
+
+<p>On token bloat: agents load skills into context at session start. My rule is under 2,000 tokens per skill, and a hard cut on anything that reads like documentation rather than instruction. If the SKILL.md is explaining what a concept is rather than telling the agent what to do with it, cut it or move it to a <code>reference/</code> subfolder that only loads on demand. The average skill in the wild is 1,900 tokens; the top 1% exceed 100,000 tokens and make the agent unusable for the rest of the session.</p>
+
+<p>On security: skills can include a <code>scripts/</code> folder with shell scripts that execute arbitrary code in the agent's environment. This is powerful when you control the source and dangerous otherwise. <a href="https://snyk.io/blog/snyk-vercel-securing-agent-skill-ecosystem/" target="_blank" rel="noopener">Vercel and Snyk now automatically scan skills uploaded to skills.sh</a> for known CVEs and prompt injection patterns -- but that gate only covers the official registry. GitHub and third-party sources do not have the same protection.</p>
+
+<p>My vetting checklist before installing any skill from an unknown source:</p>
+
+<ul>
+  <li>Read the full SKILL.md before installing, not just the description</li>
+  <li>Check the <code>scripts/</code> folder for <code>curl</code>, <code>wget</code>, <code>exec</code>, or any network calls</li>
+  <li>Check the GitHub source: stars, recent commits, issue history, maintainer activity</li>
+  <li>Test in a throwaway repo before using in a production codebase</li>
+  <li>Never install a skill that asks you to run a separate setup script or export environment variables</li>
+</ul>
+
+<h2>FAQ</h2>
+
+<h3>What is the SKILL.md format?</h3>
+
+<p>SKILL.md is an open standard for reusable AI agent instruction modules. Each skill is a folder containing a SKILL.md file with YAML frontmatter (name and description fields) and markdown instructions. The agent reads the description to decide when to activate the skill and follows the instructions when it does. As of May 2026, the format is supported on 19 platforms including Claude Code, Codex CLI, Gemini CLI, and Cursor, with zero modification required between platforms.</p>
+
+<h3>Does the same skill file work on Claude Code and Codex CLI without changes?</h3>
+
+<p>Yes. The SKILL.md format is identical across Claude Code, Codex CLI, Gemini CLI, Cursor, and 15 other agents. The only difference is the installation path: <code>~/.claude/skills/</code> for Claude Code, <code>~/.codex/skills/</code> for Codex CLI, <code>~/.gemini/skills/</code> for Gemini CLI. The SKILL.md content itself requires no modification between platforms -- write it once and copy the folder.</p>
+
+<h3>How many agent skills exist in 2026?</h3>
+
+<p>As of March 2026, over 490,000 skills existed across three major skill marketplaces, growing 18.5x from January to February 2026. Vercel's skills.sh registry supports 19 AI agents and hit 20,000 installs within six hours of its January 20, 2026 launch. awesomeskills.dev catalogs 12,242 curated skills across 14 collections. The find-skills meta-skill alone has accumulated 579,000+ installs.</p>
+
+<h3>Are agent skills safe to install?</h3>
+
+<p>Not automatically. A 2026 analysis of 40,285 publicly listed skills found 13.4% contained critical security issues including prompt injection, malware, and exposed credentials. Skills from verified sources on skills.sh -- which uses Snyk for automated scanning -- carry lower risk than arbitrary GitHub repos. Always read the SKILL.md and <code>scripts/</code> directory before enabling a skill from an unknown author, and test in a sandbox first.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the SKILL.md format?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "SKILL.md is an open standard for reusable AI agent instruction modules. Each skill is a folder containing a SKILL.md file with YAML frontmatter (name and description fields) and markdown instructions. The agent reads the description to decide when to activate the skill and follows the instructions when it does. As of May 2026, the format is supported on 19 platforms including Claude Code, Codex CLI, Gemini CLI, and Cursor, with zero modification required between platforms."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the same skill file work on Claude Code and Codex CLI without changes?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The SKILL.md format is identical across Claude Code, Codex CLI, Gemini CLI, Cursor, and 15 other agents. The only difference is the installation path: ~/.claude/skills/ for Claude Code, ~/.codex/skills/ for Codex CLI, ~/.gemini/skills/ for Gemini CLI. The SKILL.md content itself requires no modification between platforms."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How many agent skills exist in 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "As of March 2026, over 490,000 skills existed across three major skill marketplaces, growing 18.5x from January to February 2026. Vercel's skills.sh registry supports 19 AI agents and hit 20,000 installs within six hours of its January 20, 2026 launch. awesomeskills.dev catalogs 12,242 curated skills across 14 collections. The find-skills meta-skill alone has accumulated 579,000+ installs."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Are agent skills safe to install?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not automatically. A 2026 analysis of 40,285 publicly listed skills found 13.4% contained critical security issues including prompt injection, malware, and exposed credentials. Skills from verified sources on skills.sh -- which uses Snyk for automated scanning -- carry lower risk than arbitrary GitHub repos. Always read the SKILL.md and scripts/ directory before enabling a skill from an unknown author, and test in a sandbox first."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
