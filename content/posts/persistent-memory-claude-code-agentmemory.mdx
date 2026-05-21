@@ -1,0 +1,201 @@
+---
+id: persistent-memory-claude-code-agentmemory
+uuid: persistent-memory-claude-code-agentmemory
+slug: persistent-memory-claude-code-agentmemory
+title: How to Add Persistent Memory to Claude Code with agentmemory
+excerpt: agentmemory is an open-source MCP server that gives Claude Code persistent memory across sessions. Install it in three commands, and it auto-captures your tool use, file edits, and decisions using 12 
+feature_image: null
+featured: false
+published_at: "2026-05-21T03:09:57-07:00"
+updated_at: "2026-05-21T03:09:57-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, mcp, memory]
+tag_names: [Tutorials, Claude Code, MCP, Memory]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: Add Persistent Memory to Claude Code with agentmemory
+meta_description: "agentmemory adds persistent memory to Claude Code via MCP. Auto-captures tool use and decisions using 12 hooks. 95.2% on LongMemEval-S. Install in 3 commands."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Add Persistent Memory to Claude Code with agentmemory</h1>
+
+<p class="lede">agentmemory is an open-source MCP server that gives Claude Code persistent memory across sessions. Install it in three commands, and it auto-captures your tool use, file edits, and decisions using 12 built-in hooks -- no manual memory.add() calls required. It scores 95.2% on LongMemEval-S and uses roughly 115x fewer tokens than paste-full-context approaches.</p>
+
+<p>Every Claude Code user hits the same wall eventually. You spend 40 minutes explaining your project -- the stack, the architecture decisions, why you switched from direct DB writes to a queue. You close the terminal. Next session, you start from zero. agentmemory is the first open-source tool I have tested that solves this without requiring you to manually maintain a context file.</p>
+
+<h2>What Is agentmemory and What Problem Does It Solve?</h2>
+
+<p>agentmemory is a persistent memory server for AI coding agents. It runs locally on port 3111, exposes 53 tools via MCP to Claude Code, and automatically captures your sessions using 12 pre-wired hooks. Every tool call, file edit, and architectural decision gets indexed in a hybrid BM25 + vector retrieval pipeline, so Claude can query that history at the start of each new session.</p>
+
+<p>Claude Code is stateless by design -- each session starts with a blank context window. The standard workaround is a CLAUDE.md file, but that is a manually maintained markdown file. In practice it caps out around 200 lines before context bloat starts hurting performance. agentmemory replaces that with a real retrieval system that scales to months of session history without manual curation.</p>
+
+<p>The GitHub repo (rohitg00/agentmemory) hit 3,882 stars within weeks of release, trending at +754 stars per day as of May 10, 2026. That velocity tells you how many Claude Code users were waiting for exactly this. It is the #1-ranked persistent memory system on the LongMemEval-S benchmark among open-source alternatives.</p>
+
+<h2>How Does the Memory Retrieval Actually Work?</h2>
+
+<p>agentmemory uses a BM25 + vector hybrid retrieval pipeline with reciprocal rank fusion (RRF). BM25 handles keyword-exact matches -- good for querying specific function names, file paths, error messages. The vector layer (all-MiniLM-L6-v2 embeddings) catches semantic similarity -- so "how did we handle auth" still finds memories that mention "JWT" and "middleware" but not the word "auth." RRF fuses both ranked lists into a single relevance score.</p>
+
+<p>On LongMemEval-S (ICLR 2025, 500 long-term memory questions), this pipeline scores 95.2% R@5 -- it retrieves the correct memory in the top 5 results 95.2% of the time. BM25 alone scores 86.2%, so the hybrid approach adds 9 percentage points. Pure vector search tops out at 96.6%, just 1.4 percentage points ahead but at significantly higher embedding overhead.</p>
+
+<p>Efficiency matters for daily use. agentmemory processes around 170,000 tokens per year at roughly $10/year in API cost. Paste-full-context approaches -- where you push your entire CLAUDE.md and recent chat history into every session -- consume approximately 19.5 million tokens per year. That is about 115x more. If you are on Claude Max or a team plan, that difference adds up to real money across a year of daily use.</p>
+
+<h2>Installing agentmemory: Three Commands</h2>
+
+<p>The fastest path requires Node.js 18+. Open a terminal and run these three commands in order:</p>
+
+<pre><code># Install globally
+npm install -g @agentmemory/agentmemory
+
+# Start the memory server (keep this running, or daemonize it)
+agentmemory
+
+# Verify it is running
+curl http://localhost:3111/agentmemory/health</code></pre>
+
+<p>If the health check returns JSON with a "status" field, the server is up. The real-time viewer at http://localhost:3113 shows every memory as it gets captured, which is useful for debugging your first session and confirming the hooks are firing correctly.</p>
+
+<p>If you prefer not to install globally:</p>
+
+<pre><code>npx @agentmemory/agentmemory</code></pre>
+
+<p>For the server to survive reboots, add a cron entry:</p>
+
+<pre><code>@reboot /usr/local/bin/agentmemory &gt;&gt; /tmp/agentmemory.log 2&gt;&amp;1</code></pre>
+
+<p>Or set up a systemd unit if you want proper process management. The server is lightweight -- Node.js with a SQLite backing store -- and uses negligible CPU when idle. On my dev machine it sits at 0% CPU and about 60MB RAM between sessions.</p>
+
+<h2>Connecting Claude Code via MCP</h2>
+
+<p>With the server running, add agentmemory as an MCP server in Claude Code. The @agentmemory/mcp package is a thin shim that routes all 51 memory tools through AGENTMEMORY_URL to your local server. The remaining 2 of the 53 total tools are administrative endpoints that run directly against the server REST API.</p>
+
+<p>Add this to ~/.claude/.mcp.json for global use across all projects:</p>
+
+<pre><code>&#123;
+  "mcpServers": &#123;
+    "agentmemory": &#123;
+      "command": "npx",
+      "args": ["-y", "@agentmemory/mcp"],
+      "env": &#123;
+        "AGENTMEMORY_URL": "http://localhost:3111"
+      &#125;
+    &#125;
+  &#125;
+&#125;</code></pre>
+
+<p>Restart Claude Code after adding this. Run /mcp in Claude Code to confirm the server is connected. You should see memory_smart_search, memory_save, memory_sessions, and memory_governance_delete in the tool list. If tools do not appear, check that your agentmemory server is running and confirm the port with the health check endpoint.</p>
+
+<p>For project-level scoping -- separate memory stores per codebase -- put the .mcp.json in the project root instead of ~/.claude/. agentmemory namespaces memories by project, so work on Project A will not bleed into Project B context. Always verify the current config syntax in the README at github.com/rohitg00/agentmemory, as the @agentmemory/mcp shim interface has changed across minor versions.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What Do the 12 Auto-Capture Hooks Actually Do?</h2>
+
+<p>After Claude Code connects via MCP, agentmemory registers 12 hooks that fire automatically during sessions. You do not need to call memory.save() or tell Claude to remember anything. The hooks capture session events at the tool level and organize them into four memory types:</p>
+
+<ul>
+<li><strong>Tool use events</strong>: Every time Claude calls Read, Edit, Write, Bash, or Glob, the hook records the file path, operation type, and a summary of what changed. You build up a chronological map of what was touched and why.</li>
+<li><strong>Error events</strong>: When a command fails or a tool throws, the failure context gets indexed. Future sessions will know "we tried this approach in April and it broke because of X" without you having to document it anywhere.</li>
+<li><strong>Decision events</strong>: When Claude reasons through an architectural choice in conversation, the reasoning gets extracted and stored as a tagged decision memory. These are particularly valuable for onboarding new tools to an existing project.</li>
+<li><strong>Session boundaries</strong>: At session start and end, agentmemory logs a record with timestamps, project context, and a summary of what was accomplished. This gives you a searchable audit trail of your work over time.</li>
+</ul>
+
+<p>In practice, after two or three working sessions with the server connected, Claude Code starts new sessions by automatically querying memory_smart_search with the current project context and pulling in the most relevant recent sessions. You can also query it manually: ask Claude "what do you know about how we handle database migrations in this project?" and it will hit the memory server and return a summary built from actual session history, not from your CLAUDE.md.</p>
+
+<h2>agentmemory vs CLAUDE.md: Which to Use When</h2>
+
+<p>CLAUDE.md and agentmemory handle different layers of context and work best used together. CLAUDE.md is the right place for static, stable project context: your tech stack, team conventions, key architectural decisions that are unlikely to change week to week. It is version-controlled, readable by humans, and loads synchronously at session start with zero latency.</p>
+
+<p>agentmemory handles the dynamic, ephemeral layer: what you were debugging last Tuesday, which file you were editing when the session timed out, why you switched from approach A to approach B mid-sprint. That context does not belong in CLAUDE.md -- it goes stale fast, grows without bound, and manual curation is a maintenance burden you do not need. agentmemory captures it automatically and retrieves only what is relevant to the current session query.</p>
+
+<p>The setup I use: a lean CLAUDE.md with 50-80 lines of durable project context -- stack, conventions, key constraints -- plus agentmemory running as a background service. CLAUDE.md tells Claude Code who you are and what the project is. agentmemory tells it what you have been doing. Each handles what it is good at.</p>
+
+<h2>Multi-Agent and Cross-Tool Memory Sharing</h2>
+
+<p>One capability that is easy to miss: agentmemory is not Claude Code-specific. The same localhost server works with Cursor, Codex CLI, Gemini CLI, Cline, Windsurf, Roo Code, and OpenCode -- any agent that supports MCP or REST calls. A single agentmemory instance serves all eight tools simultaneously from one shared memory store.</p>
+
+<p>This is useful if you mix tools across a workflow. If you do architecture review in Claude Code and implementation work in Cursor, both agents share the same project memory. In multi-agent systems where different tools handle different stages, shared memory eliminates the context handoff problem without any glue code.</p>
+
+<p>The four tools you will use most often from the 53-tool MCP surface:</p>
+
+<ul>
+<li><code>memory_smart_search</code> -- hybrid BM25+vector query across all stored memories</li>
+<li><code>memory_save</code> -- explicit manual save when you want to bookmark important context</li>
+<li><code>memory_sessions</code> -- list recent sessions with summaries and timestamps</li>
+<li><code>memory_governance_delete</code> -- remove stale or incorrect memories from the store</li>
+</ul>
+
+<h2>FAQ</h2>
+
+<h3>Does agentmemory store my source code or just descriptions of what happened?</h3>
+
+<p>agentmemory stores structured memory records, not raw file contents. Each memory is a JSON object containing a timestamp, a type (tool_use, decision, error, or session), a text description of what happened, and metadata like file paths and tool names. Your source code does not get copied into the memory store -- only references to what changed and why. Review the full source at github.com/rohitg00/agentmemory before deploying on codebases with compliance requirements.</p>
+
+<h3>Does the agentmemory server need to stay running continuously?</h3>
+
+<p>The server needs to be running when Claude Code is active. If it goes offline mid-session, Claude Code keeps working -- the memory tools become unavailable but everything else functions normally. For always-on use, a systemd service or @reboot cron entry is the standard setup. The server is lightweight (Node.js + SQLite) and uses negligible resources when idle, so running it persistently on a dev machine is not a concern.</p>
+
+<h3>Is agentmemory safe to use on private or proprietary codebases?</h3>
+
+<p>agentmemory runs entirely locally. The server lives on localhost:3111, the SQLite database is stored on your own machine, and nothing is sent to external services unless you explicitly configure a remote AGENTMEMORY_URL pointing elsewhere. The @agentmemory/mcp shim connects only to your local server -- it is not a cloud service. That said, audit the source yourself at github.com/rohitg00/agentmemory before deploying in regulated environments.</p>
+
+<h3>What happens to retrieval quality as the memory store grows over months of use?</h3>
+
+<p>LongMemEval-S tests retrieval specifically over long, complex conversation histories -- 500 questions designed to require multi-hop reasoning across extended context chains. agentmemory scored 95.2% R@5 on the full 500-question set, not a filtered subset. The BM25+vector hybrid is designed for scale; the practical limit is disk space for the SQLite store, not degradation in retrieval quality as history grows.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does agentmemory store my source code or just descriptions of what happened?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "agentmemory stores structured memory records, not raw file contents. Each memory is a JSON object containing a timestamp, a type (tool_use, decision, error, or session), a text description of what happened, and metadata like file paths. Your source code does not get copied into the memory store -- only references to what changed and why."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the agentmemory server need to stay running continuously?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The server needs to be running when Claude Code is active. If it goes offline mid-session, Claude Code keeps working -- the memory tools become unavailable but everything else functions normally. For always-on use, a systemd service or @reboot cron entry is the standard setup. The server is lightweight (Node.js + SQLite) and uses negligible resources when idle."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is agentmemory safe to use on private or proprietary codebases?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "agentmemory runs entirely locally. The server lives on localhost:3111, the SQLite database is stored on your own machine, and nothing is sent to external services unless you explicitly configure a remote AGENTMEMORY_URL pointing elsewhere. The @agentmemory/mcp shim connects only to your local server -- it is not a cloud service."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens to retrieval quality as the memory store grows over months of use?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "LongMemEval-S tests retrieval over long, complex conversation histories -- 500 questions requiring multi-hop reasoning across extended context chains. agentmemory scored 95.2% R@5 on the full 500-question set. The BM25+vector hybrid handles scale well; the practical limit is disk space for the SQLite store, not degradation in retrieval quality."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
