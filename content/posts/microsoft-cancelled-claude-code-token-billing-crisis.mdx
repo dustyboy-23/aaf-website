@@ -1,0 +1,146 @@
+---
+id: microsoft-cancelled-claude-code-token-billing-crisis
+uuid: microsoft-cancelled-claude-code-token-billing-crisis
+slug: microsoft-cancelled-claude-code-token-billing-crisis
+title: The Token Billing Crisis That Cancelled Claude Code at Microsoft
+excerpt: "Microsoft's Experiences + Devices division -- the teams building Windows, Microsoft 365, Teams, and Surface -- is shutting off Claude Code for all developers by June 30, 2026. The cause: token-based b"
+feature_image: null
+featured: false
+published_at: "2026-05-23T03:09:03-07:00"
+updated_at: "2026-05-23T03:09:03-07:00"
+reading_time: 8
+tags: [economics, claude-code, enterprise-ai, token-billing, microsoft]
+tag_names: [Economics, Claude Code, Enterprise AI, Token Billing, Microsoft]
+primary_tag: economics
+primary_tag_name: Economics
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Microsoft Cancelled Claude Code: The Token Billing Crisis"
+meta_description: Microsoft cancelled Claude Code for 100K+ devs by June 30. Token billing burned their annual AI budget. Uber hit the same wall. What every team needs to know.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>The Token Billing Crisis That Cancelled Claude Code at Microsoft</h1>
+
+<p class="lede">Microsoft's Experiences + Devices division -- the teams building Windows, Microsoft 365, Teams, and Surface -- is shutting off Claude Code for all developers by June 30, 2026. The cause: token-based billing burned through their annual AI budget in months. Uber hit the same wall four months into the year. This is the pattern now.</p>
+
+<p>I've watched this happen twice in the same month. Two enterprises, same tool, same outcome. The math isn't hard to see once you look at it -- but most teams never look until the invoice lands.</p>
+
+<h2>What actually happened at Microsoft with Claude Code?</h2>
+
+<p>Microsoft's Experiences + Devices division -- the group building Windows, Microsoft 365, Outlook, Teams, and Surface -- opened Claude Code access in December 2025, extending it not just to developers but to product managers and designers. Adoption was fast. By spring, the tool was popular enough that EVP Rajesh Jha had to make a call.</p>
+
+<p>The call: shut it down by June 30, 2026 and migrate everyone to GitHub Copilot CLI. Jha framed it as "benchmarking-then-convergence" -- Microsoftran the experiment, got the data, and is standardizing. According to <a href="https://www.windowscentral.com/microsoft/microsoft-cancels-claude-code-licenses-shifting-developers-to-github-copilot-cli-a-move-likely-driven-by-financial-motives">Windows Central</a> and <a href="https://aiweekly.co/alerts/microsoft-drops-claude-code-after-budget-overrun">AI Weekly</a>, the real driver was budget: token-based billing burned through the annual AI allocation in months, and June 30 is Microsoft's fiscal year close. Cleaning up the external Claude Code seats before the new fiscal year starts is accounting hygiene at scale.</p>
+
+<p>The Microsoft-Anthropic relationship isn't over. The November 2025 Foundry agreement stays intact, and Claude models remain accessible through Copilot CLI. What's cancelled is the standalone Claude Code interface -- the one with the usage-based billing that finance couldn't predict.</p>
+
+<h2>Why did Uber hit the same wall four months into 2026?</h2>
+
+<p>Uber adopted Claude Code in December 2025 -- the same month as Microsoft. By April, they'd burned through their entire 2026 AI budget with three quarters of the year remaining. Per <a href="https://www.storyboard18.com/brand-marketing/uber-exhausts-2026-ai-budget-in-four-months-amid-massive-claude-code-adoption-98443.htm">Storyboard18</a>, 84% of Uber engineers had become agentic coding users by March, and internal leaderboards ranked engineers on Claude Code activity. The company had incentivized the exact behavior driving the cost spike.</p>
+
+<p>The scale of adoption was real: 95% of Uber engineers used AI tools every month by that point, and 70% of committed code was coming from those systems. That's not a prototype -- it's a full deployment running without a cost model underneath it. The usage leaderboards amplified consumption past any forecast the budget team had built.</p>
+
+<p>Two companies, same tool, same month of adoption, same outcome. Different industries, different team sizes, different use cases -- same structural gap: the cost model didn't scale with the rollout.</p>
+
+<h2>Why does token billing catch enterprise teams off guard?</h2>
+
+<p>Token billing looks like SaaS pricing but doesn't behave like it. A flat 00/seat plan creates a predictable budget line. Token consumption creates exposure that scales with how intensely the tool gets used -- and agentic workflows are designed to use a lot of tokens.</p>
+
+<p>The enterprise averages, per <a href="https://www.cloudzero.com/blog/claude-code-pricing/">CloudZero's 2026 pricing analysis</a>, sit at roughly 3 per developer per active day and 50-250 per developer per month. That's a developer doing mixed work -- code review, autocomplete, some generation. For developers running Claude Code as an agent platform -- multi-file edits, background task delegation, automated PR review -- costs run 00-2,000 per month. For 90% of users, per-active-day costs stay under 0. The other 10% don't.</p>
+
+<p>The problem is that most enterprise budget models treat AI tools like SaaS: headcount times seat price. Token billing means the real number is headcount times usage intensity times session depth. The difference between the two models isn't 10% -- it can be 5x at the tail.</p>
+
+<p>At the API layer, the numbers get concrete fast. Claude Opus 4.7 (now powering Claude Code's /fast mode as of v2.1.150) costs  per million input tokens and 5 per million output tokens. A single complex agentic session consuming 500K input tokens and 200K output tokens costs .50. Run 100 developers at 20 agentic sessions per working day and you're at .5M/month -- which is close to what Peter Steinberger's 3-person team spent running 100 Codex agents for 30 days. His bill: <a href="https://www.tomshardware.com/tech-industry/artificial-intelligence/openclaw-creator-burns-through-1-3-million-in-openai-api-tokens-in-a-single-month">,305,088.81</a>, covering 603 billion tokens across 7.6 million requests. OpenAI paid it -- he works there. Your CFO won't have that arrangement.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>What does the governance gap actually look like?</h2>
+
+<p>Claude Code ships with a /cost command that shows session-level spend per developer. The data stays local on each machine. There's no built-in centralized view of who's consuming what, which models are driving costs, or how spend breaks down across teams and projects. Enterprise admins can set per-user spend caps -- but that's a limit after the fact, not visibility before it.</p>
+
+<p>The tools available today are good for individual accountability. They weren't built for fleet-wide cost governance. An AI gateway -- intercepting API traffic before it reaches the provider -- gives you centralized logging, per-team budget enforcement, and the model-level breakdown finance needs. Without that layer, you're reconciling token costs in arrears.</p>
+
+<p>One signal worth noting: Claude Code v2.1.150 shipped today (May 23) with plugin token cost visibility -- before you run a plugin, Claude Code now shows a projected per-session token cost. It's a small feature in a 418-package plugin ecosystem. But it's the right direction: show the cost before the commit, not after. Anthropic sees this problem clearly. The tooling is catching up to it.</p>
+
+<h2>What every engineering team should do before the CFO asks</h2>
+
+<p>The teams getting hit are the ones that ran fast on adoption and didn't build the cost model at the same speed. Here's what I'd run through before the budget conversation happens at the executive level:</p>
+
+<p><strong>Measure what you're actually spending.</strong> Install <a href="https://github.com/ryoppippi/ccusage">ccusage</a> on every developer machine and get real numbers, not estimates. If your enterprise plan includes admin dashboards, audit them weekly. You need a baseline before you can govern anything.</p>
+
+<p><strong>Find your heavy users.</strong> Agentic workflows cost 5-10x more than interactive use. In most teams, 20% of developers drive 80% of token consumption. Find that group. Understand what they're building. Some of it's high-leverage; some of it's habit.</p>
+
+<p><strong>Match model to task.</strong> Opus 4.7 at /5 per million tokens is for the hard problems. Sonnet 4.6 at /5 handles most engineering work. Haiku 4.5 at / is fast enough for autocomplete and simple lookups. Most Claude Code configurations default up. Setting team-level model defaults -- Sonnet for standard tasks, Opus only when complexity warrants it -- is the single highest-leverage cost reduction you can make without changing workflow.</p>
+
+<p><strong>Set per-user spend limits proactively.</strong> Enterprise admins can cap monthly spend per user. A 00/month default cap with a review process to raise it for power users is more sustainable than waiting for an overage alert. Build the ceiling before you need it.</p>
+
+<p><strong>Add an AI gateway at 50+ developers.</strong> Per-machine tools like ccusage work for small teams. At 50+ developers, you need centralized traffic interception, model-level cost breakdowns, and per-project budget enforcement. An AI gateway pays for itself in the first billing cycle where you catch an outlier running agents overnight.</p>
+
+<h2>FAQ</h2>
+
+<h3>Did Microsoft cancel its entire Anthropic partnership?</h3>
+<p>No. Microsoft's broader Anthropic relationship -- including the November 2025 Foundry agreement and Copilot Cowork inside Microsoft 365 Copilot -- stays intact. Claude models remain accessible through GitHub Copilot CLI for affected developers. The cancellation is specifically for standalone Claude Code licenses in the Experiences + Devices division. The access continues; the billing model changes.</p>
+
+<h3>How much does Claude Code actually cost for an enterprise team?</h3>
+<p>Enterprise averages run 3 per developer per active day and 50-250 per developer per month for mixed usage. Heavy agentic users -- running multi-file background tasks and automated review pipelines -- cost 00-2,000 per month. Token billing means actual spend scales with usage intensity, not headcount. A team of 500 with 20% heavy users can run 00K-M/year depending on agentic adoption rate.</p>
+
+<h3>What spend controls does Claude Code offer for enterprise deployments?</h3>
+<p>Claude Code's /cost command shows session-level spend per developer, stored locally with no centralized aggregation. Enterprise admins can set per-user monthly spend caps. The v2.1.150 update (May 23) added plugin token cost preview before execution. For fleet-wide governance, an AI gateway intercepting API traffic is the standard approach. ccusage is the go-to per-machine monitoring tool for smaller teams.</p>
+
+<h3>Could this same billing crisis happen with Codex or Gemini CLI?</h3>
+<p>Yes. Any token-billed AI coding tool -- Codex, Gemini CLI, or direct API wrappers -- has the same cost exposure as Claude Code at scale. GitHub Copilot's flat per-seat model is why Microsoft is standardizing on it: cost predictability matters at enterprise budget cycles, even if peak capability is lower. The tradeoff is real. Most enterprise finance teams will take predictable over optimal.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Did Microsoft cancel its entire Anthropic partnership?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Microsoft's broader Anthropic relationship -- including the November 2025 Foundry agreement and Copilot Cowork inside Microsoft 365 Copilot -- stays intact. Claude models remain accessible through GitHub Copilot CLI for affected developers. The cancellation is specifically for standalone Claude Code licenses in the Experiences + Devices division. The access continues; the billing model changes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How much does Claude Code actually cost for an enterprise team?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Enterprise averages run 3 per developer per active day and 50-250 per developer per month for mixed usage. Heavy agentic users -- running multi-file background tasks and automated review pipelines -- cost 00-2,000 per month. Token billing means actual spend scales with usage intensity, not headcount. A team of 500 with 20% heavy users can run 00K-M/year depending on agentic adoption rate."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What spend controls does Claude Code offer for enterprise deployments?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Code's /cost command shows session-level spend per developer, stored locally with no centralized aggregation. Enterprise admins can set per-user monthly spend caps. The v2.1.150 update (May 23) added plugin token cost preview before execution. For fleet-wide governance, an AI gateway intercepting API traffic is the standard approach. ccusage is the go-to per-machine monitoring tool for smaller teams."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Could this same billing crisis happen with Codex or Gemini CLI?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Any token-billed AI coding tool -- Codex, Gemini CLI, or direct API wrappers -- has the same cost exposure as Claude Code at scale. GitHub Copilot's flat per-seat model is why Microsoft is standardizing on it: cost predictability matters at enterprise budget cycles, even if peak capability is lower. The tradeoff is real. Most enterprise finance teams will take predictable over optimal."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
