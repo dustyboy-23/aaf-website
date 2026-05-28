@@ -1,0 +1,150 @@
+---
+id: claude-code-v2-1-153-mcp-fixes
+uuid: claude-code-v2-1-153-mcp-fixes
+slug: claude-code-v2-1-153-mcp-fixes
+title: "Claude Code v2.1.153: The 36-Change Release That Fixes MCP Reliability"
+excerpt: "Claude Code v2.1.153 shipped May 28, 2026 with 36 changes. The two that matter most for production work: MCP servers now auto-retry up to 3 times on transient startup errors instead of silently stayin"
+feature_image: null
+featured: false
+published_at: "2026-05-28T03:11:27-07:00"
+updated_at: "2026-05-28T03:11:27-07:00"
+reading_time: 9
+tags: [news, claude-code, mcp]
+tag_names: [News, Claude Code, MCP]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.153: MCP Reliability Fixes Explained"
+meta_description: "Claude Code v2.1.153 ships 36 changes fixing MCP paginated tools/list and startup auto-retry. Here's what broke, what's fixed, and how to verify your setup."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.153: The 36-Change Release That Fixes MCP Reliability</h1>
+
+<p class="lede">Claude Code v2.1.153 shipped May 28, 2026 with 36 changes. The two that matter most for production work: MCP servers now auto-retry up to 3 times on transient startup errors instead of silently staying disconnected, and paginated tools/list responses no longer silently drop tools past the first page. Both bugs had been breaking production setups without any visible error signal.</p>
+
+<p>I've hit both of these bugs in production. The pagination one is particularly brutal -- you wire up an MCP gateway aggregating several servers, everything reports "connected," and you spend hours debugging why Claude isn't using half your tools. They weren't broken. They just weren't on page 1.</p>
+
+<h2>What Was the MCP Pagination Bug?</h2>
+
+<p>The MCP paginated tools/list bug caused Claude Code to silently ignore all tools past the first page of any cursor-paginated response. Claude Code was fetching the first page, seeing a nextCursor in the response, and then stopping -- it never requested subsequent pages. Tools on page 2 and beyond were completely undiscoverable and uncallable for the entire session.</p>
+
+<p>One well-documented case came from <a href="https://github.com/anthropics/claude-code/issues/24785">GitHub issue #24785</a>. A developer routing Claude Code through an MCP gateway aggregating multiple backend servers -- 48 tools total -- could only see 30. The remaining 18 were invisible for the entire session, with no error, no warning, and no indication anything was missing. The connection showed as healthy. The tools simply weren't there.</p>
+
+<p>The bug was not limited to tools. The v2.1.153 changelog also fixes paginating MCP servers dropping resources, templates, and prompts past page 1. The same broken pagination logic was applied across all list endpoints. If your MCP server exposes resources or prompt templates in large numbers, those were being silently truncated as well.</p>
+
+<p>Most users didn't hit this because most single-purpose MCP servers don't expose enough tools to exceed a single page. The default page size varies by server implementation but typically caps at 25-30 entries. The bug surfaced specifically in gateway setups, aggregator proxies, and unusually large tool registries -- exactly the architectures that are hardest to debug when Claude starts behaving unexpectedly.</p>
+
+<h2>How MCP Auto-Retry Changes Startup Behavior</h2>
+
+<p>Before v2.1.153, if an MCP server hit a transient error during startup -- connection refused, a timeout, or a 5xx response -- Claude Code would mark it as permanently failed for the session. No retry. The only recovery path was restarting Claude Code entirely. Now, Claude Code retries up to 3 times before marking the server as failed.</p>
+
+<p>The retry logic is deliberate about scope. The 3-attempt startup retry covers only recoverable errors: 5xx responses (server-side transient failures), connection refused (server not yet ready), and timeouts (slow to start). Authentication failures and not-found errors are not retried -- those require a configuration change to resolve, and retrying them wastes time without any chance of success.</p>
+
+<p>This matters for any MCP server running in a container or remote environment. Docker cold starts, servers behind a VPN, and cloud-hosted MCP endpoints all have startup windows where a transient connection failure is expected. Before this fix, Claude Code would give up on the server in that window and leave it disconnected for the entire session. The failure was silent: no retry, no error notification, just a missing server you'd only notice when you tried to use one of its tools.</p>
+
+<p>For mid-session disconnections, Claude Code already had exponential backoff reconnection: up to 5 retry attempts, starting at a 1-second delay and doubling each time (1s, 2s, 4s, 8s, 16s). The new startup retry is a separate, complementary layer. Startup retry handles the "not ready yet" window at session open. Exponential backoff handles "dropped the connection after it was working." Both operate independently and address different failure classes.</p>
+
+<h2>The Other Notable Changes in v2.1.153</h2>
+
+<p>Beyond the two headline MCP fixes, v2.1.153 ships 34 more changes. Five are immediately relevant for production users: Vertex AI now supports X.509 mTLS Workload Identity Federation, MCP servers returning SVG images no longer break conversations, iTerm2 clipboard is fixed for the /copy command, a 75-second startup hang is eliminated when the Anthropic API is unreachable, and a stateful MCP SSE reconnect loop regression introduced in v2.1.147 is fixed.</p>
+
+<p><strong>Vertex AI X.509 mTLS Workload Identity Federation.</strong> Vertex AI now supports X.509 certificate-based Workload Identity Federation (mTLS ADC), tracked in <a href="https://github.com/anthropics/claude-code/issues/54169">GitHub issue #54169</a>. This unlocks Claude Code for enterprise GCP environments that require zero-trust mutual TLS auth -- specifically those that cannot use the OIDC token-based Workload Identity Federation path. Existing Vertex AI deployments using standard Application Default Credentials are unaffected.</p>
+
+<p><strong>MCP SVG and unsupported MIME type handling.</strong> If an MCP server returned an image with an unsupported MIME type -- SVG being the most common case -- Claude Code would throw an error that terminated the conversation. In v2.1.153, unsupported MIME type images are saved to disk and referenced in the tool result instead. The conversation continues. This was a silent conversation-terminator for anyone integrating MCP screenshot or diagram tools.</p>
+
+<p><strong>iTerm2 clipboard fix for /copy.</strong> The /copy command was silently failing in iTerm2 terminals, including inside tmux sessions. The /terminal-setup command now automatically enables iTerm2's "Applications in terminal may access clipboard" setting. If you've been frustrated by /copy not working on iTerm2, run /terminal-setup once to activate it.</p>
+
+<p><strong>75-second startup hang eliminated.</strong> If api.anthropic.com was unreachable at startup -- VPN rules, a restrictive firewall, a transient network issue -- Claude Code would hang for 75 seconds before surfacing any error. That hang is gone in v2.1.153. The startup path now fails immediately when the endpoint is unreachable, so you get a useful error instead of a silent freeze.</p>
+
+<p><strong>SSE reconnect loop regression fixed.</strong> Stateful MCP servers without the optional GET SSE stream endpoint were triggering a reconnect loop on tools/list calls, introduced as a regression in v2.1.147. If your stateful MCP server started showing repeated reconnect behavior after a recent Claude Code upgrade, this is the fix.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>Is Your Setup Affected? How to Check</h2>
+
+<p>The pagination bug affects any MCP setup where the total tool count exceeds a single tools/list page -- typically 25 to 30 entries. The fastest check: run /mcp in a Claude Code session and compare the tool count against what your MCP server actually registers. A suspiciously round number -- exactly 25, exactly 30 -- is the signature of a first-page ceiling.</p>
+
+<p>If you're using an MCP gateway that aggregates multiple upstream servers, the risk is highest. Gateways combine tool registries from multiple sources, and the combined total commonly exceeds a single page. A gateway aggregating 3-5 servers with 10-15 tools each will almost certainly exceed 30 tools total and was silently truncating before v2.1.153.</p>
+
+<p>For the startup retry fix: if you've had sessions where an MCP server was connected in one session but disconnected in another with no obvious explanation, transient startup failures are the likely cause. After updating to v2.1.153, those failures will retry 3 times before giving up, smoothing over the timing race that was silently dropping connections.</p>
+
+<p>After updating, run a fresh Claude Code session and check /mcp. If the tool count increases versus pre-update, you were affected by the pagination bug. Verify by comparing Claude Code's reported count against what your server or gateway registers directly.</p>
+
+<h2>How to Update to v2.1.153</h2>
+
+<p>Install or update via npm. The release is live as of May 28, 2026:</p>
+
+<pre><code>npm install -g @anthropic-ai/claude-code@2.1.153</code></pre>
+
+<p>If you're running Claude Code inside a container or CI environment, pin to this version in your setup script and pull fresh. The full 36-change release notes are at <a href="https://github.com/anthropics/claude-code/releases/tag/v2.1.153">github.com/anthropics/claude-code/releases/tag/v2.1.153</a>. The changelog at <a href="https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md">github.com/anthropics/claude-code/blob/main/CHANGELOG.md</a> has cumulative history if you're jumping multiple versions.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is the MCP paginated tools/list bug in Claude Code?</h3>
+<p>Before v2.1.153, Claude Code only fetched the first page of tools from any MCP server using cursor-based pagination. Tools on page 2 and beyond were silently discarded -- no error, no warning. In one documented production case (<a href="https://github.com/anthropics/claude-code/issues/24785">GitHub issue #24785</a>), 18 out of 48 tools were invisible to Claude because they appeared after the first-page cutoff. The fix in v2.1.153 correctly follows nextCursor pagination through all pages for tools, resources, templates, and prompts.</p>
+
+<h3>How do MCP auto-retry and exponential backoff reconnection work together?</h3>
+<p>Auto-retry (new in v2.1.153) handles the startup window -- when a server isn't ready yet. It retries up to 3 times on 5xx errors, connection refused, and timeouts before marking the server as failed. Exponential backoff (existing behavior) handles mid-session disconnections after a successful start. It retries up to 5 times with delays of 1s, 2s, 4s, 8s, 16s. Both mechanisms operate independently and address different failure modes.</p>
+
+<h3>Does the Vertex AI mTLS update affect existing deployments?</h3>
+<p>No, unless you want to use X.509 certificate-based Workload Identity Federation. Existing Vertex AI deployments using standard Application Default Credentials are unaffected. The mTLS option is additive -- it unlocks a new authentication path for GCP environments that require mutual TLS, without changing behavior for anyone using the existing ADC auth paths.</p>
+
+<h3>How do I verify my MCP tools are all loading after updating?</h3>
+<p>Run /mcp in a Claude Code session to see connected servers and tool counts. Compare the tool count Claude Code reports against the total tools your MCP server or gateway actually registers. If the count increased after updating to v2.1.153, you were affected by the pagination bug. For gateways aggregating multiple upstream servers, verify the reported count matches the sum across all backends.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the MCP paginated tools/list bug in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Before v2.1.153, Claude Code only fetched the first page of tools from any MCP server using cursor-based pagination. Tools on page 2 and beyond were silently discarded with no error or warning. In one documented production case, 18 out of 48 tools were invisible to Claude because they appeared after the first-page cutoff. The fix in v2.1.153 correctly follows nextCursor pagination through all pages for tools, resources, templates, and prompts."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do MCP auto-retry and exponential backoff reconnection work together?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Auto-retry (new in v2.1.153) handles the startup window when a server isn't ready yet. It retries up to 3 times on 5xx errors, connection refused, and timeouts before marking the server as failed. Exponential backoff handles mid-session disconnections after a successful start, retrying up to 5 times with delays of 1s, 2s, 4s, 8s, 16s. Both operate independently and address different failure modes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the Vertex AI mTLS update affect existing deployments?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No, unless you want to use X.509 certificate-based Workload Identity Federation. Existing Vertex AI deployments using standard Application Default Credentials are unaffected. The mTLS option is additive -- it unlocks a new authentication path for GCP environments that require mutual TLS, without changing behavior for anyone using existing ADC auth paths."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I verify my MCP tools are all loading after updating?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run /mcp in a Claude Code session to see connected servers and tool counts. Compare the tool count Claude Code reports against the total tools your MCP server or gateway registers. If the count increased after updating to v2.1.153, you were affected by the pagination bug. For gateways aggregating multiple backends, verify the reported count matches the sum across all upstream servers."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
