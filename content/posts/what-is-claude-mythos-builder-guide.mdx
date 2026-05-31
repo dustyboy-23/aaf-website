@@ -1,0 +1,135 @@
+---
+id: what-is-claude-mythos-builder-guide
+uuid: what-is-claude-mythos-builder-guide
+slug: what-is-claude-mythos-builder-guide
+title: What Is Claude Mythos and When Can Builders Get Access?
+excerpt: "Claude Mythos Preview is Anthropic's most capable model -- a full tier above Opus 4.8 -- currently restricted to roughly 50 vetted critical-infrastructure partners through Project Glasswing. In its fi"
+feature_image: null
+featured: false
+published_at: "2026-05-31T03:13:31-07:00"
+updated_at: "2026-05-31T03:13:31-07:00"
+reading_time: 8
+tags: [news, claude, anthropic, ai-security]
+tag_names: [News, Claude, Anthropic, AI Security]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Mythos: What Builders Need to Know Before Launch"
+meta_description: "Claude Mythos Preview is Anthropic's most capable model, restricted to 50 Glasswing partners. What it does, what it costs, and when general access drops."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>What Is Claude Mythos and When Can Builders Get Access?</h1>
+
+<p class="lede">Claude Mythos Preview is Anthropic's most capable model -- a full tier above Opus 4.8 -- currently restricted to roughly 50 vetted critical-infrastructure partners through Project Glasswing. In its first active month, partners surfaced 10,000+ high-severity software vulnerabilities. Anthropic confirmed after the May 28 Opus 4.8 launch that Mythos-class models are coming to all customers "in the coming weeks."</p>
+
+<p>I've tracked every Mythos development since the April announcement. Most coverage is either cybersecurity-focused or pure hype rehash. This is the builder brief: what Mythos actually is, what it has done in controlled testing, who has access now, what it costs, and what the realistic timeline to general API access looks like.</p>
+
+<h2>What is Claude Mythos Preview, and how does it differ from Opus 4.8?</h2>
+<p>Claude Mythos Preview is Anthropic's most capable model -- a new "Mythos-class" tier above Opus 4.8. On benchmarks, it scores 93.9% on SWE-bench Verified, 77.8% on SWE-bench Pro, 82.0% on Terminal-Bench 2.0, and 97.6% on USAMO 2026, per <a href="https://red.anthropic.com/2026/mythos-preview/">Anthropic's red team announcement</a>.</p>
+<p>Opus 4.8 handles most production agentic workflows fine. Mythos is designed for extended autonomous reasoning and multi-step execution -- particularly in security research and complex engineering. The capability gap is significant enough that Anthropic explicitly delayed public release, citing insufficient safeguards to prevent misuse at scale. That's not marketing caution -- that's the stated reason, confirmed by both Anthropic and the UK AI Safety Institute's independent evaluations.</p>
+<p>The model has a 1M token context window (200k on Microsoft Foundry) and is available to Glasswing partners via the Claude API, Amazon Bedrock, Google Vertex AI, and Microsoft Foundry -- same infrastructure as Opus 4.8, gated behind Glasswing approval.</p>
+
+<h2>What has Mythos actually done in real-world deployments?</h2>
+<p>Project Glasswing partners found more than 10,000 high- or critical-severity vulnerabilities across systemically important software in roughly five weeks after launch, according to <a href="https://www.helpnetsecurity.com/2026/05/26/anthropic-project-glasswing-update/">Help Net Security's May 2026 report</a>. The approximately 50-partner cohort includes Cloudflare, Palo Alto Networks, and major financial institutions.</p>
+<p>The Firefox numbers are the clearest capability comparison. Mozilla used Mythos Preview to audit Firefox 150 and found 271 vulnerabilities -- more than ten times the number found in Firefox 148 using Opus 4.6, per <a href="https://www.securityweek.com/claude-mythos-finds-271-firefox-vulnerabilities/">SecurityWeek</a>. The exploit conversion rate is the more striking figure: Opus 4.6 turned discovered vulnerabilities into working JavaScript shell exploits twice out of several hundred attempts. Mythos developed 181 working exploits across the same class of test -- a roughly 90x improvement.</p>
+<p>Mythos also autonomously identified and exploited a 17-year-old remote code execution vulnerability in FreeBSD during separate testing, per <a href="https://red.anthropic.com/2026/mythos-preview/">Anthropic's own writeup</a>. The model found the bug and built a working exploit without human direction.</p>
+
+<h2>What did the UK AI Safety Institute's evaluation actually find?</h2>
+<p>The UK AISI <a href="https://www.aisi.gov.uk/blog/our-evaluation-of-claude-mythos-previews-cyber-capabilities">published an independent evaluation</a> of Mythos Preview in April 2026. Their primary test -- called "The Last Ones" (TLO) -- is a 32-step corporate network attack simulation spanning reconnaissance through full network takeover. Human professionals need an estimated 20 hours to complete TLO.</p>
+<p>Mythos Preview is the first AI model to solve TLO end-to-end: it completed all 32 steps in 3 out of 10 attempts. Across all attempts, it averaged 22 out of 32 steps. Claude Opus 4.6 averaged 16 steps and never completed the full sequence. Going from 0% to 30% completion rate on the same benchmark is a meaningful threshold jump in autonomous offensive capability.</p>
+<p>The AISI included important caveats. Their test ranges lack active defenders, defensive tooling, and alert penalties that real environments have. Their formal conclusion: Mythos "is at least capable of autonomously attacking small, weakly defended and vulnerable enterprise systems where access to a network has been gained." That qualifier matters -- this isn't Mythos cracking well-defended infrastructure. It's Mythos operating at the level of a skilled human attacker against under-protected targets.</p>
+<p>The AISI did not call for blocking Mythos deployment. They published this as part of their <a href="https://www.aisi.gov.uk/blog/how-fast-is-autonomous-ai-cyber-capability-advancing">ongoing research series</a> tracking how fast autonomous cyber capability is advancing across frontier models. The evaluation is context, not a verdict.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What is Project Glasswing and who has access right now?</h2>
+<p>Project Glasswing is Anthropic's <a href="https://www.anthropic.com/glasswing">invitation-only defensive security program</a>, announced April 7, 2026 alongside the Mythos Preview reveal. The program launched with 12 founding organizations and expanded to approximately 40 additional vetted critical-infrastructure operators -- around 50 total as of late May. Confirmed partners include Cloudflare and Palo Alto Networks; the rest of the cohort is undisclosed.</p>
+<p>Access criteria: organizations that build or maintain software where a breach would have cascading effects beyond themselves -- financial clearing infrastructure, major cloud providers, telecom operators, critical open-source projects. There is no public application queue. Open-source maintainers can submit an inquiry through <a href="https://claude.com/contact-sales/claude-for-oss">Anthropic's Claude for Open Source program</a> -- the only semi-public entry point currently available.</p>
+<p>If your product doesn't qualify as critical infrastructure, skip the Glasswing angle. The path for most builders is the general access launch Anthropic announced alongside Opus 4.8.</p>
+
+<h2>What does Claude Mythos Preview cost for current partners?</h2>
+<p>Glasswing partner pricing is $25 per million input tokens and $125 per million output tokens, per <a href="https://tokencost.app/models/claude-mythos-preview">TokenCost's May 2026 tracker</a>. That's 5x the cost of Opus 4.8 ($5/$25 per million tokens), reflecting both compute requirements and the restricted access status.</p>
+<p>Practical math for agent loop planning: a 2,000-token input plus 1,000-token output exchange with Mythos Preview costs approximately $0.175. The same exchange with Opus 4.8 costs about $0.035. Over thousands of agentic iterations, that 5x multiplier adds up fast. Build your unit economics at $25/$125 per million tokens and validate the math before committing to Mythos-powered architecture.</p>
+<p>Anthropic hasn't confirmed general availability pricing. Based on historical release behavior, initial GA pricing will stay near the $25/$125 level, with compression over 6-12 months as compute scales and successor models arrive. Don't plan for Opus-level pricing at launch.</p>
+
+<h2>When will Mythos reach general availability?</h2>
+<p>Anthropic's stated timeline from the May 28 Opus 4.8 launch is "in the coming weeks," with Mythos-class models available "to all customers" once cyber safeguards are in place, per <a href="https://gizmodo.com/anthropic-debuts-claude-opus-4-8-teases-upcoming-launch-of-mythos-class-models-2000764742">Gizmodo</a> and <a href="https://www.ksl.com/article/51503758/anthropic-to-roll-out-claude-mythos-in-coming-weeks-launches-opus-48">KSL</a>. The framing is deliberately non-committal -- Anthropic won't commit to a date until safeguards pass their own internal bar.</p>
+<p>Based on Anthropic's described three-phase roadmap -- validate safeguards on Opus-class first, expand Glasswing defensively, then open limited enterprise API access -- and their historical preview-to-GA cadence of 6-8 weeks, Q3 2026 is the most credible estimate for limited enterprise access. Consumer-facing availability is likely 2027 or later given the safeguard requirements.</p>
+<p>What's genuinely unclear: whether the GA release will be a full Mythos model or a capability-constrained variant. Given the AISI evaluation results, there's a reasonable case Anthropic ships Mythos with offensive capabilities rate-limited or disabled for non-Glasswing API users. The system card, when it drops, will tell you what's actually in the box. Watch Anthropic's <a href="https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8">What's New changelog</a> -- that's where the launch will appear first, ahead of any press coverage.</p>
+
+<h2>What should builders do right now to prepare?</h2>
+<p>Most builders don't need to act urgently. Opus 4.8 handles the overwhelming majority of real-world agentic workflows, and Mythos will be a premium tier at launch -- not a default upgrade path. But if you're building in security research, code auditing, or complex multi-step autonomous workflows, three things are worth doing now.</p>
+<p>First, monitor Anthropic's What's New changelog at <a href="https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8">platform.claude.com/docs</a>. Model availability updates land there first. The GA announcement won't have a press launch cycle -- it'll be a changelog entry.</p>
+<p>Second, if your organization builds or maintains critical infrastructure software, an inquiry to Glasswing at <a href="https://www.anthropic.com/glasswing">anthropic.com/glasswing</a> now puts you ahead of the queue when Anthropic expands the program pre-GA.</p>
+<p>Third, audit your current Opus 4.8 agent loops for cost assumptions. A loop that costs $10/run with Opus 4.8 will cost $50 with Mythos Preview at the current 5x price differential. Run the math at $25/$125 per million tokens before you commit to Mythos-powered architecture.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is Claude Mythos the same as Claude Opus?</h3>
+<p>"Mythos-class" is a new capability tier Anthropic introduced above the Opus line. Claude Opus 4.8 is the most capable publicly available model as of May 2026. Mythos Preview is a separate, more capable model in restricted testing through Project Glasswing. Anthropic has implied Mythos-class will eventually replace Opus as the flagship tier, with Opus continuing as a lower-cost production option.</p>
+
+<h3>Can I apply for Claude Mythos access today?</h3>
+<p>No public application process exists. Access is invitation-only through Project Glasswing, limited to organizations building or maintaining critical-infrastructure software. Open-source maintainers can submit an inquiry through claude.com/contact-sales/claude-for-oss. For everyone else, the path is the general access launch Anthropic indicated is coming in the weeks following the May 28, 2026 Opus 4.8 release.</p>
+
+<h3>How much does Claude Mythos cost per million tokens?</h3>
+<p>Current Glasswing partner pricing is $25 per million input tokens and $125 per million output tokens -- 5x the cost of Opus 4.8. General availability pricing has not been confirmed. Expect it to be near the $25/$125 range at launch, with gradual compression over 6-12 months as compute scales and successor models arrive.</p>
+
+<h3>Why did Anthropic delay Mythos's public release?</h3>
+<p>Anthropic stated that no current safeguards are strong enough to prevent misuse at scale. The AISI's evaluation confirmed Mythos completed a 32-step autonomous corporate network attack in 3 of 10 attempts and developed working exploits at roughly 90 times the rate of Opus 4.6. The delay is specifically to develop and validate safeguards that reduce offensive use risk before broad deployment.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Claude Mythos the same as Claude Opus?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Mythos-class is a new capability tier above the Opus line. Claude Opus 4.8 is the most capable publicly available model as of May 2026. Mythos Preview is a separate, more capable model restricted to Project Glasswing testing. Anthropic has implied Mythos-class will eventually replace Opus as the flagship tier."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I apply for Claude Mythos access today?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No public application process exists. Access is invitation-only through Project Glasswing. Open-source maintainers can inquire through claude.com/contact-sales/claude-for-oss. For everyone else, the path is the general access launch Anthropic indicated is coming in the weeks following the May 28, 2026 Opus 4.8 release."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How much does Claude Mythos cost per million tokens?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Current Glasswing partner pricing is $25 per million input tokens and $125 per million output tokens -- 5x the cost of Opus 4.8. General availability pricing has not been confirmed. Expect near the $25 slash $125 range at launch."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Why did Anthropic delay Mythos public release?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Anthropic stated that no current safeguards are strong enough to prevent misuse at scale. The AISI evaluation showed Mythos completed a 32-step autonomous corporate network attack in 3 of 10 attempts and developed working exploits at 90 times the rate of Opus 4.6. The delay is to develop safeguards that reduce offensive use risk before broad deployment."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
