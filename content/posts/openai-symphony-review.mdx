@@ -1,0 +1,127 @@
+---
+id: openai-symphony-review
+uuid: openai-symphony-review
+slug: openai-symphony-review
+title: "OpenAI Symphony: The Spec That Claims 500% More Merged PRs"
+excerpt: OpenAI Symphony is an open-source SPEC.md that turns a Linear project board into a control plane for autonomous Codex coding agents. Every active issue gets one dedicated agent. Agents run until a pul
+feature_image: null
+featured: false
+published_at: "2026-06-03T03:14:20-07:00"
+updated_at: "2026-06-03T03:14:20-07:00"
+reading_time: 9
+tags: [reviews, openai, codex, agent-orchestration, claude-code]
+tag_names: [Reviews, OpenAI, Codex, Agent Orchestration, Claude Code]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "OpenAI Symphony Review: 500% More PRs? Here's the Reality"
+meta_description: "OpenAI Symphony turns your Linear board into an agent pipeline claiming 500% more PRs. Here's the spec breakdown and what it actually requires to work."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>OpenAI Symphony: The Spec That Claims 500% More Merged PRs</h1>
+
+<p class="lede">OpenAI Symphony is an open-source SPEC.md that turns a Linear project board into a control plane for autonomous Codex coding agents. Every active issue gets one dedicated agent. Agents run until a pull request is ready. Teams only review. Internal OpenAI teams reported 500% more landed PRs in the first three weeks.</p>
+
+<p>Released April 27, 2026, Symphony hit 15,000 GitHub stars within four days -- a faster adoption rate than most infrastructure tooling sees in months. The 500% headline is real, but buried in the spec are three requirements most coverage skips over entirely.</p>
+
+<h2>What is OpenAI Symphony and how does it work?</h2>
+<p>OpenAI Symphony is an <a href="https://github.com/openai/symphony">Apache 2.0-licensed SPEC.md</a> plus an Elixir/BEAM reference implementation that turns a Linear board into a persistent agent dispatch system. The orchestrator polls for active issues, spawns one Codex agent per issue in an isolated workspace, and drives it through CI until a PR lands. Engineers review -- they never supervise.</p>
+<p>The spec itself is the important deliverable, not the Elixir runtime. OpenAI explicitly positions Symphony as a reference: read the spec, fork it, rebuild it in your own stack. The BEAM implementation proves the protocol end-to-end against Linear, GitHub, and Codex -- it is proof of concept, not a deployable product. That makes Symphony language-agnostic at the protocol layer even though v1 ships in Elixir only.</p>
+<p>The dispatch model is clean: one active Linear issue maps to one agent workspace. Symphony emits lifecycle events -- worker_dispatched, worker_completed, worker_failed -- and retries stalled agents with configurable backoff. When an agent crashes, Symphony restarts it automatically. When the PR is open and CI passes, the issue moves to done. No human attention required until review.</p>
+
+<h2>What does the "500% more landed PRs" claim actually mean?</h2>
+<p>OpenAI internal teams saw a 500% increase in landed PRs within three weeks of deploying Symphony, per the <a href="https://openai.com/index/open-source-codex-orchestration-symphony/">official announcement</a>. The result comes from teams with harness engineering already in place -- maintained Linear boards, hermetic tests, automated CI, and issues scoped enough for agents to act without clarification. It is a multiplier on good process, not a fix for bad process.</p>
+<p>The underlying math is straightforward. Codex subagents shipped to general availability on March 14, 2026. Up to 8 agents can run simultaneously per workspace. Before Symphony, engineers managed Codex sessions manually -- <a href="https://openai.com/index/open-source-codex-orchestration-symphony/">the spec notes</a> that 3 to 5 sessions was the comfortable attention ceiling before context switching became costly. Symphony removes that ceiling: issues get dispatched the moment they are unblocked, 24 hours a day, without an engineer needing to open a tab.</p>
+<p>The 500% number is a real result from a specific context. Teams without clean issue hygiene or automated CI will see Symphony expose those gaps immediately -- and at real Codex API token cost. The spec recommends capacity planning before deployment precisely because running agents continuously against an active board with 50-plus open issues generates substantial token volume. Budget before you deploy.</p>
+
+<h2>What does Symphony actually require to work?</h2>
+<p>Symphony requires three foundations that most coverage skips: a maintained Linear board with well-scoped issues, hermetic tests with automated CI, and upfront harness engineering. The 500% PR increase is not available on day one -- it is the output of teams that built these foundations first and are now removing human bottlenecks from an already-working pipeline.</p>
+<p>The Linear coupling is tighter than it sounds. The SPEC.md is built around Linear's workflow state system as the control signal -- issues move from active to done as agents complete work. Porting this to Jira, GitHub Issues, or a custom board requires rebuilding the Linear integration layer from scratch. For v1, Symphony is a Linear-first tool.</p>
+<p>Token cost is the second hidden requirement. Symphony running continuously against an active board is not a zero-cost operation. Every Codex agent session consumes API credits from issue pickup through CI completion. For a team shipping 50 issues per sprint, that is 50 separate agent runs per cycle. Teams should model Codex API spend carefully before enabling persistent dispatch -- the continuous orchestration loop is where costs accumulate.</p>
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+
+<h2>How does Symphony compare to Claude Code's approach?</h2>
+<p>Symphony and Claude Code solve the same problem from opposite directions. Symphony externalizes control to the project board -- agents are stateless workers dispatched 24/7 from outside. Claude Code internalizes control inside the agent's reasoning loop, where it decomposes tasks and spawns sub-tasks dynamically. Neither is categorically better; they fit different team sizes and workflow structures.</p>
+<p>I have been running Claude Code's Dynamic Workflows -- the Opus 4.7 subagent system -- on a solo build stack for several months. The model is: describe a complex task, Claude decomposes it and fans out to parallel sub-tasks (up to 20 simultaneously per session), each with its own context window. This works well for exploratory work and messy systems without pre-scoped tickets. There is no Linear board to maintain -- and also no 24/7 autonomous dispatch. When my session closes, the work stops.</p>
+<p>Symphony's persistent orchestration is the genuine differentiator. If your team generates issues faster than engineers can manually dispatch agent sessions, Symphony's continuous dispatch loop is worth the harness investment. If you are a solo builder or small team doing exploratory work, the overhead of maintaining a clean Linear board to feed Symphony likely outweighs the gains -- Claude Code's built-in TodoWrite and subagent decomposition gets you 80% of the throughput with zero infrastructure setup.</p>
+<p>Benchmark context matters: <a href="https://www.morphllm.com/comparisons/codex-vs-claude-code">per Morph LLM's May 2026 comparison</a>, Codex (GPT-5.5) scores 88.7% on SWE-bench Verified against Claude Opus 4.7 at 87.6%. On Symphony's specific pattern -- closed-loop PR generation from well-scoped tickets with automated CI -- Codex's strength in isolated, well-defined tasks is the right fit. For exploratory architecture work, large refactors without clear specs, or cross-file context reasoning, Claude Code has the practical edge.</p>
+
+<h2>Who should actually deploy Symphony right now?</h2>
+<p>Symphony is worth deploying if three conditions hold: your team uses Linear and maintains it, your codebase has automated CI with test coverage, and one engineer is willing to invest a sprint in harness setup. Teams meeting this bar will see real gains -- the 500% claim maps to conditions most mid-size engineering teams can reach.</p>
+<p>It is not worth deploying for solo developers or small teams of two or three without mature issue hygiene. The friction of maintaining a clean Linear board to feed Symphony exceeds the value at that scale. For those teams, Claude Code's Dynamic Workflows or manual Codex dispatch gets comparable throughput without the infrastructure overhead. Symphony is optimized for scale, not for scrappy solo builds.</p>
+<p>The adoption signal is worth noting: by late April 2026, Symphony had reached <a href="https://www.verdent.ai/guides/what-is-symphony-open-source">15,400 GitHub stars and 1,300 forks</a> -- a global repository rank of approximately 2,913. Most of those stars are engineers reading the spec, not running Symphony in production. The pattern is proven; the tooling is early. This is the read-the-spec, understand-the-architecture, wait-for-your-stack-to-mature stage for most teams outside OpenAI.</p>
+
+<h2>What are the realistic alternatives to Symphony?</h2>
+<p>The main alternatives for autonomous coding agent orchestration are Claude Code's Dynamic Workflows, CrewAI's multi-agent framework, and emerging tools like the Composio agent orchestrator. Each sits differently on the build-vs-buy and internal-vs-external control plane spectrum -- the right pick depends on whether you need a project board to drive agents or agents to decompose tasks themselves.</p>
+<p>CrewAI supports multi-agent task decomposition but lacks Symphony's tight project-board integration -- it is better for prompt-driven, conversational orchestration than for persistent issue-board automation. The <a href="https://github.com/ComposioHQ/agent-orchestrator/discussions/526">Composio agent orchestrator</a> adds more flexibility through a modular approach but requires significantly more configuration than Symphony's opinionated SPEC.md provides.</p>
+<p>The biggest gap in the current ecosystem: Symphony assumes Linear, and most open-source and mid-size teams run on GitHub Issues or Jira. A GitHub-native port of the Symphony spec would immediately expand its practical reach. The spec is open and the protocol is portable -- but no mature port exists yet. If you are on GitHub Issues today and want Symphony-style persistent orchestration, you are looking at a custom engineering project, not a drop-in install.</p>
+
+<h2>FAQ</h2>
+<h3>What is OpenAI Symphony?</h3>
+<p>OpenAI Symphony is an open-source specification (SPEC.md, Apache 2.0 license) that turns a Linear project management board into a control plane for autonomous Codex coding agents. Every active Linear issue gets a dedicated agent that runs until a pull request is ready. Engineering teams review PR outcomes instead of managing individual agent sessions. Released April 27, 2026 with an Elixir/BEAM reference implementation.</p>
+
+<h3>Does Symphony work with GitHub Issues or Jira?</h3>
+<p>No, not natively. The current SPEC.md and reference implementation are tightly coupled to Linear's workflow state system. GitHub Issues and Jira are not supported in v1. The spec is open-source and portable by design -- teams can rebuild the tracker integration for a different board -- but that requires real custom engineering, not a configuration change. No mature non-Linear port exists as of June 2026.</p>
+
+<h3>What are the actual requirements for the 500% PR increase?</h3>
+<p>Three requirements most headlines skip: a maintained Linear board with clearly scoped issues, hermetic automated tests and CI guardrails, and upfront harness engineering before deployment. The 500% increase comes from OpenAI teams that already had these foundations in place. Without clean issue hygiene and automated CI, Symphony surfaces process gaps at Codex API token cost instead of delivering throughput gains.</p>
+
+<h3>How is Symphony different from Claude Code's subagent system?</h3>
+<p>Symphony externalizes orchestration to the project board -- the Linear board dispatches agents 24/7, agents are stateless workers that complete when a PR lands. Claude Code's subagents internalize orchestration inside the agent's reasoning loop -- the agent decomposes complex tasks and spawns up to 20 parallel sub-tasks dynamically. Symphony wins for persistent board-driven throughput at team scale. Claude Code wins for exploratory work and solo developers without structured issue boards.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is OpenAI Symphony?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "OpenAI Symphony is an open-source specification (SPEC.md, Apache 2.0) that turns a Linear project management board into a control plane for autonomous Codex coding agents. Every active issue gets a dedicated agent that runs until a pull request is ready. Teams review PR outcomes instead of managing agent sessions. Released April 27, 2026 with an Elixir/BEAM reference implementation."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Symphony work with GitHub Issues or Jira?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No, not natively. The current SPEC.md is tightly coupled to Linear's workflow state system. GitHub Issues and Jira are not supported in v1. The spec is open-source and portable -- teams can rebuild the tracker integration for a different board -- but that requires custom engineering, not a config change. No mature non-Linear port exists as of June 2026."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What are the actual requirements for the 500% PR increase?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Three requirements most headlines skip: a maintained Linear board with clearly scoped issues, hermetic automated tests and CI guardrails, and upfront harness engineering before deployment. The result comes from OpenAI teams with these foundations already in place. Without clean issue hygiene and automated CI, Symphony surfaces process gaps at Codex API token cost instead of delivering throughput gains."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How is Symphony different from Claude Code's subagent system?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Symphony externalizes orchestration to the project board -- the Linear board dispatches agents 24/7. Claude Code's subagents internalize orchestration inside the agent's reasoning loop -- the agent decomposes tasks and spawns up to 20 parallel sub-tasks dynamically. Symphony wins for persistent board-driven throughput at team scale. Claude Code wins for exploratory work and solo developers without structured issue boards."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
