@@ -1,0 +1,141 @@
+---
+id: ai-skill-economy-agent-behaviors-app-store
+uuid: ai-skill-economy-agent-behaviors-app-store
+slug: ai-skill-economy-agent-behaviors-app-store
+title: "The AI Skill Economy: Why Agent Behaviors Are the New App Store"
+excerpt: "AI agent skills -- reusable markdown files that tell agents how to behave -- have become the fastest-growing category on GitHub in 2026. Repos mentioning \"agent\" and \"skill\" grew from 17 results in 20"
+feature_image: null
+featured: false
+published_at: "2026-06-08T03:11:01-07:00"
+updated_at: "2026-06-08T03:11:01-07:00"
+reading_time: 10
+tags: [news, claude-code, ai-agents, skills]
+tag_names: [News, Claude Code, AI Agents, Skills]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "The AI Skill Economy: Agent Behaviors as the New Platform"
+meta_description: "AI agent skills -- reusable markdown behaviors -- are the fastest-growing GitHub category in 2026. Here's what the skill economy means for builders right now."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>The AI Skill Economy: Why Agent Behaviors Are the New App Store</h1>
+
+<p class="lede">AI agent skills -- reusable markdown files that tell agents how to behave -- have become the fastest-growing category on GitHub in 2026. Repos mentioning "agent" and "skill" grew from 17 results in 2023 to 23,900+ in Q1 2026. Individual skill collections hit 100k+ stars. Three skill repos each gained 1,100 stars in a single day last week. This is what the early App Store looked like.</p>
+
+<p>I've been watching this pattern build for months. The moment that crystallized it was seeing NousResearch/hermes-agent, mvanhorn/last30days-skill, and Leonxlnx/taste-skill each gain 1,100+ GitHub stars in a single day. <a href="https://duanyytop.github.io/agents-radar/#2026-06-08/ai-trending-en">Agents-radar called it "unprecedented velocity for this category."</a> That's not hype -- it's a category forming in real time, and builders who miss the structural shift will spend the next two years catching up.</p>
+
+<h2>What exactly is an AI agent skill?</h2>
+<p>An AI agent skill is a reusable, portable capability -- typically a markdown file or small bundle of scripts -- that tells an AI agent how to perform a specific task. Skills sit at layer 2 of the agent architecture: above the model and below the application. When you install a skill, you give your agent persistent "how to do X" instructions that load automatically across sessions and projects, without being rewritten into every prompt.</p>
+<p>The most concrete example is Claude Code's .claude/skills/ directory. These files aren't code -- they're behavioral instructions. A "test-driven development" skill tells Claude to write failing tests first. A "debugging" skill tells it to bisect problems systematically. They compose, persist, and can be shared via git clone. <a href="https://github.com/VoltAgent/awesome-agent-skills">VoltAgent's awesome-agent-skills repo</a> already indexes 1,000+ skills "compatible with Claude Code, Codex, Gemini CLI, Cursor, and more." The portability is real.</p>
+<p>What makes skills architecturally significant is that the same instruction file often works across multiple agents. The behavioral specification is largely model-agnostic. That's the unlock: skills are closer to standards than plugins, which means the moat isn't in the format -- it's in the content and the distribution network.</p>
+
+<h2>How fast is the skill ecosystem growing?</h2>
+<p>From 17 GitHub repos mentioning "agent" and "skill" in 2023 to <a href="https://ossinsight.io/blog/agent-skills-explosion-2026">23,900+ in Q1 2026</a> -- roughly 1,400x growth in three years. Alongside that: 57,000+ AGENTS.md files, 21,000+ CLAUDE.md files, and 31,000+ skill definitions in .claude/skills/ directories indexed across GitHub. Community-contributed skills hit 5,200+ by April 2026, with 2,810 skills available through the Claude Code-specific registry at tonsofskills.com.</p>
+<p>The star counts on individual skill repos tell the same story. <a href="https://github.com/NousResearch/hermes-agent">NousResearch/hermes-agent</a> -- an agent that builds and refines skills from its own experience -- crossed 175,000 GitHub stars in under four months from its February 25, 2026 launch. <a href="https://github.com/forrestchang/andrej-karpathy-skills">Forrestchang/andrej-karpathy-skills</a>, a single CLAUDE.md distilling Andrej Karpathy's coding agent principles, sits at 106,827 stars. Matt Pocock's TypeScript-focused skills collection has 55,320 stars. None of these are frameworks or runtimes -- they're instruction files.</p>
+<p>Distribution infrastructure scaled alongside content. Vercel launched skills.sh in January 2026 and hit 20,000+ installs across 16+ agents within its first quarter. The <a href="https://github.com/jeremylongshore/claude-code-plugins-plus-skills">tonsofskills.com registry</a> now lists 425 plugins, 2,810 skills, and 200 agents for Claude Code, all installable via the ccpi CLI package manager -- the npm of the skill economy.</p>
+
+<h2>Why the App Store comparison actually holds up</h2>
+<p>The early App Store had three properties that made it a platform: discoverability (a single catalog), distribution (one-click install), and economics (a model where creators could build sustainable value). The agent skill ecosystem is replicating all three -- faster than mobile apps did, because the barrier to publishing is a markdown file instead of compiled, reviewed, and approved binary code.</p>
+<p>Discoverability: Anthropic runs an official plugin marketplace at anthropics/claude-plugins-official, auto-loaded when Claude Code starts. A community marketplace at anthropics/claude-plugins-community handles third-party submissions with automated validation and safety screening. Independent directories like <a href="https://claudemarketplaces.com/">claudemarketplaces.com</a> fill the long tail, and <a href="https://www.claudepluginhub.com/plugins/forrestchang-andrej-karpathy-skills">plugin hubs are indexing skills by use case</a>.</p>
+<p>Distribution: /plugin marketplace add pulls skills directly inside Claude Code. npx skills add handles npm-style installs. ccpi handles the curated tonsofskills.com registry. Three distinct install paths emerged in one ecosystem in under 18 months -- compare that to mobile apps, which took years to standardize distribution.</p>
+<p>Economics: still forming. Most skills are open source today. But Vercel's skills.sh, Matt Pocock's commercial skill templates, and enterprise "certified skill" concepts all point toward a paid tier emerging by late 2026. That's the App Store moment -- when the first developers start getting paid for behavioral instructions the way iOS devs got paid for apps.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>Claude Code's skill system is the reference implementation</h2>
+<p>Claude Code's .claude/skills/ directory structure has become the de facto standard for agent skills. It's the most documented, most forked, and most written-about skill system in the ecosystem -- and when other CLI tools add skill support, they aim for Claude Code compatibility first. That's not brand loyalty; it's ecosystem gravity.</p>
+<p>The current Claude Code skill system (v2.1.168) supports: auto-load from .claude/skills/ on session start, plugin bundles (one plugin, multiple skills), hooks that fire pre/post tool calls, and MCP server configurations bundled with skills. Plugins install via GitHub URL or the official Anthropic marketplace. Anthropic's own "superpowers" skills -- TDD, debugging, code review, brainstorming -- are just markdown files in the same format the community uses. There's no privileged internal format.</p>
+<p>There are now 9 actively developed AI CLI tools: Claude Code, OpenAI Codex, Gemini CLI, GitHub Copilot CLI, Kimi Code CLI, OpenCode, Pi, Qwen Code, and DeepSeek TUI. Most are adding skills support. None have Claude Code's depth of community tooling yet. But 9 teams independently building toward a skills layer confirms this is becoming infrastructure, not a differentiator. Infrastructure gets commoditized; content and distribution networks don't.</p>
+
+<h2>The security problem the ecosystem isn't solving fast enough</h2>
+<p>A <a href="https://arxiv.org/pdf/2603.00195">2026 formal analysis of 42,447 agent skills</a> found 26.1% contain at least one security vulnerability. The OpenClaw malicious skills crisis confirmed 1,184 malicious skills published to ClawHub -- roughly one in five packages in that ecosystem at peak. Skills are instruction files read by a model at runtime, which means a poisoned skill can alter agent behavior in ways that are difficult to detect without reading every line of every file you load.</p>
+<p>This is the supply chain attack vector that didn't exist two years ago. When you install an npm package, you run compiled code you can audit with static analysis tools and signature verification. When you install a skill, you load an instruction file that rewrites your agent's behavior at inference time -- at the natural language layer, where there are no linters. The <a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-skill-md-agent-context-poisoning-20260506/">Cloud Security Alliance published a research note</a> specifically on "Agent Context Poisoning" via SKILL.md files. <a href="https://www.mitiga.io/blog/ai-agent-supply-chain-risk-silent-codebase-exfiltration-via-skills">Mitiga documented silent codebase exfiltration attacks via skills.</a> <a href="https://orca.security/resources/blog/ai-agent-skill-supply-chain-security/">Orca Security demonstrated supply chain attack vectors</a> in skills marketplaces.</p>
+<p>The mitigations are lagging the growth rate by a wide margin. Before installing community skills: read the full text of every file, verify the author's commit history, and treat unknown skills like unknown code dependencies -- because behaviorally, that's exactly what they are.</p>
+
+<h2>What builders should do with this right now</h2>
+<p>Three concrete actions worth taking this week, based on where the ecosystem actually is:</p>
+<p><strong>Write skills for your recurring workflows.</strong> Any multi-step behavior you've explained to Claude twice is a skill candidate. Write it once, put it in .claude/skills/, and it auto-loads. I have skills for code review format, debugging methodology, and commit structure. They save 10-15 minutes per session on setup context and make agent behavior consistent across projects -- which matters when you're running multiple Claude Code sessions in parallel.</p>
+<p><strong>Watch the portable formats.</strong> The value of a skill compounds when it works across agents. VoltAgent's 1,000+ cross-compatible skills and the Karpathy skills repo (designed for Claude Code, Codex, and Cursor) suggest the ecosystem is converging on a portable format. Building in Claude Code's current format is the safest bet for future compatibility. The agent that wins the skills race isn't the one with the best model -- it's the one with the deepest skill library that other agents also support.</p>
+<p><strong>Audit before you install.</strong> The 26.1% vulnerability rate in community skills is real. Stick to verified skills from the official Anthropic marketplace or well-starred repos you've read completely. Installing a skill is granting behavioral write access to your agent. Treat it accordingly.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is an AI agent skill?</h3>
+<p>An AI agent skill is a reusable capability -- usually a markdown file or small bundle of scripts -- that tells an AI agent how to perform a specific type of task. Skills load automatically at session start and persist behavioral instructions across projects without being rewritten into every prompt. They sit between the model layer and the application layer in agent architecture, making them portable across different AI coding tools.</p>
+
+<h3>How do I install skills in Claude Code?</h3>
+<p>Three methods work in Claude Code v2.1.168+. Run /plugin marketplace add with a GitHub URL directly inside Claude Code. Use npx skills add [github-url] from the command line for npm-style installs. Or git clone a skills repo and copy the .claude/skills/ directory to your project or ~/.claude/skills/ for global installs that apply to all projects. The official Anthropic marketplace at anthropics/claude-plugins-official loads automatically with no install step required.</p>
+
+<h3>Are community AI agent skills safe to install?</h3>
+<p>Not automatically. A 2026 formal analysis of 42,447 agent skills found 26.1% contain at least one security vulnerability. The OpenClaw crisis confirmed 1,184 malicious skills in one marketplace. Skills are instruction files interpreted by a model at runtime -- a poisoned skill can alter agent behavior in ways that are hard to detect without reading every line. Always read the full text before loading and prefer verified marketplaces over unknown community repos.</p>
+
+<h3>What is the skills.sh platform?</h3>
+<p>skills.sh is Vercel's agent skills distribution platform, launched January 2026. It hit 20,000+ installs across 16+ agents within its first quarter. It functions as a registry and CDN for agent skills, similar to how npm works for JavaScript packages. Skills published on skills.sh are designed for compatibility across multiple agents, not just Vercel's own tooling -- making it one of the first cross-agent skill distribution platforms.</p>
+
+<h3>How is the AI skill economy different from previous plugin ecosystems?</h3>
+<p>Three differences matter. First, skills are natural language instructions, not code -- so anyone can write one, not just developers. Second, the same skill file often works across multiple AI agents (Claude Code, Codex, Gemini CLI, Cursor), creating a cross-platform ecosystem that didn't exist in prior plugin eras. Third, the growth rate is dramatically faster: from 17 relevant repos in 2023 to 23,900+ in Q1 2026, with no sign of slowing.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is an AI agent skill?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "An AI agent skill is a reusable capability -- usually a markdown file or small bundle of scripts -- that tells an AI agent how to perform a specific type of task. Skills load automatically at session start and persist behavioral instructions across projects without being rewritten into every prompt. They sit between the model layer and the application layer in agent architecture."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I install skills in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Three methods work in Claude Code v2.1.168+. Run /plugin marketplace add with a GitHub URL inside Claude Code. Use npx skills add [github-url] from the command line. Or git clone a skills repo and copy the .claude/skills/ directory to your project or ~/.claude/skills/ for global installs. The official Anthropic marketplace loads automatically with no install step required."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Are community AI agent skills safe to install?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not automatically. A 2026 formal analysis of 42,447 agent skills found 26.1% contain at least one security vulnerability. The OpenClaw crisis confirmed 1,184 malicious skills in one marketplace. Skills are instruction files interpreted by a model at runtime -- a poisoned skill can alter agent behavior in ways that are hard to detect. Always read the full text before loading."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the skills.sh platform?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "skills.sh is Vercel's agent skills distribution platform, launched January 2026. It hit 20,000+ installs across 16+ agents within its first quarter. It functions as a registry and CDN for agent skills, similar to npm for JavaScript packages, and supports multiple agents beyond Vercel's own tooling."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How is the AI skill economy different from previous plugin ecosystems?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Three differences matter. Skills are natural language instructions, not code -- anyone can write one. The same skill file often works across multiple AI agents (Claude Code, Codex, Gemini CLI, Cursor). And the growth rate is dramatically faster: from 17 relevant repos in 2023 to 23,900+ in Q1 2026."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
