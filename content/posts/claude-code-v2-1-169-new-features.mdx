@@ -1,0 +1,191 @@
+---
+id: claude-code-v2-1-169-new-features
+uuid: claude-code-v2-1-169-new-features
+slug: claude-code-v2-1-169-new-features
+title: "Claude Code v2.1.169: What's New and How to Actually Use It"
+excerpt: Claude Code v2.1.169 shipped June 8, 2026 with 30 changes. The headline additions are a fallbackModel setting that prevents 529 overload errors from killing long sessions, hardened cross-session secur
+feature_image: null
+featured: false
+published_at: "2026-06-09T03:08:55-07:00"
+updated_at: "2026-06-09T03:08:55-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, agent-development]
+tag_names: [Tutorials, Claude Code, Agent Development]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.169: New Features and How to Use Them"
+meta_description: "Claude Code v2.1.169 adds fallbackModel, hardened cross-session security, and MCP pagination fixes. Here's what changed and how to configure it today."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.169: What's New and How to Actually Use It</h1>
+
+<p class="lede">Claude Code v2.1.169 shipped June 8, 2026 with 30 changes. The headline additions are a fallbackModel setting that prevents 529 overload errors from killing long sessions, hardened cross-session security so relayed messages can't escalate agent privileges, and glob-pattern deny rules that lock down tool access with a single wildcard entry. Here's how to use each one.</p>
+
+<p>I've been running Claude Code daily since early 2025, and the release cadence is still wild -- roughly 100 versions in about three months. Most are small patch fixes, but v2.1.169 landed a few things I immediately deployed. Let me walk through what actually matters for builders.</p>
+
+<h2>What shipped in v2.1.169?</h2>
+
+<p>Claude Code v2.1.169, released June 8, 2026, includes 30 changes: three new features (fallbackModel configuration, glob pattern deny rules, hardened cross-session messaging) and targeted bug fixes for MCP pagination, Bedrock/Vertex model picker, and JetBrains terminal flickering. It's a reliability-focused release with one meaningful security addition.</p>
+
+<p>The version count tells you something about the development pace: Claude Code has shipped roughly 100 versions since the tool went public, averaging better than one release per day. Not every version matters equally. v2.1.169 has three features worth understanding before you run your next long agent session, plus one bug fix that likely affected you silently if you run production MCP integrations.</p>
+
+<p>Quick summary of what's new: <strong>fallbackModel</strong> configures backup models when your primary is overloaded. <strong>Glob deny rules</strong> block all tools with a single wildcard entry. <strong>Hardened cross-session messaging</strong> closes a privilege escalation path in multi-agent setups. Bug fixes address MCP paginated tool lists silently dropping tools, the Bedrock/Vertex Opus 1M picker regression (broken since v2.1.129), and JetBrains 2026.1 terminal flickering.</p>
+
+<h2>How does the new fallbackModel setting work?</h2>
+
+<p>The fallbackModel setting lets you configure up to three backup models in sequence. When your primary model returns a 529 overload error, Claude Code automatically tries the next model in the list instead of crashing the session. Configured in settings.json, it now applies to interactive sessions as well -- previously this flag only worked in non-interactive mode.</p>
+
+<p>Before this feature, hitting a 529 during a long coding session meant waiting and retrying manually, or accepting that the session was dead. Anyone running overnight agent tasks knows how painful that is -- one overload at 2 AM kills your entire run.</p>
+
+<p>Here's how to configure it in your project's .claude/settings.json:</p>
+
+<pre><code>&#123;
+  "model": "claude-opus-4-8",
+  "fallbackModel": [
+    "claude-sonnet-4-6",
+    "claude-haiku-4-5"
+  ]
+&#125;</code></pre>
+
+<p>The fallback chain tries each model in order. Opus 4.8 overloaded -- drops to Sonnet 4.6. Sonnet also slammed -- tries Haiku 4.5. The session continues rather than crashing. You can also set a single fallback at the command line: <code>--fallback-model claude-sonnet-4-6</code> for one-off sessions without touching settings.json.</p>
+
+<p>One important nuance: fallback only kicks in on overload errors (529), not on API authentication failures or token budget exhaustion. This is specifically for model availability, not capacity limits. If you're hitting rate limits on your token budget, this won't help. It's purpose-built for the "model is slammed right now" failure mode.</p>
+
+<h2>What are glob pattern deny rules and why do they matter?</h2>
+
+<p>Glob pattern support in deny rules means you can put "*" in the tool-name position to deny all tools matching a pattern. The standalone wildcard "*" denies every tool, giving you a whitelist-by-default security posture -- deny everything, then explicitly allow only what your agent needs. Note that allow rules reject non-MCP globs; this feature targets deny rules specifically.</p>
+
+<p>Before this, you had to list each tool individually in deny rules. If you wanted to block all write-capable MCP tools from an untrusted source, you needed one entry per tool. Now you can block entire categories with a single rule.</p>
+
+<p>Example -- locking down a read-only research agent that should never write files:</p>
+
+<pre><code>&#123;
+  "permissions": &#123;
+    "deny": ["Write", "Edit", "Bash(*)", "mcp__*__write*"]
+  &#125;
+&#125;</code></pre>
+
+<p>The "mcp__*__write*" pattern blocks any write-capable MCP tool across any connected server. This matters most in multi-agent setups where you're spinning up subagents with different trust levels -- a research agent shouldn't be able to commit to git.</p>
+
+<p>The startup warning for unknown tool names in deny rules is also new and genuinely useful. If you typo a tool name ("Wirte" instead of "Write"), Claude Code now warns you at startup instead of silently ignoring the rule. Previously, a typo in your deny rules gave you false confidence that you'd locked something down when you hadn't.</p>
+
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>Why did Anthropic harden cross-session messaging?</h2>
+
+<p>Messages relayed through SendMessage from other Claude Code sessions no longer carry the originating session's user authority. Before this fix, a subagent could relay a message that appeared to come from a user, potentially triggering permission grants or auto-mode behaviors. Receivers now refuse relayed permission requests, and auto mode blocks them entirely.</p>
+
+<p>This is a real security fix, not a theoretical one. In multi-agent architectures -- where a coordinator agent dispatches subagents via SendMessage -- there was a path where a compromised or misbehaving subagent could craft a message that looked like user input and escalate its own permissions. The fix makes the sender/relay distinction explicit: user messages and agent-relayed messages are now treated differently by receivers regardless of routing.</p>
+
+<p>If you run agent orchestration patterns, this means reviewing anywhere your coordinator passes user-facing prompts through SendMessage. Subagents can still communicate freely -- they just can't impersonate users to grant themselves new capabilities. The practical impact is minimal for legitimate orchestration patterns; the protection is against unexpected privilege chains in complex multi-agent graphs.</p>
+
+<h2>How does Agent View fit into a Claude Code v2.1.169 workflow?</h2>
+
+<p>Agent View is Claude Code's CLI dashboard for managing multiple parallel sessions from a single terminal screen. Launched in research preview on May 11, 2026 (requires v2.1.139 or later), it's available on Pro, Max, Team, Enterprise, and API plans. Open it with <code>claude agents</code>. Each row shows session state, last activity, and whether that agent is waiting for your input.</p>
+
+<p>The standout feature: each dispatched session automatically gets its own git worktree, so parallel agents never edit the same files. You can have four agents working on different components of a codebase simultaneously without conflicts -- authentication service, database layer, API routes, frontend -- and Agent View gives you one screen to track all of them.</p>
+
+<p>Practical workflow with Agent View:</p>
+
+<ol>
+  <li>Start your main Claude Code session with a complex multi-component task</li>
+  <li>Use the Agent tool to dispatch subagents to different subsystems</li>
+  <li>Open <code>claude agents</code> in a second terminal to see all sessions at a glance</li>
+  <li>Each row shows which sessions are working, waiting, or completed -- reply from Agent View without switching terminals</li>
+  <li>When sessions complete, worktrees merge cleanly back to your main branch</li>
+</ol>
+
+<p>Agent View is a visibility layer, not a control layer. It doesn't change how agents execute -- it makes parallel work actually manageable by replacing the "constantly switching between five terminals" workflow with a single status dashboard. Still in research preview as of v2.1.169, meaning the interface may change before GA.</p>
+
+<h2>When should you use dynamic workflows vs regular sessions?</h2>
+
+<p>Dynamic workflows -- available on Enterprise, Team, and Max plans with Opus 4.8 -- let a single session plan work and then spin up hundreds of parallel subagents to execute it. Use them when your task spans thousands of files or needs agents verifying each other's output. For focused single-file work, regular sequential sessions are faster and cheaper.</p>
+
+<p>The practical distinction: a regular Claude Code session is sequential by default. You give it a task, it works step by step. A dynamic workflow is explicitly parallel -- Claude plans the decomposition, dispatches subagents to each piece, then aggregates and verifies before reporting back. The coordination overhead is real, so it only pays off at scale.</p>
+
+<p>Real example of when this matters: migrating authentication logic across a 200,000-line codebase. Sequential session would take hours and lose context. Dynamic workflow decomposes it by module, runs agents on each piece in parallel, has each agent verify changes against the test suite, then combines results. Anthropic frames it as "kickoff to merge" -- the whole migration cycle runs unattended.</p>
+
+<p>Opus 4.8 is the model behind this. It scores 69.2% on SWE-Bench Pro vs GPT-5.5's 58.6%, and 88.6% on SWE-Bench Verified -- according to Anthropic's May 28, 2026 release benchmarks. At standard pricing of $5/$25 per million tokens, or fast mode at $10/$50 (2.5x speed, 3x cheaper than previous fast mode), Opus 4.8 is also the new default model in Claude Code as of this release cycle.</p>
+
+<h2>What bug fixes in v2.1.169 actually matter?</h2>
+
+<p>Three bug fixes stand out: the Bedrock/Vertex Opus 1M context picker regression (broken since v2.1.129), MCP paginated tool lists silently dropping all tools after the first page, and JetBrains 2026.1 terminal flickering. The MCP pagination fix is the most consequential -- if you connect an MCP server with 30+ tools using paginated responses, you've been missing tools without knowing it.</p>
+
+<p><strong>The MCP pagination bug</strong> is the one I'd flag immediately for anyone running production MCP integrations. If your server exposes more than one page worth of tools and uses paginated <code>tools/list</code> responses -- standard practice for large tool inventories -- Claude Code was only seeing the first page. All tools after that were invisible to the model. No warning, no error, just silent tool loss. Update to v2.1.169 if you have any production MCP servers with significant tool counts.</p>
+
+<p><strong>The Bedrock/Vertex regression</strong> is a clean fix for enterprise users on AWS or Google Cloud. If you couldn't select the 1M context Opus model from the <code>/model</code> picker, that's resolved. It was broken since v2.1.129 (shipped in May) -- a regression that sat for several weeks before this fix.</p>
+
+<p><strong>The JetBrains fix</strong> addresses terminal flickering in IntelliJ, PyCharm, WebStorm, and other JetBrains IDEs on the 2026.1+ release. Synchronized output mode is now enabled by default. Shift+non-ASCII characters being silently dropped in Kitty keyboard protocol terminals is also fixed in this version -- relevant if you're on a Linux terminal setup with Kitty.</p>
+
+<h2>FAQ</h2>
+
+<h3>How do I update to Claude Code v2.1.169?</h3>
+<p>Run <code>npm install -g @anthropic-ai/claude-code@latest</code> to update. Check your current version with <code>claude --version</code>. Managed enterprise deployments on Bedrock or Vertex may have their own update cadences -- check with your administrator. The update is non-breaking; existing settings.json configurations carry forward without changes.</p>
+
+<h3>Does the fallbackModel setting work on all Claude Code plans?</h3>
+<p>The fallbackModel setting works on any plan with access to multiple Claude models. Direct API users configure it in settings.json. Bedrock and Vertex users need the fallback model available on their respective platform. As of v2.1.169, the setting applies to both interactive sessions and non-interactive runs -- the previous version only honored it in non-interactive mode.</p>
+
+<h3>Is Agent View out of research preview in v2.1.169?</h3>
+<p>No -- Agent View remains in research preview as of v2.1.169. It launched on May 11, 2026 (requiring v2.1.139+) and Anthropic hasn't announced a GA date. Research preview means it works but the interface and behavior may change before general availability. It is available on Pro, Max, Team, Enterprise, and API plans.</p>
+
+<h3>What plans support dynamic workflows in Claude Code?</h3>
+<p>Dynamic workflows are available on Enterprise, Team, and Max plans with Opus 4.8. They are not available on the standard Pro tier or basic individual API access. The feature is designed for large-scale tasks -- codebase migrations, parallel verification workflows -- that exceed what single-session sequential processing handles effectively. Standard sessions still work on all plans.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "How do I update to Claude Code v2.1.169?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run npm install -g @anthropic-ai/claude-code@latest to update. Check your current version with claude --version. Managed enterprise deployments on Bedrock or Vertex may have their own update cadences. The update is non-breaking; existing settings.json configurations carry forward without changes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the fallbackModel setting work on all Claude Code plans?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The fallbackModel setting works on any plan with access to multiple Claude models. Direct API users configure it in settings.json. Bedrock and Vertex users need the fallback model available on their respective platform. As of v2.1.169, the setting applies to both interactive sessions and non-interactive runs."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is Agent View out of research preview in v2.1.169?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No -- Agent View remains in research preview as of v2.1.169. It launched on May 11, 2026 (requiring v2.1.139+) and Anthropic has not announced a GA date. It is available on Pro, Max, Team, Enterprise, and API plans."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What plans support dynamic workflows in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Dynamic workflows are available on Enterprise, Team, and Max plans with Opus 4.8. They are not available on the standard Pro tier or basic individual API access. The feature is designed for large-scale tasks -- codebase migrations, parallel verification workflows -- that exceed what single-session sequential processing handles effectively."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
