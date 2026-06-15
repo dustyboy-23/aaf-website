@@ -1,0 +1,217 @@
+---
+id: claude-code-agent-view-parallel-agents
+uuid: claude-code-agent-view-parallel-agents
+slug: claude-code-agent-view-parallel-agents
+title: "Claude Code Agent View: How to Run 10 AI Agents in Parallel From One Terminal"
+excerpt: Claude Code Agent View, launched May 11 2026, gives you a single terminal dashboard to launch, background, monitor, and switch between multiple parallel AI agents. Combined with rate limits that doubl
+feature_image: null
+featured: false
+published_at: "2026-06-15T03:12:25-07:00"
+updated_at: "2026-06-15T03:12:25-07:00"
+reading_time: 12
+tags: [tutorials, claude-code, ai-agents, parallel-agents]
+tag_names: [Tutorials, Claude Code, AI Agents, Parallel Agents]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Agent View: Run Multiple Agents in Parallel"
+meta_description: Learn how to run parallel AI agents from one terminal using Claude Code Agent View. Covers launch commands, permissions, quota math, and production patterns.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Agent View: How to Run 10 AI Agents in Parallel From One Terminal</h1>
+
+<p class="lede">Claude Code Agent View, launched May 11 2026, gives you a single terminal dashboard to launch, background, monitor, and switch between multiple parallel AI agents. Combined with rate limits that doubled in May 2026, Opus 4.8 as the new default, and nested sub-agent support up to 5 levels deep, running genuine parallel agentic workflows is now practical for solo builders.</p>
+
+<p>I've been running 4-6 parallel agents daily since Agent View shipped. The workflow change is qualitative, not just quantitative -- you stop thinking in single sessions and start thinking in pipelines. Here's the actual setup and the tradeoffs you need to know before you scale up.</p>
+
+<h2>What Is Claude Code Agent View?</h2>
+
+<p>Claude Code Agent View is a centralized control panel that shows every active session -- foreground and background -- as a scrollable list inside a single terminal. Each row shows session name, last output line, timestamp, and whether the agent needs your attention. It launched as a research preview on May 11 2026, replacing the tab-juggling most builders were doing with tmux or multiple terminal windows.</p>
+
+<p>Before Agent View, managing parallel Claude Code sessions meant keeping track of terminal windows manually, switching context constantly, and having zero at-a-glance visibility into agent status. You'd forget what each window was doing, miss when agents were blocked waiting for input, and have no way to triage which one needed attention. Now you open Agent View with <code>claude agents</code> (or press the left arrow key from any active session) and see everything in one scrollable list.</p>
+
+<p>The May/June 2026 timeline is worth understanding. Agent View shipped the same period Anthropic launched nested sub-agents (v2.1.172 on June 10), Managed Agents orchestration on the Claude platform, and Opus 4.8 as the new Claude Code default. These weren't coincidental releases -- they're the infrastructure stack for running parallel workloads at real scale. The rate limit doubling in May 2026, backed by the SpaceX/xAI Colossus 1 partnership (300 megawatts of compute, 220,000+ NVIDIA GPUs added to Claude infrastructure), gave those parallel workloads room to actually run.</p>
+
+<p>If you've been on the fence about running multiple agents, the infrastructure argument has been answered. The constraints now are workflow design and quota math -- not raw capacity.</p>
+
+<h2>How Do You Launch Multiple Parallel Agents?</h2>
+
+<p>You have two distinct paths to parallel agents in Claude Code: background sessions (independent workers you launch manually and monitor from Agent View) and foreground subagents (agents spawned by a parent orchestrator using the Task tool). Background sessions are for independent parallel tasks. Foreground subagents are for coordinated work where an orchestrator breaks a problem, fans it out, and collects results.</p>
+
+<h3>Background sessions: the direct approach</h3>
+
+<p>Launch a fresh background session directly from the terminal:</p>
+
+<pre><code>claude --bg "Refactor the auth module to use JWT. Changes go in src/auth/ only. Run tests when done."</code></pre>
+
+<p>Or push your current foreground session to the background while it keeps running:</p>
+
+<pre><code>/bg</code></pre>
+
+<p>You can also hit <code>Ctrl+B</code> to background a running task mid-execution without stopping it. Then open Agent View to see all active sessions:</p>
+
+<pre><code>claude agents</code></pre>
+
+<p>From the Agent View list, use arrow keys to navigate to any session and press Enter to bring it to the foreground. The list shows each session's last output line, timestamp, and a visual indicator of whether it's waiting for your input or actively running. You can fire off a task, background it, fire off another, and manage the whole fleet without touching a second terminal window.</p>
+
+<h3>Foreground subagents: the orchestrated approach</h3>
+
+<p>For coordinated parallel work, you write an orchestrator prompt that tells Claude Code to break the task into parallel subtasks. Claude Code's native mechanism is the Task tool -- it spawns sub-agents that run in parallel within a session, each with its own context window, and reports results back to the orchestrator when complete.</p>
+
+<p>The split-and-merge pattern: the orchestrator receives the spec, identifies independent subtasks, fans them out to parallel sub-agents, and collects and merges results when all are done. For a large codebase refactor, that might mean one sub-agent per module. For multi-source research, one sub-agent per source type.</p>
+
+<p>The key difference from background sessions: Task-spawned subagents are managed by the parent orchestrator's logic. Background sessions are independently managed by you via Agent View. Both burn quota in parallel -- there's no free lunch on the token side.</p>
+
+<h2>How Do Background Agent Permissions Work?</h2>
+
+<p>Background agents must have permissions pre-approved at launch. Before a background session starts, Claude Code prompts for the tool permissions the session will need. Once running, the agent inherits those approved permissions and auto-denies anything not on the list -- it cannot acquire new permissions mid-task. Foreground subagents work the opposite way: permission prompts flow through to you in real time.</p>
+
+<p>This permission model makes background agents more secure than they might seem for long-running tasks. A background agent with pre-approved <code>Bash(npm test)</code> can run your test suite -- but it can't delete files or make network requests outside pre-approved tools. The constraint is the protection. The setup friction upfront prevents silent overstep later.</p>
+
+<p>Practical guidance for background agent permissions:</p>
+
+<ul>
+<li>Think through the full execution path before launching. What file reads? What writes? What shell commands? Narrow the approved list to exactly what the task needs.</li>
+<li>Grant specific permissions, not broad ones. <code>Bash(npm test)</code> is safer than <code>Bash(*)</code> for a task that only needs to run tests.</li>
+<li>If the task scope is uncertain or may evolve, use an orchestrated subagent instead -- permission prompts flow through to you dynamically, so you can respond in real time.</li>
+<li>Check Agent View after a few minutes if you're unsure whether a background agent got stuck on a denied permission. A stuck agent shows no output progress in the list.</li>
+</ul>
+
+<p>One billing note: starting June 15 2026, <code>claude -p</code> (programmatic/SDK invocation) on subscription plans draws from a separate monthly Agent SDK credit, distinct from interactive usage credits. If you're programmatically spawning background agents rather than launching them interactively, verify your plan's Agent SDK allocation.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How Deep Can You Nest Sub-Agents?</h2>
+
+<p>As of Claude Code v2.1.172 (released June 10 2026), nested sub-agents are supported up to 5 levels deep. Sub-agents can now spawn their own sub-agents, enabling multi-tier orchestration. The constraint isn't the nesting limit -- it's the token math. Subagent-heavy workflows already run approximately 7 times the tokens of a single-threaded session, and nesting compounds costs geometrically with each additional level.</p>
+
+<p>For most of 2026, nested sub-agents were explicitly blocked. The Claude Code docs stated "subagents cannot spawn other subagents" as a deliberate guardrail against infinite recursion and cost blowouts. Version 2.1.172 lifted that restriction with a 5-frame stack limit: each frame in the nesting stack carries its own system prompt and model assignment. The infrastructure capacity to support this came from the May 2026 compute expansion.</p>
+
+<p>Here's the token multiplication by nesting level:</p>
+
+<ul>
+<li><strong>1 level (single session):</strong> baseline token cost</li>
+<li><strong>2 levels (orchestrator + N sub-agents):</strong> roughly 7x baseline for subagent-heavy work</li>
+<li><strong>3 levels (orchestrator + domain agents + file workers):</strong> A tree with 3 sub-agents per level creates 27 leaf agents running simultaneously</li>
+<li><strong>4-5 levels:</strong> geometric blowup. 4 sub-agents per level at 4 levels = 256 leaf agents. Rarely justified.</li>
+</ul>
+
+<p>My working rule: stay at 2 levels by default. Move to 3 when you have a genuinely large-scale parallel task -- 50+ independent files, multi-domain research synthesis, or multi-stage build pipelines. Reach for 4+ only if you've run the cost math and it still pencils out against the alternatives.</p>
+
+<p>For very large fan-outs (spawning hundreds of parallel agents), Anthropic's dynamic workflow harness in Claude Code is a better tool than deep nesting. It's purpose-built for that scale, with deterministic control flow and better cost visibility. Deep nesting is for orchestration complexity; the workflow harness is for raw throughput.</p>
+
+<h2>How Do You Track What's Burning Your Quota?</h2>
+
+<p>The <code>/usage</code> command in Claude Code -- added in the June 2026 update -- gives you per-component token breakdowns across all sessions, not just a running total. You see which background sessions, workflow steps, and plugin components are consuming tokens. Before this, you had a single aggregate number and no way to identify which parallel session was burning 80% of your 5-hour window.</p>
+
+<p>The quota math for parallel sessions is straightforward but easy to underestimate:</p>
+
+<ul>
+<li><strong>Parallel sessions multiply consumption by session count.</strong> 10 agents running simultaneously fills your 5-hour window 10x faster in wall-clock time. That's calendar math, not a rate-limit constraint.</li>
+<li><strong>Background sessions keep consuming after you background them.</strong> "Background" means "run without my attention," not "pause." An agent you backgrounded 20 minutes ago has been burning quota that whole time.</li>
+<li><strong>Nested sub-agents compound the multiplier.</strong> A 2-level workflow with 5 sub-agents runs at roughly 35x token consumption versus a single session (5 sub-agents x 7x overhead each).</li>
+</ul>
+
+<p>Practical quota management for parallel work:</p>
+
+<ul>
+<li>Run <code>/usage</code> every few sessions when working heavily with background agents. One unexpected runaway session can drain a full 5-hour window in under an hour.</li>
+<li>Give background sessions bounded scopes. "Refactor src/auth/ and run tests" finishes and stops. "Improve the codebase" runs until the window closes.</li>
+<li>Check Agent View status before spawning new sessions. If you have 8 agents running and only 10% of your window left, wait for completions before spawning more.</li>
+</ul>
+
+<h2>What Parallel Patterns Actually Work in Practice?</h2>
+
+<p>Three patterns work reliably for parallel Claude Code agents: domain decomposition, file-level decomposition, and pipeline staging. The failure mode is consistent across all three if you ignore it -- running agents against overlapping work. Two agents editing the same file creates merge conflicts, wasted tokens, and a cleanup task that takes longer than the original work.</p>
+
+<p><strong>Domain decomposition</strong> is the cleanest approach. Assign each agent a clear domain boundary with no file overlap: one agent owns the frontend components, one owns the backend API routes, one owns the test suite, one owns documentation. Each agent gets the spec, works on its bounded domain, and you merge results when all complete. Zero conflict risk by design.</p>
+
+<p>Pair domain decomposition with git worktrees for code tasks. Each agent works in its own worktree -- a separate working copy of the repo on its own branch, same git history. No file-level conflicts are possible because agents work on different branches. You merge branches when agents finish. Claude Code's <code>--worktree</code> flag handles the setup.</p>
+
+<p><strong>File-level decomposition</strong> scales better for large, uniform refactors. You have 60 files that need updating for a new API contract. Split them into 6 batches of 10, spawn 6 background agents, assign each a file list. The orchestrator collects results. This is flat parallelism -- much more token-efficient than nesting the same work into a recursive hierarchy, and easier to debug when something goes wrong on file N.</p>
+
+<p><strong>Pipeline staging</strong> runs sequentially between stages but parallel within each stage. Research agents run in parallel (all searching different sources simultaneously), then writing agents run in parallel (each writing an independent section), then a single consolidation agent merges. The overall pipeline is faster than pure sequential execution because you parallelize the expensive steps, even though stages themselves run in order.</p>
+
+<p>The meta-principle across all three: design for zero shared mutable state between parallel agents. Shared state -- a database, a config file, a draft document -- becomes either a bottleneck or a conflict. The more isolated each agent's work, the more reliable and debuggable the parallel execution.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is Claude Code Agent View and when did it launch?</h3>
+<p>Claude Code Agent View is a built-in terminal dashboard that shows all active Claude Code sessions -- foreground and background -- in a single scrollable list. It launched as a research preview on May 11 2026. You open it by running <code>claude agents</code> from any session, or by pressing the left arrow key. Each row shows the session's last output line, timestamp, and a status indicator showing whether the agent is running or waiting for input.</p>
+
+<h3>How many agents can you run in parallel with Claude Code?</h3>
+<p>There's no enforced ceiling on the number of parallel sessions, but your 5-hour rate limit quota applies across all sessions simultaneously. Running 10 agents in parallel consumes your quota 10x faster in wall-clock time. Anthropic doubled the 5-hour rate limits in May 2026 using compute from the SpaceX/xAI Colossus 1 partnership (300 megawatts, 220,000+ NVIDIA GPUs), giving parallel workloads significantly more headroom than before.</p>
+
+<h3>What's the token cost of nested sub-agents in Claude Code?</h3>
+<p>Subagent-heavy workflows run approximately 7 times the tokens of a single-threaded session. Nesting compounds this geometrically with depth -- not linearly. As of v2.1.172 (June 10 2026), nesting is supported up to 5 levels deep. A practical rule: 2 nesting levels covers 90% of real use cases. At 3 levels with 3 sub-agents per level, you're running 27 leaf agents simultaneously -- verify the cost math before going that deep.</p>
+
+<h3>Do Claude Code background agents keep running when I close the terminal?</h3>
+<p>Yes. Background sessions launched with <code>claude --bg</code> or pushed with <code>/bg</code> continue running after you close the terminal or switch foreground sessions. They stop when the task completes or when the agent hits a permission prompt it wasn't pre-authorized to handle. Monitor all running sessions at any time with <code>claude agents</code> -- the Agent View list shows live status for every active session.</p>
+
+<h3>How do I see which Claude Code session is consuming my quota?</h3>
+<p>Run <code>/usage</code> inside any Claude Code session. Added in the June 2026 update alongside Safe Mode and the Opus 4.8 default, <code>/usage</code> shows per-component token breakdowns -- which background sessions, workflow steps, and plugin components are consuming tokens. Before this command, you had only a running aggregate with no visibility into where quota was going across parallel sessions.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is Claude Code Agent View and when did it launch?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Code Agent View is a built-in terminal dashboard that shows all active Claude Code sessions -- foreground and background -- in a single scrollable list. It launched as a research preview on May 11 2026. You open it by running claude agents from any session, or by pressing the left arrow key. Each row shows the session's last output line, timestamp, and a status indicator showing whether the agent is running or waiting for input."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How many agents can you run in parallel with Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "There's no enforced ceiling on the number of parallel sessions, but your 5-hour rate limit quota applies across all sessions simultaneously. Running 10 agents in parallel consumes your quota 10x faster in wall-clock time. Anthropic doubled the 5-hour rate limits in May 2026 using compute from the SpaceX/xAI Colossus 1 partnership (300 megawatts, 220,000+ NVIDIA GPUs), giving parallel workloads significantly more headroom than before."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What's the token cost of nested sub-agents in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Subagent-heavy workflows run approximately 7 times the tokens of a single-threaded session. Nesting compounds this geometrically -- not linearly. As of v2.1.172 (June 10 2026), nesting is supported up to 5 levels deep. A practical rule: 2 nesting levels covers 90% of real use cases. At 3 levels with 3 sub-agents per level, you're running 27 leaf agents simultaneously."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do Claude Code background agents keep running when I close the terminal?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Background sessions launched with claude --bg or pushed with /bg continue running after you close the terminal or switch foreground sessions. They stop when the task completes or when the agent hits a permission prompt it was not pre-authorized to handle. Monitor all running sessions at any time with claude agents."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I see which Claude Code session is consuming my quota?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run /usage inside any Claude Code session. Added in the June 2026 update alongside Safe Mode and the Opus 4.8 default, /usage shows per-component token breakdowns -- which background sessions, workflow steps, and plugin components are consuming tokens. Before this command, you had only a running aggregate with no visibility into where quota was going."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
