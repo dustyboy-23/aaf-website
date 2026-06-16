@@ -1,0 +1,136 @@
+---
+id: ai-cli-tools-2026-compared
+uuid: ai-cli-tools-2026-compared
+slug: ai-cli-tools-2026-compared
+title: Which AI CLI Tool Wins in 2026? Claude Code, Codex, Antigravity and 6 Others Compared
+excerpt: "The AI CLI ecosystem now has nine serious contenders. Claude Code leads on autonomous capabilities, MCP integration, and the skills/plugin system. OpenAI Codex CLI tops Terminal-Bench 2.1 at 83.4%. Op"
+feature_image: null
+featured: false
+published_at: "2026-06-16T03:11:57-07:00"
+updated_at: "2026-06-16T03:11:57-07:00"
+reading_time: 10
+tags: [reviews, claude-code, ai-developer-tools, openai-codex, gemini-cli]
+tag_names: [Reviews, Claude Code, AI Developer Tools, OpenAI Codex, Gemini CLI]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "AI CLI Tools 2026: Claude Code, Codex, Antigravity Compared"
+meta_description: "Full comparison of 9 AI CLI tools in June 2026: Claude Code, Codex, Antigravity CLI and 6 more. Rankings, benchmarks, free tiers, and which to pick."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Which AI CLI Tool Wins in 2026? Claude Code, Codex, Antigravity and 6 Others Compared</h1>
+
+<p class="lede">The AI CLI ecosystem now has nine serious contenders. Claude Code leads on autonomous capabilities, MCP integration, and the skills/plugin system. OpenAI Codex CLI tops Terminal-Bench 2.1 at 83.4%. OpenCode is free with 172,000 GitHub stars. And Gemini CLI shuts down June 18, 2026 -- replaced by Google's Antigravity CLI.</p>
+
+<p>I run Claude Code in production every day, so I have a strong view on where it wins. But I tracked all nine tools closely to give this a fair read. The landscape shifted hard in the last 60 days -- a major tool deprecated, a replacement launched, and two open-source entries crossed star counts that put them ahead of every paid tool on GitHub.</p>
+
+<h2>What changed in the AI CLI space in 2026?</h2>
+<p>Six months ago, the conversation was three tools: Claude Code, Gemini CLI, and Codex. As of June 2026, at least nine distinct tools are actively competing, two are open-source with over 100K GitHub stars each, and Google killed Gemini CLI for something built from scratch. The benchmark gap between top tools has closed to statistical noise -- differentiators now live in workflow fit, not raw model quality.</p>
+<p>Claude Opus 4.6/4.7 scores approximately 80.8% on SWE-bench Verified. Gemini 3.1 Pro scores approximately 80.6% on the same benchmark -- a 0.2-point gap that is meaningless across 500 tasks. Codex CLI topped Terminal-Bench 2.1 at 83.4%, though Terminal-Bench and SWE-bench test different things. No single benchmark crowns a winner here.</p>
+<p>The market is splitting into two camps: cloud-native tools with premium model access (Claude Code, Codex, Antigravity) and open-weight, self-hosted options (OpenCode, Qwen Code, DeepSeek TUI). The open-weight tier is closing the gap faster than most expected. Eighteen months ago the best open-weight model scored around 40% on SWE-bench Verified. Today Qwen 3.6 Plus is competitive with frontier closed models on multi-step tasks.</p>
+
+<h2>Claude Code: the standard for autonomous, multi-step agent work</h2>
+<p>Claude Code is the strongest pick when a task requires real autonomous execution -- reading a codebase, writing tests, running them, debugging failures, and shipping a PR without constant hand-holding. It runs Opus 4.8 by default since the June 2026 v2.1.169+ releases. The Skills/plugin architecture for automating repeatable workflows remains the most mature of any CLI tool in this comparison.</p>
+<p>Claude Code shipped 1,096 commits in v2.1.0 -- more than any competing tool in this field. Version v2.1.178, released June 15, 2026, added Tool(param:value) permission matching with wildcard support -- the first way to lock tool permissions to specific inputs at a granular level. The June 2026 update also doubled rate limits and added Agent View, which lets you run up to 10 parallel sub-agents from a single terminal session.</p>
+<p>Where it loses: cost. Claude Code requires a Pro ($20/month) or Max subscription ($100-$200/month). No meaningful free tier exists. If you are running automated agents at scale, the metered credit caps that went live June 14, 2026 mean costs can spike without warning. For light exploratory work, Antigravity CLI's free tier is the rational choice.</p>
+<p><strong>Best for:</strong> production codebase work, complex multi-file refactors, agentic automation, teams already on Claude API.</p>
+
+<h2>Antigravity CLI: what Google built after killing Gemini CLI</h2>
+<p>Google deprecated Gemini CLI at Google I/O on May 19, 2026, and replaced it with Antigravity CLI. Gemini CLI stops serving free and individual users on June 18 -- 48 hours from the time this article was published. If you are still on Gemini CLI, migrate now. Antigravity CLI inherits the 1M-token context window, the free tier, Agent Skills, Hooks, and Subagents, wrapped in a new Go-based architecture.</p>
+<p>The biggest architectural change in Antigravity is asynchronous subagent orchestration. Where Gemini CLI ran one agent sequentially, Antigravity's main agent spawns specialized helpers to work in parallel and synthesizes their results. This closes the largest operational gap Gemini CLI had against Claude Code's Agent View feature.</p>
+<p>The free tier carries over at 1,000 requests per day on a Google account. For developers doing lighter exploration or building in the Google Cloud ecosystem, this remains a strong option. Google published the migration guide at the Google Developers Blog -- it is largely a direct swap for existing Gemini CLI users.</p>
+<p><strong>Best for:</strong> Google Cloud-native shops, developers migrating from Gemini CLI, teams that need 1M context on a budget.</p>
+
+<h2>OpenAI Codex CLI: benchmark leader with the strongest sandbox story</h2>
+<p>Codex CLI leads Terminal-Bench 2.1 at 83.4% -- the highest score on that benchmark across all nine tools here. It runs sandboxed execution by default (every code execution runs in an isolated container), has native GitHub Actions support, and is built in Rust. If sandboxed execution is a hard security requirement, no other tool in this list comes close on that specific axis.</p>
+<p>The catch: Codex CLI requires a ChatGPT subscription (Plus at $20/month or Pro at $200/month). If you already pay for ChatGPT Pro, Codex CLI is effectively included. The model it runs -- GPT-5.2 -- consumes approximately 4x fewer tokens per task than Claude Opus in parallel benchmark testing, which matters if you are running agents at scale with a tight token budget.</p>
+<p>Codex CLI is optimized for pull-request-level work: it creates PRs, handles code review natively, and processes GitHub issues. For long autonomous runs with deep multi-file reasoning, Claude Code still edges it on completion quality.</p>
+<p><strong>Best for:</strong> OpenAI subscribers, teams where sandbox isolation is non-negotiable, GitHub-native pull request workflows.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>OpenCode (Crush): the open-source dark horse at 172K stars</h2>
+<p>OpenCode -- rebranded as Crush by Charm -- is the most-starred AI coding CLI in existence at 172,198 GitHub stars. It is multi-model (switch models mid-session), LSP-enhanced for semantic code understanding, features a full Bubble Tea TUI, and runs any model via API key. The simplest self-hosted setup is OpenCode plus Ollama for a fully local, zero-cloud coding agent.</p>
+<p>OpenCode's key differentiator is model agnosticism. Run it against Claude Opus, GPT-5, Gemini 2.5, Qwen3, or any local model without switching tools. That 172K star count is more than Gemini CLI (105K) and Codex CLI (89K) combined -- a clear signal that developers want model flexibility more than they want any single provider's lock-in.</p>
+<p><strong>Best for:</strong> developers who want model flexibility, self-hosted deployments, anyone managing multiple AI subscriptions who wants one interface.</p>
+
+<h2>The other five: Kimi, Qwen Code, GitHub Copilot CLI, DeepSeek TUI, and Pi</h2>
+<p>Five more tools complete the nine-way field. Kimi CLI (Moonshot AI) runs on K2.5 with a 256K context window and outputs approximately 100 tokens per second -- the fastest streaming response in this group, which makes interactive tasks feel noticeably snappier. It can also plug in as a model backend for Claude Code and OpenCode, so it is not only useful as a standalone. Qwen Code (Alibaba) adapted the Gemini CLI codebase and optimized it for Qwen3-Coder 480B MoE, an open-weight model that benchmarks competitively with closed-source frontier models on multi-step coding tasks.</p>
+<p>GitHub Copilot CLI is the enterprise-safe choice: it lives inside the GitHub ecosystem, handles code suggestions and PR reviews, and clears security review in organizations that have not yet approved Claude Code or Codex for production use. DeepSeek TUI takes the terminal-first approach with DeepSeek V4, offering the best performance-to-inference-cost ratio for teams that self-host. Pi rounds out the field as a lighter-weight interactive CLI focused on conversational pair programming rather than long autonomous runs.</p>
+<p>None of these five are the default pick for raw autonomous coding power, but they fill real gaps. Kimi and Qwen Code are worth tracking closely -- both are closing the benchmark gap on frontier models faster than the paid options would like.</p>
+
+<h2>How I would pick between them</h2>
+<p>Three questions decide it: what is your budget, do you need autonomous multi-step execution or interactive pair programming, and are you locked to a cloud ecosystem? Claude Code wins for teams that need the deepest autonomous capability and can absorb the subscription cost. Antigravity CLI is the right call if you have been on Gemini CLI and want continuity without paying more. Codex CLI makes sense if you already pay for ChatGPT Pro and need CI/CD sandbox execution by default. OpenCode is the answer if you want model flexibility and won't pay for three separate subscriptions.</p>
+<p>My personal setup: Claude Code for production agent work and agentic workflows, OpenCode as the fallback when I'm testing open-weight models or want to avoid burning API budget. I used Gemini CLI until the Google I/O deprecation announcement -- now I'm migrating to Antigravity before the June 18 cutoff. If you're still on Gemini CLI, migrate before this week ends.</p>
+<p>One pattern worth noting: the open-source tier (OpenCode, Qwen Code, DeepSeek TUI) is closing the benchmark gap faster than anyone in the paid camp predicted. If the trend holds another six months, the question won't be "should I pay for Claude Code or Codex?" -- it will be "which open-weight model do I want OpenCode running?"</p>
+
+<h2>FAQ</h2>
+<h3>Is Claude Code better than Gemini CLI in 2026?</h3>
+<p>Claude Code outperforms Gemini CLI on complex multi-file autonomous tasks. On raw benchmarks they are near-identical: Claude Opus 4.6/4.7 scores approximately 80.8% on SWE-bench Verified versus Gemini 3.1 Pro at approximately 80.6%. The real gap is workflow depth -- Claude Code's Skills system, Agent View for parallel sub-agents, and MCP plugin integration are more capable than anything Gemini CLI ever shipped. Note: Gemini CLI is being retired June 18, 2026, replaced by Antigravity CLI.</p>
+
+<h3>What is Antigravity CLI and does it replace Gemini CLI?</h3>
+<p>Antigravity CLI is Google's new agent platform announced at Google I/O on May 19, 2026, that fully replaces Gemini CLI. Gemini CLI stops serving free and individual users on June 18, 2026. Antigravity CLI keeps the 1M-token context, the free tier at 1,000 requests per day, Agent Skills, and Hooks, but rebuilds the architecture in Go with asynchronous subagent orchestration that lets the main agent spawn specialist agents to work in parallel.</p>
+
+<h3>Which AI CLI tool has the best free tier in 2026?</h3>
+<p>Antigravity CLI (formerly Gemini CLI) offers the most usable free tier with 1,000 requests per day on a Google account. OpenCode is fully free and open-source but requires you to supply API keys or run local models. GitHub Copilot CLI is included with GitHub Free for limited use. Claude Code and Codex CLI both require paid subscriptions with no meaningful free tier for sustained use.</p>
+
+<h3>Is OpenCode better than Claude Code?</h3>
+<p>OpenCode has 172K GitHub stars -- more than any other AI CLI tool -- and supports any model via API key, making it the most flexible option in this comparison. Claude Code outperforms OpenCode on autonomous multi-step tasks, deep codebase reasoning, and the Skills/plugin automation layer. If you want model flexibility and do not need the depth of Claude's autonomous agent mode, OpenCode is a legitimate alternative and costs nothing beyond model API fees.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Claude Code better than Gemini CLI in 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Code outperforms Gemini CLI on complex multi-file autonomous tasks. On raw benchmarks they are near-identical: Claude Opus 4.6/4.7 scores approximately 80.8% on SWE-bench Verified versus Gemini 3.1 Pro at approximately 80.6%. The real gap is workflow depth -- Claude Code Skills, Agent View, and MCP plugin integration are more capable. Note: Gemini CLI is being retired June 18, 2026, replaced by Antigravity CLI."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is Antigravity CLI and does it replace Gemini CLI?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Antigravity CLI is Google's new agent platform announced at Google I/O on May 19, 2026, that fully replaces Gemini CLI. Gemini CLI stops serving free and individual users on June 18, 2026. Antigravity CLI keeps the 1M-token context, the free tier at 1,000 requests per day, Agent Skills, and Hooks, rebuilt in Go with asynchronous subagent orchestration."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Which AI CLI tool has the best free tier in 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Antigravity CLI offers the most usable free tier with 1,000 requests per day on a Google account. OpenCode is fully free and open-source but requires API keys or local models. GitHub Copilot CLI is included with GitHub Free for limited use. Claude Code and Codex CLI both require paid subscriptions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is OpenCode better than Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "OpenCode has 172K GitHub stars and supports any model via API key, making it the most flexible option. Claude Code outperforms it on autonomous multi-step tasks, deep codebase reasoning, and the Skills/plugin automation layer. If you want model flexibility without Claude's autonomous agent depth, OpenCode is a legitimate free alternative."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
