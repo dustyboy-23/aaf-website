@@ -1,0 +1,239 @@
+---
+id: claude-code-dynamic-workflows-multi-agent-fan-out
+uuid: claude-code-dynamic-workflows-multi-agent-fan-out
+slug: claude-code-dynamic-workflows-multi-agent-fan-out
+title: How to Build a Multi-Agent Fan-Out System With Claude Code Dynamic Workflows
+excerpt: Claude Code Dynamic Workflows let one lead agent write a JavaScript orchestration script that fans work across up to 1,000 parallel subagents in a single run. Released May 28, 2026 alongside Opus 4.8,
+feature_image: null
+featured: false
+published_at: "2026-06-17T03:08:46-07:00"
+updated_at: "2026-06-17T03:08:46-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, multi-agent, dynamic-workflows]
+tag_names: [Tutorials, Claude Code, Multi-Agent, Dynamic Workflows]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Dynamic Workflows: Multi-Agent Fan-Out Guide"
+meta_description: "Claude Code Dynamic Workflows guide: fan out to 1,000 subagents. Covers pipeline(), parallel(), 5-level nesting, and real token cost math for builders."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Build a Multi-Agent Fan-Out System With Claude Code Dynamic Workflows</h1>
+
+<p class="lede">Claude Code Dynamic Workflows let one lead agent write a JavaScript orchestration script that fans work across up to 1,000 parallel subagents in a single run. Released May 28, 2026 alongside Opus 4.8, the system uses three primitives -- agent(), parallel(), and pipeline() -- to coordinate work without burning your main context window.</p>
+
+<p>I have been running these in production for a few weeks now. The fan-out pattern is the most genuinely useful thing Anthropic has shipped for builders this year -- not because of the headline number (1,000 agents sounds absurd), but because of what the architecture actually solves: context isolation. Noisy tasks stay in subagent context windows. Only results flow back.</p>
+
+<h2>What Are Claude Code Dynamic Workflows?</h2>
+<p>Dynamic Workflows are a Claude Code feature where you describe a task in plain language and Claude writes a JavaScript orchestration script to complete it. The script fans work out across subagents, keeps intermediate results in script variables rather than the main context window, and returns only the final answer to your session. The routing code itself costs zero model tokens -- only the agents do.</p>
+<p>Anthropic shipped the feature on May 28, 2026, bundled with the Opus 4.8 release. You need CLI v2.1.154 or later to use it. The workflow script runs in an async JavaScript context with access to four core functions: agent(), parallel(), pipeline(), and phase().</p>
+<p>Here is the minimal structure every workflow script needs:</p>
+<pre><code>export const meta = &#123;
+  name: 'find-auth-bugs',
+  description: 'Audit auth layer for security issues',
+  phases: [
+    &#123; title: 'Scan', detail: 'grep auth files for patterns' &#125;,
+    &#123; title: 'Verify', detail: 'confirm each finding is real' &#125;
+  ]
+&#125;
+
+phase('Scan')
+const findings = await agent('Find all auth-related TypeScript files and list potential security issues', &#123;
+  schema: &#123; type: 'object', properties: &#123; issues: &#123; type: 'array', items: &#123; type: 'string' &#125; &#125; &#125;, required: ['issues'] &#125;
+&#125;)
+
+phase('Verify')
+const verified = await pipeline(
+  findings.issues,
+  issue =&gt; agent(`Verify this is a real exploitable bug: $&#123;issue&#125;`, &#123; label: `verify:$&#123;issue.slice(0,40)&#125;` &#125;)
+)
+
+return verified.filter(Boolean)
+</code></pre>
+
+<h2>How Does the Fan-Out Pattern Work?</h2>
+<p>The fan-out pattern in Dynamic Workflows works through two primitives: pipeline() streams items through stages with no synchronization barrier, while parallel() runs tasks concurrently but waits for all of them to finish before continuing. For most work, you want pipeline() -- it starts the next stage as soon as any item finishes stage one, so your wall-clock time is bounded by the slowest single item chain, not the slowest item at each stage.</p>
+<p>The difference matters when you are processing a list of files or tasks. With parallel(), if you have 50 files and stage one finishes 49 of them quickly but one takes 30 seconds, the entire fleet idles for those 30 seconds before stage two starts. With pipeline(), those 49 fast results are already in stage two while the slow one is still in stage one.</p>
+<p>Here is a practical fan-out that audits a list of files across two stages -- no barrier between them:</p>
+<pre><code>const FILES = ['auth.ts', 'db.ts', 'api.ts', 'middleware.ts', 'session.ts']
+
+const FINDING_SCHEMA = &#123;
+  type: 'object',
+  properties: &#123;
+    file: &#123; type: 'string' &#125;,
+    issues: &#123; type: 'array', items: &#123; type: 'string' &#125; &#125;,
+    severity: &#123; type: 'string', enum: ['low', 'medium', 'high'] &#125;
+  &#125;,
+  required: ['file', 'issues', 'severity']
+&#125;
+
+const VERDICT_SCHEMA = &#123;
+  type: 'object',
+  properties: &#123;
+    finding: &#123; type: 'string' &#125;,
+    isReal: &#123; type: 'boolean' &#125;,
+    reasoning: &#123; type: 'string' &#125;
+  &#125;,
+  required: ['finding', 'isReal', 'reasoning']
+&#125;
+
+const results = await pipeline(
+  FILES,
+  file =&gt; agent(
+    `Read $&#123;file&#125; and identify any security or correctness issues`,
+    &#123; label: `audit:$&#123;file&#125;`, phase: 'Scan', schema: FINDING_SCHEMA &#125;
+  ),
+  finding =&gt; agent(
+    `Verify this finding is a real bug: $&#123;JSON.stringify(finding)&#125;`,
+    &#123; label: `verify:$&#123;finding.file&#125;`, phase: 'Verify', schema: VERDICT_SCHEMA &#125;
+  )
+)
+
+return results.filter(Boolean).filter(r =&gt; r.isReal)
+</code></pre>
+<p>The schema option forces structured output -- the subagent is required to call a StructuredOutput tool and the result is validated before agent() returns. No parsing, no hallucinated JSON.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What Is Performance Outcomes and How Do I Use It?</h2>
+<p>Performance Outcomes is the quality gate layer that ships on top of Dynamic Workflows. You supply a rubric -- criteria like "all tests pass", "no new TODOs introduced", "no public API changes" -- and a separate grader subagent evaluates each result against that rubric in its own context window. If a result fails, the subagent gets sent back to revise. Anthropic reported this pattern bumped task-success rates by up to 10 percentage points on their hardest internal benchmarks.</p>
+<p>In practice, this looks like a verify-and-retry loop in your pipeline. The grader runs in its own isolated context so it cannot be influenced by the work that produced the finding. You want independent judgment, not rubber-stamping.</p>
+<pre><code>const GRADER_SCHEMA = &#123;
+  type: 'object',
+  properties: &#123;
+    passed: &#123; type: 'boolean' &#125;,
+    failureReason: &#123; type: 'string' &#125;,
+    revisedOutput: &#123; type: 'string' &#125;
+  &#125;,
+  required: ['passed']
+&#125;
+
+async function gradeWithRetry(output, rubric, maxRetries = 2) &#123;
+  let current = output
+  for (let i = 0; i &lt; maxRetries; i++) &#123;
+    const grade = await agent(
+      `Grade this output against the rubric: $&#123;rubric&#125;
+
+Output: $&#123;current&#125;
+
+If it fails, provide a revised version in revisedOutput.`,
+      &#123; schema: GRADER_SCHEMA &#125;
+    )
+    if (grade.passed) return current
+    if (grade.revisedOutput) current = grade.revisedOutput
+  &#125;
+  return current
+&#125;
+</code></pre>
+
+<h2>How Deep Can Subagents Actually Nest?</h2>
+<p>Background subagents can spawn their own subagents up to 5 levels deep. Foreground subagents have no nesting limit. The 5-level cap for background mode landed in v2.1.172 on June 10, 2026 -- the stated goal was context isolation, with agents kicking off agents as a way to better manage context, and only conclusions flowing upward. Deep nesting is designed for recursive investigation tasks, not raw parallelization.</p>
+<p>The cost warning here is real: token consumption multiplies by up to 7x with deep nesting. Every level adds a full context window. The practical ceiling most builders should operate at is 2-3 levels. At 5 levels on Opus 4.8 ($5/M input, $25/M output), you can burn through a Max plan subscription on a single complex workflow if you are not careful about which model you assign at each depth.</p>
+<p>I use the model override option to assign cheaper models at deeper levels -- Haiku 4.5 at levels 3-5 for reconnaissance work, Sonnet at level 2 for reasoning, Opus at the top for synthesis:</p>
+<pre><code>// Top-level synthesis (Opus 4.8 -- expensive, high quality)
+const summary = await agent('Synthesize all findings into a final report', &#123; schema: REPORT_SCHEMA &#125;)
+
+// Mid-level reasoning (Sonnet 4.6 -- balanced)
+const analysis = await agent('Analyze this module for patterns', &#123;
+  model: 'sonnet',
+  schema: ANALYSIS_SCHEMA
+&#125;)
+
+// Deep reconnaissance (Haiku 4.5 -- fast, cheap)
+const scan = await agent('List all function names in this file', &#123;
+  model: 'haiku',
+  schema: NAMES_SCHEMA
+&#125;)
+</code></pre>
+
+<h2>What Are the Real Scale Limits?</h2>
+<p>Claude Code Dynamic Workflows cap concurrent agent execution at 16 subagents per workflow at any given moment, with a total lifetime cap of 1,000 agents per run. Excess calls queue automatically -- you can pass 500 items to pipeline() and they all complete, but only 16 run at the same time. The 1,000-agent cap is a runaway-loop backstop; real workflows should stay well under that for cost reasons alone.</p>
+<p>The clearest real-world demonstration of scale: one team reported rewriting 750,000 lines of code in 6 days using Dynamic Workflows (source: lassiecoder, Medium, May 2026). That is not a typical use case, but it shows what becomes possible when you structure work so agents truly parallelize rather than waiting on each other.</p>
+<p>For context efficiency, Dynamic Workflows keeps intermediate results in JavaScript variables rather than the main context window. A 200-turn session in normal Claude Code sends roughly 200K tokens per turn as context grows. A workflow that fans 50 tasks out to subagents keeps all 50 result sets out of your primary context -- only the final merged answer flows back.</p>
+
+<h2>Three Mistakes That Will Cost You</h2>
+<p>The three most common Dynamic Workflow mistakes are using parallel() when pipeline() is correct, nesting too deep without model tiering, and skipping schemas on agent() calls. Each one compounds -- you get surprise usage bills, 45-minute workflows that return garbage, or silent failures that look like successes.</p>
+<p><strong>Mistake 1: Defaulting to parallel() everywhere.</strong> parallel() is a synchronization barrier -- all tasks must finish before the next stage starts. If you have 20 tasks and 19 finish in 30 seconds but one takes 5 minutes, everything waits. Use pipeline() unless you genuinely need all results together before proceeding -- for deduplication across the full result set, or an early exit on zero findings.</p>
+<p><strong>Mistake 2: Nesting 4-5 levels without model tiering.</strong> Each level adds a full context window at whatever model is running at that depth. Assign Haiku or Sonnet at reconnaissance depths. Save Opus for synthesis at the top. The 7x token multiplier at full depth on Opus will eat a $200/mo plan in one complex run.</p>
+<p><strong>Mistake 3: Skipping schemas on agent() calls.</strong> Without a schema, agent() returns the agent's final text as a raw string. Parsing JSON from that string breaks on every format variation. With a schema, the agent is forced to call StructuredOutput and the result is validated before you receive it. Retries on mismatch happen automatically at the tool layer.</p>
+
+<h2>FAQ</h2>
+<h3>Do I need a specific Claude Code plan to use Dynamic Workflows?</h3>
+<p>Dynamic Workflows require CLI v2.1.154 or later and a Claude Max subscription ($100/month for Pro, $200/month for Max 20x). They were released May 28, 2026 alongside Opus 4.8. The $20/month Claude Pro plan does not include the API rate access needed to run parallel subagent workflows at scale -- you need Max tier for the rate limits to make fan-out practical.</p>
+
+<h3>What is the difference between parallel() and pipeline() in a workflow script?</h3>
+<p>parallel() is a synchronization barrier -- it awaits all tasks before returning, and use it only when you need all results together for cross-item deduplication or early exit logic. pipeline() streams items through stages with no barrier -- item A can be in stage 3 while item B is still in stage 1. Default to pipeline() for most multi-stage work; parallel() adds latency without benefit unless the stage genuinely needs the full result set at once.</p>
+
+<h3>How many subagents can run in a single Dynamic Workflow?</h3>
+<p>Up to 1,000 total agents per workflow run, with a maximum of 16 running concurrently at any moment. Excess calls queue and run as slots free up. The 1,000-agent cap is a safety backstop for runaway loops. In practice, well-designed workflows stay under 100 agents per run. Background subagents can nest up to 5 levels deep; foreground subagents have no nesting limit.</p>
+
+<h3>What does Performance Outcomes actually do?</h3>
+<p>Performance Outcomes adds a grader layer on top of Dynamic Workflows. You supply a rubric -- pass/fail criteria for the output -- and a separate subagent evaluates each result independently in its own context window. Failures get sent back to the original subagent for revision. Anthropic reported this pattern bumped task-success rates by up to 10 percentage points on their hardest internal benchmarks.</p>
+
+<h3>How does nested subagent token cost scale?</h3>
+<p>Token consumption multiplies by up to 7x at full 5-level nesting depth. Each level runs in its own context window at the model assigned to that depth. The practical solution is model tiering: use Haiku 4.5 at levels 3-5 for reconnaissance, Sonnet at level 2 for reasoning, Opus 4.8 only at the top level for synthesis. Stay at 2-3 levels for everyday workflows unless you have a specific reason to go deeper.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Do I need a specific Claude Code plan to use Dynamic Workflows?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Dynamic Workflows require CLI v2.1.154 or later and a Claude Max subscription ($100/month for Pro, $200/month for Max 20x). They were released May 28, 2026 alongside Opus 4.8. The $20/month Claude Pro plan does not include the API rate access needed to run parallel subagent workflows at scale."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between parallel() and pipeline() in a workflow script?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "parallel() is a synchronization barrier that awaits all tasks before returning -- use it only when you need all results together for cross-item deduplication or early exit logic. pipeline() streams items through stages with no barrier -- item A can be in stage 3 while item B is still in stage 1. Default to pipeline() for most multi-stage work."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How many subagents can run in a single Dynamic Workflow?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Up to 1,000 total agents per workflow run, with a maximum of 16 running concurrently at any moment. Excess calls queue and run as slots free up. Background subagents can nest up to 5 levels deep; foreground subagents have no nesting limit."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What does Performance Outcomes actually do?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Performance Outcomes adds a grader layer on top of Dynamic Workflows. You supply a rubric and a separate subagent evaluates each result independently. Failures get sent back to the original subagent for revision. Anthropic reported this bumped task-success rates by up to 10 percentage points on their hardest internal benchmarks."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does nested subagent token cost scale?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Token consumption multiplies by up to 7x at full 5-level nesting depth. Each level runs in its own context window. The practical solution is model tiering: Haiku 4.5 at levels 3-5, Sonnet at level 2, Opus 4.8 only at the top. Stay at 2-3 levels for everyday workflows."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
