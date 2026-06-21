@@ -1,0 +1,142 @@
+---
+id: claude-code-auto-mode-bedrock-vertex-foundry
+uuid: claude-code-auto-mode-bedrock-vertex-foundry
+slug: claude-code-auto-mode-bedrock-vertex-foundry
+title: "Claude Code v2.1.185: Auto Mode Comes to Bedrock, Vertex, and Foundry"
+excerpt: Claude Code v2.1.185, released June 20, 2026, adds auto mode support for AWS Bedrock, Google Vertex AI, and Microsoft Azure Foundry -- letting enterprise teams run agentic coding sessions inside their
+feature_image: null
+featured: false
+published_at: "2026-06-21T03:14:36-07:00"
+updated_at: "2026-06-21T03:14:36-07:00"
+reading_time: 8
+tags: [news, claude-code, enterprise, auto-mode, aws-bedrock]
+tag_names: [News, Claude Code, Enterprise, Auto Mode, AWS Bedrock]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.185: Auto Mode on Bedrock and Vertex"
+meta_description: "Claude Code v2.1.185 adds auto mode on Bedrock, Vertex, and Foundry -- run agentic coding inside your VPC. Plus: /plugin list and MCP secret redaction."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.185: Auto Mode Comes to Bedrock, Vertex, and Foundry</h1>
+
+<p class="lede">Claude Code v2.1.185, released June 20, 2026, adds auto mode support for AWS Bedrock, Google Vertex AI, and Microsoft Azure Foundry -- letting enterprise teams run agentic coding sessions inside their own VPC without routing source code to api.anthropic.com. The release also adds a /plugin list command, safer prompts for risky file writes, managed deployment version controls, and secret redaction in MCP tooling.</p>
+
+<p>I've been waiting for this one. Auto mode on Bedrock and Vertex has been the most-requested enterprise feature since Claude Code launched in March 2026 -- the main reason regulated teams have stayed on the sidelines. Anthropic shipped it on June 20 as part of v2.1.185.</p>
+
+<h2>What shipped in Claude Code v2.1.185?</h2>
+<p>Claude Code v2.1.185 (June 20, 2026) ships five changes: auto mode on AWS Bedrock, Google Vertex AI, and Microsoft Azure Foundry for Opus 4.7 and Opus 4.8; a new /plugin list command; safer write prompts for shell startup files and build-tool configs; managed deployment version controls via the new enforceAvailableModels setting; and secret redaction in MCP list, get, and add commands.</p>
+<p>This is the most enterprise-focused Claude Code release since launch. Previous major releases -- Agent View in June, Dynamic Workflows in May, auto mode itself in March -- targeted individual developers and teams with direct API access. v2.1.185 targets the compliance layer: the procurement team controlling cloud spend, the security team blocking api.anthropic.com, and the IT team managing model allowlists across a fleet of developer machines.</p>
+
+<h2>What does auto mode on Bedrock, Vertex, and Foundry actually mean?</h2>
+<p>Auto mode lets Claude Code run without per-action permission prompts, replacing them with a background safety classifier. Until v2.1.185, auto mode only worked through the Anthropic API. As of June 20, 2026, you can enable it on Opus 4.7 and Opus 4.8 via AWS Bedrock, Google Vertex AI, or Azure Foundry with one environment variable: CLAUDE_CODE_ENABLE_AUTO_MODE=1.</p>
+<p>There is no per-provider toggle -- set the variable once and auto mode applies across whichever cloud path you are routing through. The safety classifier covers more than 20 block rules: no force-pushing over shared history, no mass-deleting cloud storage, no disabling audit logging, no running code pulled from external repos without approval. These are the same rules enforced on the Anthropic API -- only the inference pathway changed.</p>
+<p>One billing detail worth noting: running Opus 4.8 through Bedrock or Vertex bills consumption against your existing AWS or GCP contract, not a separate Anthropic API invoice. For enterprises with committed-use discounts or consolidated billing requirements, routing auto mode workloads through Bedrock or Vertex puts them on the same line item as the rest of your cloud spend.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>Why running auto mode inside your VPC matters</h2>
+<p>When you route Claude Code through AWS Bedrock or Google Vertex AI, your source code and inference traffic stay inside your cloud account's network boundary -- no public internet hop to api.anthropic.com. Bedrock supports VPC endpoints via AWS PrivateLink; Vertex supports Private Service Connect. Configure either and auto mode workloads become fully network-isolated -- source code, prompts, and completions all stay inside your private network.</p>
+<p>This matters most in three scenarios. Regulated industries -- financial services, healthcare, defense contractors -- where code cannot traverse the public internet regardless of encryption. Enterprises with existing cloud contracts where billing consolidation is a hard requirement: Bedrock and Vertex inference appears on the same invoice as your other cloud services. Teams with data residency requirements: AWS offers an EU Inference Profile for Bedrock that technically constrains data processing to EU regions -- a technical enforcement, not just a contractual promise, which is the threshold most GDPR sign-offs require.</p>
+<p>Anthropic confirms that Claude Code enterprise data is not used for model training, and the enterprise tier is SOC 2 Type II certified. Combined with VPC routing and network isolation options, that removes the final compliance blocker for most regulated teams that have been watching from the sidelines.</p>
+
+<h2>The new safety guardrails: risky file writes and destructive command blocking</h2>
+<p>v2.1.185 adds confirmation prompts before writing files that can compromise your environment, even in auto-approval mode. Shell startup files (.zshenv, .bash_login, .zlogin), git configs under ~/.config/git/, and build-tool configs (.npmrc, .bazelrc, bunfig.toml, .pre-commit-config.yaml, .devcontainer/) all require explicit confirmation now. Destructive git commands and terraform/pulumi destroy are also blocked without an explicit request to discard local work or destroy a specific stack.</p>
+<p>The shell startup file protection matters more than it looks. Writing to .zshenv means writing code that executes in every new terminal session and every CI pipeline on that machine -- including pipelines owned by other team members. An unintended .zshenv write is the same class of error as the February 2026 DataTalks incident, where auto mode followed a chain of reasonable-looking intermediate steps and destroyed 1.94 million rows of production data because execution scope expanded beyond what the prompt specified. The new safeguard interrupts the chain at the exact step where blast radius suddenly expands.</p>
+
+<h2>Plugin list and secret redaction</h2>
+<p>v2.1.185 adds /plugin list -- a terminal command that shows all active Claude Code plugins without opening config files. More significant for daily security is the MCP credential fix: claude mcp list, claude mcp get, and claude mcp add no longer print environment variable values, credential headers, or URL-embedded secrets to your terminal. Before this fix, running those commands in a logged shell session or CI pipeline could expose API keys in terminal history, log aggregators, or build output.</p>
+<p>The managed deployment addition -- enforceAvailableModels -- gives IT teams a hard control over which Claude models developers can run. When enabled, the setting locks Claude Code instances to the enterprise-approved availableModels allowlist, and neither individual developer settings nor project-level configs can widen that list. The practical use case: your security team approves specific model versions cleared for handling proprietary code, and the policy enforces that without relying on developer self-discipline. This is the first fleet-level model governance control in any Claude Code release.</p>
+
+<h2>How to enable auto mode on Bedrock, Vertex, or Foundry</h2>
+<p>Enabling auto mode on your cloud provider takes three steps: upgrade to Claude Code v2.1.185 or later with npm update -g @anthropic-ai/claude-code, configure your cloud credentials for your chosen provider, and set CLAUDE_CODE_ENABLE_AUTO_MODE=1 in your shell or CI environment. There is no UI toggle -- environment variable only.</p>
+
+<p>Minimal Bedrock setup:</p>
+<pre><code>export AWS_REGION=us-east-1
+export ANTHROPIC_BEDROCK_BASE_URL=https://bedrock-runtime.us-east-1.amazonaws.com
+export CLAUDE_CODE_ENABLE_AUTO_MODE=1
+claude</code></pre>
+
+<p>Minimal Vertex AI setup:</p>
+<pre><code>export CLAUDE_CODE_USE_VERTEX=1
+export ANTHROPIC_VERTEX_PROJECT_ID=your-gcp-project-id
+export CLOUD_ML_REGION=us-east5
+export CLAUDE_CODE_ENABLE_AUTO_MODE=1
+claude</code></pre>
+
+<p>The Anthropic docs at code.claude.com/docs/en/bedrock-vertex cover IAM role scoping, PrivateLink VPC configuration, and Foundry-specific auth flows. I'd start with read-only IAM credentials on a staging environment before enabling auto mode on anything production-adjacent -- the IAM scope determines the blast radius if the agent makes a call outside the intended boundary.</p>
+
+<h2>What this release still doesn't fix</h2>
+<p>Three gaps remain: auto mode on cloud providers supports Opus 4.7 and Opus 4.8 only -- no Sonnet-class models; the enforceAvailableModels setting is enterprise tier only, not available on Team plans; and Foundry documentation was sparse at release compared to the Bedrock and Vertex paths.</p>
+<p>The Sonnet gap is the most significant for most teams. Opus 4.8 on Bedrock or Vertex costs substantially more than Sonnet -- teams that want permissionless agentic coding without Opus-tier pricing are still waiting. Anthropic has not published a timeline for extending auto mode to Sonnet on cloud providers. For now, the most cost-efficient auto-mode path remains the Anthropic API direct with a Claude Max or Team subscription, which gives Sonnet auto-mode at a flat monthly rate rather than per-token Bedrock or Vertex pricing.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does Claude Code auto mode on Bedrock require a separate Anthropic API key?</h3>
+<p>No. When routing through AWS Bedrock, Claude Code authenticates via your AWS credentials -- an IAM role or access key -- not an Anthropic API key. You need a Bedrock model access grant for Claude from your AWS console, but inference billing goes through your AWS account at Bedrock pricing. No separate Anthropic API contract is required.</p>
+
+<h3>What models support auto mode on Bedrock and Vertex as of v2.1.185?</h3>
+<p>Auto mode on Bedrock, Vertex, and Foundry supports Claude Opus 4.7 and Claude Opus 4.8 as of v2.1.185 (June 20, 2026). Sonnet-class models on third-party cloud providers do not support auto mode yet -- that remains Opus-only for now. If you need auto mode at lower per-token cost, the Anthropic API direct with a Max or Team subscription supports Sonnet auto mode. Check github.com/anthropics/claude-code/releases for updates.</p>
+
+<h3>What is the enforceAvailableModels setting and who can use it?</h3>
+<p>enforceAvailableModels is a managed deployment setting that locks Claude Code instances across a fleet to a specific model allowlist. When enabled, neither individual developer settings nor project-level configs can override the approved model list. As of v2.1.185, this setting is enterprise tier only -- Team plan customers do not have access to managed deployment settings yet.</p>
+
+<h3>Did v2.1.185 change how secrets are stored in MCP configs?</h3>
+<p>No -- storage is unchanged. The fix is display-only: claude mcp list, claude mcp get, and claude mcp add no longer print environment variable values, credential headers, or URL-embedded secrets to your terminal output. Variable references appear as references rather than expanded values. Your .claude/settings.json storage behavior is unaffected by this change.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does Claude Code auto mode on Bedrock require a separate Anthropic API key?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. When routing through AWS Bedrock, Claude Code authenticates via your AWS credentials -- an IAM role or access key -- not an Anthropic API key. You need a Bedrock model access grant for Claude from your AWS console, but inference billing goes through your AWS account at Bedrock pricing. No separate Anthropic API contract is required."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What models support auto mode on Bedrock and Vertex as of v2.1.185?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Auto mode on Bedrock, Vertex, and Foundry supports Claude Opus 4.7 and Claude Opus 4.8 as of v2.1.185 (June 20, 2026). Sonnet-class models on third-party cloud providers do not support auto mode yet -- that remains Opus-only for now."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the enforceAvailableModels setting and who can use it?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "enforceAvailableModels is a managed deployment setting that locks Claude Code instances across a fleet to a specific model allowlist. When enabled, neither individual developer settings nor project-level configs can override the approved model list. As of v2.1.185, this setting is enterprise tier only -- Team plan customers do not have access to managed deployment settings yet."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Did v2.1.185 change how secrets are stored in MCP configs?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No -- storage is unchanged. The fix is display-only: claude mcp list, claude mcp get, and claude mcp add no longer print environment variable values, credential headers, or URL-embedded secrets to your terminal output. Variable references appear as references rather than expanded values. Your .claude/settings.json storage behavior is unaffected."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
