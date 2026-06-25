@@ -1,0 +1,238 @@
+---
+id: claude-code-nested-subagents-tutorial
+uuid: claude-code-nested-subagents-tutorial
+slug: claude-code-nested-subagents-tutorial
+title: "Claude Code Nested Sub-Agents: How to Build the 3-Level Hierarchy"
+excerpt: Claude Code v2.1.191, released June 24, 2026, hardens the nested sub-agent system that first shipped in v2.1.172 on June 10. The architecture lets a parent agent spawn children, which spawn grandchild
+feature_image: null
+featured: false
+published_at: "2026-06-25T03:12:07-07:00"
+updated_at: "2026-06-25T03:12:07-07:00"
+reading_time: 11
+tags: [tutorials, claude-code, sub-agents, multi-agent]
+tag_names: [Tutorials, Claude Code, Sub-Agents, Multi-Agent]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Nested Sub-Agents: The 3-Level Hierarchy Guide"
+meta_description: Claude Code v2.1.191 nested sub-agents tutorial. Build a 3-level agent hierarchy with .claude/agents/ files, fallback models, and sandbox.credentials config.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Nested Sub-Agents: How to Build the 3-Level Hierarchy</h1>
+
+<p class="lede">Claude Code v2.1.191, released June 24, 2026, hardens the nested sub-agent system that first shipped in v2.1.172 on June 10. The architecture lets a parent agent spawn children, which spawn grandchildren -- up to 5 levels deep. The practical sweet spot is 3 levels: orchestrator, specialized child, focused grandchild worker. Here's how to configure it, with working .claude/agents/ definitions, the sandbox.credentials security fix, and the three pitfalls to avoid.</p>
+
+<p>I've been running nested agent chains in Claude Code since v2.1.172 dropped. The 3-level pattern -- an orchestrator that delegates to specialists, specialists that delegate to workers -- handles a class of tasks that a flat single-agent session can't touch cleanly. v2.1.191 makes the setup production-ready by closing a real security gap around credential exposure.</p>
+
+<h2>What Did Claude Code v2.1.191 Actually Ship?</h2>
+
+<p>Claude Code v2.1.191 shipped June 24, 2026, with 20 changes. The most important for multi-agent builds: sandbox.credentials blocks sandboxed commands from reading secret env vars and credential files; org admins can configure up to 3 fallback models when the primary is rate-limited; and stateful MCP servers no longer reconnect-loop on tools/list, fixing hangs that lasted up to 5 minutes.</p>
+
+<p>The nested sub-agent architecture itself landed in v2.1.172 (June 10, 2026). Before that release, a GitHub issue (#61993 -- "Sub-agents cannot spawn other sub-agents") had been sitting open since early 2025 with consistent demand from teams trying to build hierarchical pipelines. The restriction was intentional -- a guardrail against infinite recursion -- and v2.1.172 lifted it with a hard depth limit of 5 levels.</p>
+
+<p>The specific v2.1.191 changes that matter for nested agent work:</p>
+
+<ul>
+  <li><strong>sandbox.credentials:</strong> Blocks sandboxed bash commands from reading credential files (.env, *.pem, *credentials*, service-account*.json, SSH private keys) and environment variables whose names contain KEY, TOKEN, SECRET, PASSWORD, or CREDENTIAL. Critical for automated pipelines.</li>
+  <li><strong>Fallback models:</strong> Org-configured fallback model chains (up to 3) now appear in the model picker, --model flag, /model command, and ANTHROPIC_MODEL env var. When the primary is overloaded, the system falls through automatically.</li>
+  <li><strong>Remote MCP reliability:</strong> Stateful MCP servers without the optional GET SSE stream no longer reconnect-loop on tools/list. Fixed the silent hang that blocked MCP-dependent sub-agents indefinitely.</li>
+  <li><strong>Model picker visibility:</strong> Org-configured model restrictions are now visible before you try to select them -- no more 403s mid-session from a model the org doesn't have provisioned.</li>
+</ul>
+
+<h2>How the 3-Level Hierarchy Actually Works</h2>
+
+<p>In Claude Code's nested sub-agent system, a parent at depth 0 spawns children at depth 1 via the Agent tool. Children spawn grandchildren at depth 2, up to a hard cap at depth 5. Only the direct sub-agent's summary returns to its parent -- intermediate grandchild work stays in those context windows and never surfaces to the main session.</p>
+
+<p>Here's what each depth level actually means:</p>
+
+<ul>
+  <li><strong>Depth 0:</strong> Main session -- your active conversation. Has the Agent tool. Sees only top-level summaries from depth-1 sub-agents.</li>
+  <li><strong>Depth 1 (child):</strong> Runs in its own context window with a custom system prompt, scoped tool list, and independent permissions. Can spawn depth-2 agents.</li>
+  <li><strong>Depth 2 (grandchild):</strong> Spawned by the child. Own context window. Can spawn depth-3 agents. Summary goes to its parent (depth 1), not to main.</li>
+  <li><strong>Depth 3-4:</strong> Available but expensive. Token costs compound per level. Each sub-agent burns its own context budget in addition to the calling agent's coordination overhead.</li>
+  <li><strong>Depth 5:</strong> Hard floor. No Agent tool available. Cannot spawn further.</li>
+</ul>
+
+<p>Version 2.1.139 added x-claude-code-agent-id and x-claude-code-parent-agent-id headers to every API request a sub-agent makes, plus agent_id and parent_agent_id attributes on OTEL spans. This makes the full depth-N hierarchy traceable in logs -- useful when a grandchild fails and you need to reconstruct which parent chain triggered it.</p>
+
+<p>The Claude Code UI visualization: the sub-agent panel below the prompt shows the full tree. Each row displays a (+N) descendant count, and opening a row shows direct children with the path back to main. After a nested run completes, /agents (the Running tab) or the transcript scroll shows three separate sub-agent panels for a 3-level chain.</p>
+
+<h2>Setting Up Your First Nested Sub-Agent Chain</h2>
+
+<p>Sub-agents are defined as Markdown files in .claude/agents/ at the project root. Each file's frontmatter sets the name, description, optional model override, and tool list. The body is the system prompt. A parent dispatches to a sub-agent by name or type via the Agent tool. Here's a working 3-level chain for a research-and-brief pipeline.</p>
+
+<p><strong>Step 1: Define the orchestrator (depth-1 child)</strong></p>
+
+<p>File: <code>.claude/agents/research-orchestrator.md</code></p>
+
+<pre><code>---
+name: research-orchestrator
+description: Coordinates multi-source research by dispatching specialized searchers and synthesizing results
+model: claude-sonnet-4-6
+tools:
+  - Agent
+  - Read
+  - Write
+---
+You are a research coordinator. When given a research topic:
+1. Identify 2-3 distinct angles that need separate investigation
+2. Spawn a web-search-agent for each angle using the Agent tool
+3. Collect all results and synthesize a structured brief with source attribution
+4. Return the brief -- not the raw search outputs
+
+Delegate all web searches to child agents. Do not perform searches directly.
+</code></pre>
+
+<p><strong>Step 2: Define the worker grandchild (depth-2)</strong></p>
+
+<p>File: <code>.claude/agents/web-search-agent.md</code></p>
+
+<pre><code>---
+name: web-search-agent
+description: Focused web researcher -- receives one specific question, returns a structured summary with sources
+model: claude-haiku-4-5
+tools:
+  - WebSearch
+  - WebFetch
+---
+You are a focused web researcher. You receive one specific research question.
+Return a structured summary: key finding, 2-3 supporting details, and source URLs.
+Be concise and factual. No editorializing.
+</code></pre>
+
+<p><strong>Step 3: Invoke the chain from the main session</strong></p>
+
+<pre><code>Agent(&#123;
+  agent_type: "research-orchestrator",
+  prompt: "Research the state of MCP stateless protocol adoption: what shipped in the July 28 RC, who is migrating, what is breaking in existing integrations"
+&#125;)
+</code></pre>
+
+<p>What happens: the main session calls research-orchestrator (depth 1). The orchestrator identifies 3 research angles and spawns 3 web-search-agent instances (depth 2) in parallel. Each grandchild searches independently. The orchestrator collects all 3 results and synthesizes a brief. The main session receives the brief only -- raw search results stay in the grandchild context windows.</p>
+
+<p>Token math: if each grandchild uses 20K tokens and the orchestrator uses 40K synthesizing, the main session pays roughly 100K tokens for the full run but receives a tight brief. The cost is real -- nested agents are justified when the parallelism and specialization are worth more than running a flat single-agent session.</p>
+
+<p>A background variant: the orchestrator can run in background mode (Ctrl+B equivalent in the API) while the main session continues other work. The main session is notified when the orchestrator finishes and surfaces its brief. For CLAUDE_CODE_FORK_SUBAGENT=1 (available since v2.1.117), the sub-agent shares the parent's prompt cache -- reducing cold-start token costs for agents that share context with the parent.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>The sandbox.credentials Security Fix: Why Automated Pipelines Need It</h2>
+
+<p>The sandbox.credentials setting in v2.1.191 blocks sandboxed Claude Code commands from reading credential files and secret environment variables. Before this fix, a sandboxed sub-agent running bash could read .env files, service account JSON credentials, and shell environment variables far outside its intended scope -- a real exposure surface in CI/CD pipelines where AWS keys or database passwords live in the environment.</p>
+
+<p>The context: a 2025 sandbox bypass (CVE-2025-66479) demonstrated that the sandbox was defense-in-depth, not a hard security boundary. A credentialed system running a compromised or misbehaving nested agent could have credentials exfiltrated via a simple bash read. sandbox.credentials narrows that surface considerably for the most common case -- agents that have no legitimate reason to read credentials but could access them through shell commands.</p>
+
+<p>To enable it, add to your project's .claude/settings.json:</p>
+
+<pre><code>&#123;
+  "sandbox": &#123;
+    "credentials": &#123;
+      "blockSecretEnvVars": true,
+      "blockCredentialFiles": true
+    &#125;
+  &#125;
+&#125;
+</code></pre>
+
+<p>Agents that need legitimate credential access should use purpose-built tools (an authenticated API client, a database connection tool) rather than direct file reads. The sandbox.credentials setting blocks the bash-read path, not the tool-access path. In practice, well-scoped sub-agents with properly defined tool lists don't need the bash credential-read path at all -- enabling this setting is a low-friction hardening step for any multi-agent pipeline running in an environment with sensitive credentials.</p>
+
+<h2>Configuring Fallback Model Chains for Concurrent Nested Agents</h2>
+
+<p>The v2.1.191 model picker update lets org admins configure up to 3 fallback models when the primary is unavailable. In a nested chain, parallel grandchild calls can trigger rate limits and fail the entire agent tree. With fallback chains configured, the system degrades gracefully to the next model instead of returning a 429 that kills the parent run.</p>
+
+<p>The configuration is at the organization level (Max, Team, or Enterprise plans). Individual developers see the configured fallbacks in the model picker, /model command, --model flag, and ANTHROPIC_MODEL environment variable. A typical chain: Opus 4.8 primary, Sonnet 4.6 first fallback, Haiku 4.5 second fallback. The fallback applies per agent call, not per session -- if the grandchild's primary is rate-limited, it falls to the first fallback for that specific invocation.</p>
+
+<p>For cost optimization across levels, I set different models in each sub-agent's frontmatter:</p>
+
+<ul>
+  <li><strong>Depth 0 (main session):</strong> Whatever is appropriate for the task -- Opus for complex work, Sonnet for standard sessions</li>
+  <li><strong>Depth 1 (orchestrator child):</strong> claude-sonnet-4-6 -- smart enough to coordinate and synthesize, meaningfully cheaper than Opus at scale</li>
+  <li><strong>Depth 2 (worker grandchildren):</strong> claude-haiku-4-5 -- fast and cheap for bounded, focused tasks with clear inputs and outputs</li>
+</ul>
+
+<p>The model field in the sub-agent frontmatter overrides the session default. The org-configured fallback chain applies to each level independently based on that level's configured primary model.</p>
+
+<h2>Three Pitfalls That Break Depth 4-5 Chains</h2>
+
+<p>The technical depth limit is 5 levels, but production chains beyond depth 3 hit failure modes that aren't documented. These are the three I encountered building with nested agents since v2.1.172 shipped -- each one cost time to diagnose because the symptoms surface at the parent level, not where the failure actually occurred.</p>
+
+<p><strong>Pitfall 1: Summary loss compounds with depth.</strong> Only a sub-agent's final summary returns to its parent. In a 3-level chain, grandchild results are synthesized into the child's summary, which is synthesized into what the main session sees. At depth 4 or 5, you're doing synthesis-of-synthesis-of-synthesis. By the time the main session receives the result, critical specifics -- exact numbers, source URLs, error messages -- have been abstracted away. The main session has no way to request a re-drill because it never saw the intermediate work.</p>
+
+<p><strong>Pitfall 2: Token costs multiply faster than you expect.</strong> A 3-level chain where each level uses 30K tokens costs 90K plus coordination overhead. A 5-level chain doesn't just cost 150K -- each level's synthesis is larger because it's processing the output of lower levels, and the coordination prompts at each level compound. In practice, 5-level chains can cost 4-5x more than 3-level chains accomplishing the same task.</p>
+
+<p><strong>Pitfall 3: You can't lock grandchild capabilities from the parent.</strong> It's tempting to write Agent(agent_type: "web-search-agent") with a restricted tool list in the child sub-agent's definition to control what grandchildren can do. The Claude Code docs are explicit: inside a sub-agent definition, tool type restrictions on spawned child types are ignored. Grandchild capabilities are governed by the grandchild's own .claude/agents/ definition file -- not by the parent's spawning call. If you need to restrict grandchild tools, set the restriction in the grandchild's own file, not in the parent's spawn call.</p>
+
+<h2>FAQ</h2>
+
+<h3>What version of Claude Code first introduced nested sub-agents?</h3>
+
+<p>Nested sub-agents -- where a sub-agent can spawn its own sub-agents -- launched in Claude Code v2.1.172 on June 10, 2026. Before that release, GitHub issue #61993 ("Sub-agents cannot spawn other sub-agents") had been open since early 2025. The restriction was intentional to prevent infinite recursion; v2.1.172 lifted it with a hard 5-level depth cap. Claude Code v2.1.191 (June 24, 2026) added production hardening: sandbox.credentials, fallback model chains, and MCP reliability fixes.</p>
+
+<h3>How do I prevent a child sub-agent from spawning grandchildren?</h3>
+
+<p>Remove the Agent tool from the child's tool list in its .claude/agents/ frontmatter definition. If the Agent tool is not in the tools array, the child cannot spawn further sub-agents. Note: you cannot restrict this from the parent's spawn call -- only the child's own definition file controls what tools it has access to. Setting tool restrictions in the parent's Agent() call for the child type is explicitly unsupported per the Claude Code docs.</p>
+
+<h3>What does sandbox.credentials block in Claude Code v2.1.191?</h3>
+
+<p>When enabled, sandbox.credentials blocks sandboxed bash commands from reading files matching credential patterns (.env, *.pem, *credentials*, service-account*.json, id_rsa, id_ed25519) and environment variables whose names contain KEY, TOKEN, SECRET, PASSWORD, or CREDENTIAL. Tool-based credential access -- for example, an API client tool that handles its own auth -- is not blocked. Enable it in .claude/settings.json under sandbox.credentials.blockSecretEnvVars and blockCredentialFiles. Available from v2.1.191 (June 24, 2026) onward.</p>
+
+<h3>Can I assign different Claude models to different nesting levels?</h3>
+
+<p>Yes -- set the model field in each sub-agent's .claude/agents/ frontmatter file. That model is used for that specific sub-agent regardless of what model the parent session or main conversation is running. A common cost-optimized pattern: Sonnet 4.6 at depth 1 for orchestration that requires judgment, Haiku 4.5 at depth 2 for bounded worker tasks with clear inputs and outputs. The org-configured fallback chain (up to 3 fallbacks, new in v2.1.191) applies to each level based on its configured primary model.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What version of Claude Code first introduced nested sub-agents?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Nested sub-agents launched in Claude Code v2.1.172 on June 10, 2026. Before that release, GitHub issue #61993 had been open since early 2025. The restriction was intentional to prevent infinite recursion; v2.1.172 lifted it with a hard 5-level depth cap. Claude Code v2.1.191 (June 24, 2026) added production hardening: sandbox.credentials, fallback model chains, and MCP reliability fixes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I prevent a child sub-agent from spawning grandchildren?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Remove the Agent tool from the child's tool list in its .claude/agents/ frontmatter definition. If the Agent tool is not in the tools array, the child cannot spawn further sub-agents. You cannot restrict this from the parent's spawn call -- only the child's own definition file controls what tools it has access to."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What does sandbox.credentials block in Claude Code v2.1.191?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "When enabled, sandbox.credentials blocks sandboxed bash commands from reading files matching credential patterns (.env, *.pem, *credentials*, service-account*.json, id_rsa, id_ed25519) and environment variables whose names contain KEY, TOKEN, SECRET, PASSWORD, or CREDENTIAL. Tool-based credential access is not blocked. Enable it in .claude/settings.json under sandbox.credentials.blockSecretEnvVars and blockCredentialFiles. Available from v2.1.191 (June 24, 2026) onward."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I assign different Claude models to different nesting levels?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes -- set the model field in each sub-agent's .claude/agents/ frontmatter file. A common cost-optimized pattern: Sonnet 4.6 at depth 1 for orchestration requiring judgment, Haiku 4.5 at depth 2 for bounded worker tasks. The org-configured fallback chain (up to 3 fallbacks, new in v2.1.191) applies to each level based on its configured primary model."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
