@@ -1,0 +1,158 @@
+---
+id: mcp-stateless-spec-july-2026-migration-guide
+uuid: mcp-stateless-spec-july-2026-migration-guide
+slug: mcp-stateless-spec-july-2026-migration-guide
+title: "MCP July 28 Spec Goes Stateless: Your Pre-Ship Migration Guide"
+excerpt: The MCP 2026-07-28 specification release candidate finalizes on July 28. It removes the initialize/initialized handshake, kills Mcp-Session-Id entirely, and mandates OAuth 2.1 with RFC 9728 protected 
+feature_image: null
+featured: false
+published_at: "2026-06-29T03:10:58-07:00"
+updated_at: "2026-06-29T03:10:58-07:00"
+reading_time: 9
+tags: [news, mcp, agent-architecture, oauth]
+tag_names: [News, MCP, Agent Architecture, OAuth]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "MCP July 28 Spec: Stateless Migration Guide for Builders"
+meta_description: "MCP's July 28 spec removes sessions and mandates OAuth 2.1. Here's what breaks in existing servers and the migration checklist every builder needs now."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>MCP July 28 Spec Goes Stateless: Your Pre-Ship Migration Guide</h1>
+
+<p class="lede">The MCP 2026-07-28 specification release candidate finalizes on July 28. It removes the initialize/initialized handshake, kills Mcp-Session-Id entirely, and mandates OAuth 2.1 with RFC 9728 protected resource metadata. Any server relying on session pinning, sticky routing, or tasks/list will break when compliant clients start shipping. Four weeks to migrate.</p>
+
+<p>MCP crossed 97 million monthly SDK downloads in March 2026. A large chunk of those installs built on the session model the protocol is about to retire. The release candidate has been public for weeks -- and the builder community hasn't produced a plain migration guide yet. That's what this is.</p>
+
+<h2>What is the MCP July 28 spec change?</h2>
+
+<p>The 2026-07-28 MCP spec is the largest revision since launch. It finalizes July 28 after a 10-week release candidate validation window. Core changes: the initialize/initialized handshake is removed, Mcp-Session-Id is killed, and OAuth 2.1 with RFC 9728 protected resource metadata is now mandatory for all remote Streamable HTTP servers.</p>
+
+<p>Two SEPs drive most of the downstream impact. SEP-2575 removes the initialize/initialized handshake -- the two-message exchange that previously kicked off every MCP connection and negotiated protocol version, client info, and capabilities. SEP-2567 removes Mcp-Session-Id, the header that pinned a client to a specific server instance once the handshake completed.</p>
+
+<p>Four additional SEPs harden the authorization layer, aligning it with OAuth 2.1, RFC 9728 (Protected Resource Metadata), RFC 8707 (Resource Indicators), and RFC 7591 (Dynamic Client Registration). The formal authorization spec has been maturing since OAuth 2.1 was introduced in the June 2025 release, but July 28 is when remote server compliance becomes mandatory rather than advisory.</p>
+
+<p>Scale context: MCP TypeScript and Python SDKs reached 97 million monthly downloads in March 2026, up from roughly 2 million at launch -- a 4,750% increase in 16 months. The ecosystem now has over 9,400 public servers spanning databases, CRMs, cloud providers, and developer tools, with private enterprise servers estimated at 3-4x that number. This is infrastructure-level protocol, not an experiment. Breaking changes land hard at this scale.</p>
+
+<h2>What breaks for existing MCP servers?</h2>
+
+<p>Existing MCP servers break in three areas if they don't migrate: session routing fails because Mcp-Session-Id is gone, initialization logic stops working because the handshake no longer occurs, and tasks/list is removed entirely. Any server that gates serving requests on receiving initialize, or any gateway routing traffic on Mcp-Session-Id, will fail with updated clients.</p>
+
+<p>Sticky session infrastructure is the most common production issue. The pre-spec deployment pattern for horizontal MCP required deep packet inspection at the gateway, shared session stores (Redis or similar), and pod affinity rules so the client's SSE long-poll hit the same instance as the initialize call. The canonical failure mode: pod A handles initialize and mints Mcp-Session-Id; the SSE GET load-balances to pod B, which has no record of that session and returns 404. The client throws TaskCanceledException 30 seconds later. Removing Mcp-Session-Id eliminates this failure class -- but only after you also remove the sticky routing infrastructure that was routing on it.</p>
+
+<p>Beyond routing: tasks/list is removed because it couldn't be safely scoped without session context. If you built on the experimental Tasks API, migrate to the new task lifecycle extension. The "resource not found" error code also changes from -32002 to the standard -32602, which breaks client-side error handlers that match on the old value. Roots, Sampling, and Logging are deprecated in this spec -- not yet removed, but scheduled for a future release.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What changed at the protocol level?</h2>
+
+<p>Six SEPs make up the July 28 spec. SEP-2575 removes the initialize/initialized handshake. SEP-2567 kills Mcp-Session-Id. Protocol version, client info, and capabilities now travel in _meta on every request. A new server/discover method lets clients fetch capabilities on demand instead of getting them once at connection time.</p>
+
+<p>The stateless redesign has immediate infrastructure benefits. A remote MCP server can run behind a plain round-robin load balancer -- no sticky sessions, no shared session store required. Kubernetes horizontal pod autoscaling works without session affinity rules. Serverless deployments (AWS Lambda, Google Cloud Functions) become viable because there's no persistent SSE connection to maintain per client. Rolling deployments no longer risk breaking in-flight calls tied to specific instances.</p>
+
+<p>One thing the spec does not mandate: stateless application logic. Servers that carry state across calls can still do so. You mint an explicit handle -- a basket_id, a run_id, whatever fits your domain -- from a tool, and the model passes it back as a plain argument on later calls. The session was a protocol concern. Application-level state remains yours to manage. The change is that the protocol no longer implicitly carries that context for you.</p>
+
+<p>Three features are deprecated in this spec: Roots, Sampling, and Logging. These were experimental, rarely implemented in practice, and their deprecation removes protocol surface that added complexity without wide adoption. If you built on any of them, they're still present in this release -- but plan for removal in a future spec version.</p>
+
+<h2>What does OAuth 2.1 now require from your server?</h2>
+
+<p>MCP servers are now formally OAuth 2.1 resource servers. You must expose /.well-known/oauth-protected-resource per RFC 9728. That endpoint returns JSON telling clients which authorization server to use. Clients follow that to the auth server's RFC 8414 metadata document for token and registration endpoints. Dynamic client registration and Resource Indicators are now mandatory. Stdio-only servers are exempt.</p>
+
+<p>Two requirements stand out for builders. First, dynamic client registration (RFC 7591) is now effectively required. Clients like Claude Desktop and ChatGPT self-register -- they don't have pre-minted client IDs. If your server maintains a static client allowlist instead of supporting dynamic registration, those clients won't work post-July 28. You either implement RFC 7591 or maintain an ever-expanding list of hardcoded IDs. Second, Resource Indicators (RFC 8707) are mandatory in both authorization requests and token requests. The resource parameter must be the canonical URI of your MCP server. This closes token confusion attacks where a credential minted for server A is accepted by server B.</p>
+
+<p>The /.well-known/oauth-protected-resource path is not configurable. RFC 9728 defines it as a fixed path. MCP clients hard-code discovery against it. If you host it at a custom path, compliant clients will fail to discover your authorization requirements and fall back to treating your server as unauthenticated or reject the connection.</p>
+
+<p>Scope note: OAuth 2.1 requirements only apply to remote MCP servers on Streamable HTTP. Local MCP servers using stdio transport are out of scope for the authorization spec. If you run Claude Desktop with local stdio-connected servers, the July 28 OAuth changes are invisible to you.</p>
+
+<h2>Your migration checklist before July 28</h2>
+
+<p>Four weeks is enough time to ship all of this if you start now. Nine items, ordered by how badly they break if you miss them:</p>
+
+<p><strong>1. Remove session-dependent initialization logic.</strong> Any code that waits for or requires an initialize message before serving requests needs to be removed. Clients following the new spec won't send it. Optionally add a server/discover handler for clients that want to fetch capabilities up front.</p>
+
+<p><strong>2. Strip Mcp-Session-Id from your gateway and load balancer.</strong> Remove sticky session rules. Remove any deep-packet-inspection routing on that header. Plain round-robin is now correct for horizontal deployments.</p>
+
+<p><strong>3. Migrate capabilities to per-request _meta.</strong> Protocol version, client info, and capabilities now travel inline on every request. Update your request parsing to read from _meta instead of from state set during the initialization exchange.</p>
+
+<p><strong>4. Move application state to explicit handles.</strong> Refactor cross-call state (context references, session variables, resource handles) to explicit identifiers that tools return and the model passes back as arguments on subsequent calls. Don't rely on implicit server-side session correlation.</p>
+
+<p><strong>5. Expose /.well-known/oauth-protected-resource.</strong> Add this endpoint returning an RFC 9728 JSON document with authorization_servers pointing at your auth server. This is the first endpoint compliant MCP clients will hit when connecting to a remote server.</p>
+
+<p><strong>6. Implement dynamic client registration (RFC 7591).</strong> Without it, off-the-shelf AI clients (Claude Desktop, ChatGPT, and others) can't self-register against your server. Static client allowlists won't scale once spec-compliant clients are the norm.</p>
+
+<p><strong>7. Add Resource Indicators to token validation.</strong> Validate the resource claim in incoming tokens to confirm they're scoped to your server's canonical URI. This is mandatory under RFC 8707 and prevents cross-server token reuse.</p>
+
+<p><strong>8. Update error code handling.</strong> Change -32002 to -32602 for "resource not found" errors everywhere -- client-side handlers, server logs, alerting rules, documentation.</p>
+
+<p><strong>9. Audit and migrate tasks/list usage.</strong> If you expose tasks/list, migrate to the task lifecycle extension in the new spec. The endpoint is removed outright -- there's no compatibility shim.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does the MCP stateless spec mean I have to rebuild my server from scratch?</h3>
+<p>No. The changes are targeted: remove the initialize/initialized handshake, stop using Mcp-Session-Id, expose /.well-known/oauth-protected-resource, and move application state to explicit handles. Most servers will touch routing config, initialization logic, auth endpoints, and error codes -- not a full rebuild. Servers built on official TypeScript or Python SDKs will get much of this through SDK updates when they ship.</p>
+
+<h3>Does the stateless MCP spec break local Claude Desktop MCP servers?</h3>
+<p>Local MCP servers using stdio transport are not affected. The stateless architecture and OAuth 2.1 requirements apply only to remote servers using Streamable HTTP. If you run Claude Desktop with local stdio-connected servers, the July 28 changes are transparent to you. Remote HTTP servers you connect to will need to be updated by whoever operates them.</p>
+
+<h3>When does the MCP July 28 spec finalize, and what happens to old clients?</h3>
+<p>The specification finalizes July 28, 2026. After that date, clients and servers built on the new spec won't cleanly interoperate with implementations frozen on the old session-based protocol. The 10-week RC window was specifically to give the ecosystem time to align before the spec locks. Expect a compatibility tail where old clients coexist with old servers, but new spec-compliant clients will fail against unmigrated servers.</p>
+
+<h3>What happens to MCP servers that don't migrate by July 28?</h3>
+<p>Servers that don't migrate will become incompatible with updated clients and SDKs as they ship. The timeline depends on how fast SDK updates land and how quickly major client implementers (Anthropic, OpenAI, Google) roll out spec-compliant versions. Old clients coexist with old servers for a while, but any new spec-compliant client will fail against unmigrated servers. Migrate before the deadline to stay in the compatibility window.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does the MCP stateless spec mean I have to rebuild my server from scratch?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The changes are targeted: remove the initialize/initialized handshake, stop using Mcp-Session-Id, expose /.well-known/oauth-protected-resource, and move application state to explicit handles. Most servers will touch routing config, initialization logic, auth endpoints, and error codes -- not a full rebuild. Servers built on official TypeScript or Python SDKs will get much of this through SDK updates when they ship."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the stateless MCP spec break local Claude Desktop MCP servers?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Local MCP servers using stdio transport are not affected. The stateless architecture and OAuth 2.1 requirements apply only to remote servers using Streamable HTTP. If you run Claude Desktop with local stdio-connected servers, the July 28 changes are transparent to you. Remote HTTP servers you connect to will need to be updated by whoever operates them."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "When does the MCP July 28 spec finalize, and what happens to old clients?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The specification finalizes July 28, 2026. After that date, clients and servers built on the new spec won't cleanly interoperate with implementations frozen on the old session-based protocol. The 10-week RC window was specifically to give the ecosystem time to align before the spec locks. Expect a compatibility tail where old clients coexist with old servers, but new spec-compliant clients will fail against unmigrated servers."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens to MCP servers that don't migrate by July 28?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Servers that don't migrate will become incompatible with updated clients and SDKs as they ship. The timeline depends on how fast SDK updates land and how quickly major client implementers (Anthropic, OpenAI, Google) roll out spec-compliant versions. Old clients coexist with old servers for a while, but any new spec-compliant client will fail against unmigrated servers. Migrate before the deadline to stay in the compatibility window."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
