@@ -1,0 +1,197 @@
+---
+id: claude-code-dynamic-workflows-vs-subagents
+uuid: claude-code-dynamic-workflows-vs-subagents
+slug: claude-code-dynamic-workflows-vs-subagents
+title: "Claude Code: Dynamic Workflows vs Subagents -- Which Pattern to Pick"
+excerpt: "Claude Code offers two main patterns for multi-step work: subagents (spawned via the Task tool, where Claude orchestrates dynamically) and dynamic workflows (a JavaScript script Claude writes that can"
+feature_image: null
+featured: false
+published_at: "2026-06-30T03:09:19-07:00"
+updated_at: "2026-06-30T03:09:19-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, dynamic-workflows, subagents, multi-agent]
+tag_names: [Tutorials, Claude Code, Dynamic Workflows, Subagents, Multi-Agent]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: Claude Code Dynamic Workflows vs Subagents Explained
+meta_description: "When to use Claude Code dynamic workflows vs subagents: the two-question decision framework, 7x token cost math, and production patterns for builders in 2026."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code: Dynamic Workflows vs Subagents -- Which Pattern to Pick</h1>
+
+<p class="lede">Claude Code offers two main patterns for multi-step work: subagents (spawned via the Task tool, where Claude orchestrates dynamically) and dynamic workflows (a JavaScript script Claude writes that can run up to 1,000 parallel agents while keeping your context window clean). The decision comes down to two questions: who holds the plan, and how many context windows the task actually needs.</p>
+
+<p>I've been running both patterns in production for months. The choice isn't about which is "better" -- it's about matching the pattern to the task. Get it wrong and you either burn 7x the tokens you need to, or you fail to parallelize work that should never run sequentially.</p>
+
+<h2>What's the actual difference between subagents and dynamic workflows?</h2>
+
+<p>The core difference is where the orchestration logic lives. With subagents, Claude IS the orchestrator -- it decides turn by turn what to spawn next, every result lands in the parent context window, and Claude reasons about intermediate output before spawning the next task. With dynamic workflows, a JavaScript script is the orchestrator -- Claude writes the script, the runtime executes it in the background, and Claude's context holds only the final verified answer.</p>
+
+<p>Subagents work through the Task tool. Your main Claude instance spawns separate Claude Code instances, each with their own system prompt, context window, and tool access. The parent session coordinates them and sees all their outputs. Dynamic workflows invoke the Workflow tool: Claude writes a JavaScript orchestration script that uses three primitives -- <code>agent()</code>, <code>pipeline()</code>, and <code>parallel()</code> -- to manage potentially hundreds of agents. According to the <a href="https://code.claude.com/docs/en/workflows">Claude Code documentation</a>, workflows run up to 16 agents concurrently with a hard cap of 1,000 agents per workflow run.</p>
+
+<p>One other key distinction: nested subagents now support depth=5 as of v2.1.172 (June 9, 2026). Subagents can spawn their own subagents five levels deep, which is useful for hierarchical tasks. But as the token math section shows, depth beyond 3 gets expensive fast.</p>
+
+<h2>When do subagents win?</h2>
+
+<p>Subagents are the right call when Claude needs to make orchestration decisions dynamically based on what each step returns. If the next task can't be planned in advance -- because it depends on reasoning about what the last step found -- you want Claude in the loop between steps, not code. Subagents are also the simpler setup for shallow fan-outs: 2-5 parallel tasks that each need their own context window where the parent synthesizes everything without drowning.</p>
+
+<p>Concrete examples where subagents win:</p>
+
+<ul>
+  <li><strong>Debugging a failing CI pipeline.</strong> You don't know where the failure is yet. Claude needs to run a test, see what breaks, decide what to look at next, spawn a subagent to dig into that specific module, and adapt based on what it finds. The path is unknown; Claude must navigate it.</li>
+  <li><strong>Competitive research with unknown scope.</strong> Start by searching a competitor's feature list. Depending on what's there, spawn subagents to dig into pricing, or their API docs, or their recent changelog. The research tree branches based on what Claude finds.</li>
+  <li><strong>Code review with feedback loops.</strong> A subagent reviews a file and flags issues. The parent decides whether to spawn a follow-up subagent to propose fixes or to escalate certain findings. Judgment calls at each step.</li>
+</ul>
+
+<p>The sweet spot is depth 2-3. At depth 2, you have a parent orchestrating 3-10 specialized subagents. At depth 3, each of those spawns 2-5 more. Beyond that, the context overhead starts eating the gains.</p>
+
+<h2>When do dynamic workflows win?</h2>
+
+<p>Dynamic workflows win when the task structure is known upfront and can be expressed as code. If you can write a list of items and a set of stages to run each item through, you want a workflow -- not Claude making decisions turn by turn. The orchestration becomes deterministic code rather than model reasoning, which means it's faster, cheaper, and resumable if it fails mid-run.</p>
+
+<p>The most striking real-world example: Bun creator Jarred Sumner used Claude Code dynamic workflows to port Bun from Zig to Rust, writing approximately <a href="https://medium.com/illumination/claude-codes-dynamic-workflows-the-ai-agent-architecture-that-just-rewrote-750-000-lines-of-code-d605a1d9b6d4">750,000 lines of Rust in 6 days</a> with hundreds of agents working in parallel and two independent reviewers on each file. No single-session subagent tree could hold that scale -- the work list was too large, the parallelism too deep. A workflow script drove the whole operation.</p>
+
+<p>Concrete examples where workflows win:</p>
+
+<ul>
+  <li><strong>Audit 500 files for a specific pattern.</strong> The work list is the file list. Fan it out with <code>pipeline(files, checkFile, verifyFinding)</code> and get all results without any intermediate output landing in your context window.</li>
+  <li><strong>Generate a batch of 30 articles from a topic list.</strong> Each topic is independent. Write one script, run all 30 in parallel.</li>
+  <li><strong>Security audit across a monorepo.</strong> Find all API surface area, check each endpoint, adversarially verify each finding. Pipeline pattern with a verify stage after find.</li>
+  <li><strong>Large-scale code migration.</strong> Transform each file, run tests, verify each transform passes. Deterministic structure, known work list.</li>
+</ul>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>The two-question decision framework</h2>
+
+<p>Two questions get you to the right pattern every time. First: who needs to hold the plan? If the orchestration logic can be expressed as deterministic code, use a dynamic workflow. If the orchestrator needs to reason about what to do next based on each intermediate result, use subagents. Second: how many context windows does the task need? If the work fits in a few isolated contexts that report to a single parent, subagents work fine. If the task needs 20, 50, or 500 parallel contexts, use a workflow script to manage them.</p>
+
+<p>Quick cheat sheet:</p>
+
+<ul>
+  <li><strong>Known work list + same operation per item</strong> -- dynamic workflow, pipeline pattern</li>
+  <li><strong>Unknown work list, Claude decides what to tackle next</strong> -- subagents</li>
+  <li><strong>Need 15+ parallel agents</strong> -- dynamic workflow (subagent fan-out at that scale drowns the parent context)</li>
+  <li><strong>Need judgment calls mid-execution</strong> -- subagents</li>
+  <li><strong>Need to resume after failure</strong> -- dynamic workflow (workflows journal completed agent() calls; same script + same args returns cached results on resume)</li>
+  <li><strong>Simple 2-3 step delegation</strong> -- subagents, simpler to set up and debug</li>
+</ul>
+
+<h2>The token math: what each pattern actually costs</h2>
+
+<p>Token cost is the most underestimated variable when choosing between these patterns. Per <a href="https://code.claude.com/docs/en/costs">Anthropic's cost management documentation</a>, agent teams running in plan mode consume approximately 7x the tokens of a single-thread session. Subagent-heavy workflows add 200-500% overhead versus the same task run as a single agent. Running 10 agents in parallel costs roughly 10x what one sequential agent costs -- parallelism multiplies token consumption linearly.</p>
+
+<p>Dynamic workflows shift this math by keeping intermediate results in JavaScript variables instead of Claude's context window. When an <code>agent()</code> call returns inside a workflow, the result lives in a variable -- not in the session's growing context. This avoids the exponential blowup that hits deep subagent trees, where every intermediate result stacks into an expanding parent context until it hits limits or costs spiral out.</p>
+
+<p>Real-world calibration: one developer reported running 49 specialized subagents in parallel for 2.5 hours and received an estimated bill of <a href="https://www.aicosts.ai/blog/claude-code-subagent-cost-explosion-887k-tokens-minute-crisis">$8,000-$15,000</a>. That's the subagent pattern applied at workflow scale without workflow's context controls. The problem wasn't agents -- it was the wrong tool for that scale of fan-out.</p>
+
+<p>On Claude Code Max ($100/month), dynamic workflows are included in the plan. The Workflow tool itself doesn't add per-token costs beyond what the individual <code>agent()</code> calls consume.</p>
+
+<h2>The three workflow primitives with real examples</h2>
+
+<p>Claude Code dynamic workflows ship with three core primitives that compose into every useful pattern. Claude writes the orchestration script based on your task description; you invoke it via the Workflow tool. Here's what each primitive does and when to reach for it, per the <a href="https://code.claude.com/docs/en/workflows">official workflow documentation</a>:</p>
+
+<p><strong><code>agent(prompt, opts)</code></strong> spawns one subagent and returns its result. It's the atomic unit -- one isolated context window, one clean output. Everything else is built on top of this.</p>
+
+<pre><code>// Single agent -- simplest case
+const result = await agent("Audit src/auth.ts for SQL injection patterns")
+</code></pre>
+
+<p><strong><code>pipeline(items, stage1, stage2, ...)</code></strong> runs each item through every stage independently with no barrier between stages. Item A can be in stage 3 while item B is still in stage 1. This is the right default for multi-stage work -- fastest wall-clock time because nothing waits for the slowest item per stage to finish before the next stage starts.</p>
+
+<pre><code>// Audit all files, then verify each finding independently
+const results = await pipeline(
+  files,
+  file =&gt; agent(`Audit $&#123;file&#125; for security issues`, &#123;schema: FINDINGS_SCHEMA&#125;),
+  findings =&gt; agent(`Adversarially verify these findings`, &#123;schema: VERDICT_SCHEMA&#125;)
+)
+</code></pre>
+
+<p><strong><code>parallel(thunks)</code></strong> runs all tasks concurrently and waits for ALL to complete before moving on. Use this when you genuinely need all results before the next step -- for deduplicating findings across a full batch before running verification. It's a deliberate barrier; <code>pipeline()</code> is the leaner default when you don't need it.</p>
+
+<pre><code>// Fan out to multiple research angles, synthesize all at once
+const research = await parallel([
+  () =&gt; agent("Search GitHub for MCP issues in the last 7 days"),
+  () =&gt; agent("Search Reddit for MCP discussions this week"),
+  () =&gt; agent("Search HackerNews for MCP threads this week")
+])
+const synthesis = await agent(`Synthesize: $&#123;JSON.stringify(research)&#125;`)
+</code></pre>
+
+<p>Version requirement: dynamic workflows need Claude Code v2.1.154 or later. Run <code>claude --version</code> to confirm you're on a compatible build before writing workflow scripts.</p>
+
+<h2>FAQ</h2>
+
+<h3>Can I use dynamic workflows and subagents together in the same task?</h3>
+
+<p>Yes. Each <code>agent()</code> call inside a dynamic workflow IS a subagent -- it gets its own context window, system prompt, and tool access. You can configure custom agent types via the <code>agentType</code> option. The workflow script is the outer orchestrator; individual <code>agent()</code> calls are effectively subagents with isolated contexts, but their intermediate output doesn't accumulate in the parent session context.</p>
+
+<h3>What's the minimum Claude Code version for dynamic workflows?</h3>
+
+<p>Dynamic workflows require Claude Code v2.1.154 or later. The feature launched in May 2026 and is available on Pro, Max, Team, and Enterprise plans, as well as via direct API access on Amazon Bedrock, Google Vertex AI, and Microsoft Azure Foundry. Nested subagents at depth=5 require v2.1.172 specifically, which shipped June 9, 2026. Run <code>claude --version</code> to check.</p>
+
+<h3>How do I prevent runaway token costs with dynamic workflows?</h3>
+
+<p>Three controls work well together: prefer <code>pipeline()</code> over <code>parallel()</code> when you don't need a full result barrier (it's faster and uses less token overhead); scope each <code>agent()</code> prompt tightly so agents don't carry unnecessary context; and use the built-in <code>budget</code> global to set a hard ceiling -- <code>while (budget.remaining() &gt; 50_000) &#123; ... &#125;</code> stops a discovery loop before costs escape. The 1,000-agent cap is a safety backstop, not a target to optimize toward.</p>
+
+<h3>When should I start with subagents and move to workflows later?</h3>
+
+<p>Start with subagents when the task structure is still unclear -- they're easier to set up and debug because Claude is making the orchestration decisions in real time. Once you understand the shape of the work (this list, these stages, this fan-out), encode it as a dynamic workflow. Workflows pay off when the structure is understood and the scale exceeds what a single parent context can manage cleanly.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Can I use dynamic workflows and subagents together in the same task?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Each agent() call inside a dynamic workflow is a subagent with its own context window, system prompt, and tool access. The workflow script is the outer orchestrator. Intermediate outputs from agent() calls live in JavaScript variables, not in the parent session context, so you get subagent flexibility without the context accumulation problem."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What's the minimum Claude Code version for dynamic workflows?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Dynamic workflows require Claude Code v2.1.154 or later, launched in May 2026. Available on Pro, Max, Team, and Enterprise plans, plus direct API on Amazon Bedrock, Google Vertex AI, and Microsoft Azure Foundry. Nested subagents at depth=5 require v2.1.172 specifically (June 9, 2026). Run claude --version to check."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I prevent runaway token costs with dynamic workflows?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Three controls: prefer pipeline() over parallel() when you don't need a full result barrier; scope each agent() prompt tightly to avoid unnecessary context; and use the budget global to set a hard token ceiling. The 1,000-agent hard cap per workflow run is a safety backstop, not a target."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "When should I start with subagents and move to dynamic workflows later?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Start with subagents when the task structure is still unclear -- they're easier to debug because Claude makes orchestration decisions in real time. Once you understand the shape of the work and the scale exceeds what a single parent context can manage, encode it as a dynamic workflow. Workflows pay off when the structure is known and parallelism exceeds 10-15 agents."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
