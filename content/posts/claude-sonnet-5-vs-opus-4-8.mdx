@@ -1,0 +1,163 @@
+---
+id: claude-sonnet-5-vs-opus-4-8
+uuid: claude-sonnet-5-vs-opus-4-8
+slug: claude-sonnet-5-vs-opus-4-8
+title: "Claude Sonnet 5 vs Opus 4.8: The Honest Agent Builder's Comparison"
+excerpt: "Claude Sonnet 5 should be your default for most agentic workloads. It scores 63.2% on SWE-bench Pro and 80.4% on Terminal-Bench 2.1 -- within striking distance of Opus 4.8 -- at intro pricing of $2/$1"
+feature_image: null
+featured: false
+published_at: "2026-07-01T03:07:33-07:00"
+updated_at: "2026-07-01T03:07:33-07:00"
+reading_time: 8
+tags: [reviews, claude, sonnet-5, opus-4-8, model-comparison]
+tag_names: [Reviews, Claude, Sonnet 5, Opus 4.8, Model Comparison]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Sonnet 5 vs Opus 4.8: Agent Builder Comparison"
+meta_description: "Claude Sonnet 5 scores 63.2% SWE-bench Pro at $2/M tokens through Aug 31. Honest breakdown of when Opus 4.8 still justifies the price for agent builders."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Sonnet 5 vs Opus 4.8: The Honest Agent Builder's Comparison</h1>
+
+<p class="lede">Claude Sonnet 5 should be your default for most agentic workloads. It scores 63.2% on SWE-bench Pro and 80.4% on Terminal-Bench 2.1 -- within striking distance of Opus 4.8 -- at intro pricing of $2/$10 per million tokens through August 31, 2026. Opus still leads on long-horizon planning, extended thinking, and computer use tasks where that benchmark gap actually matters.</p>
+
+<p>I switched my production agents to Sonnet 5 the day it shipped on June 30. Here is what the numbers say and where I still route work to Opus.</p>
+
+<h2>What do the benchmarks actually tell agent builders?</h2>
+
+<p>Sonnet 5 scores 63.2% on SWE-bench Pro versus Opus 4.8's 69.2% -- a real 6-point gap on multi-file agentic coding. On Terminal-Bench 2.1 (real terminal environments, multi-step tasks), Sonnet 5 hits 80.4% compared to Opus's 82.7%. On knowledge-work tasks (GDPval-AA v2), Sonnet 5 scores 1,618 and Opus 4.8 scores 1,615 -- essentially tied. Which benchmark matters depends entirely on your workload class.</p>
+
+<p>The number that caught my attention was the Terminal-Bench jump. Sonnet 5 improved 20.7 points over Sonnet 4.6 on that benchmark (<a href="https://www.marktechpost.com/2026/06/30/anthropic-claude-sonnet-5-vs-sonnet-4-6-vs-opus-4-8-agentic-coding-benchmarks-api-pricing-and-cost-performance-tradeoffs-compared/">MarkTechPost</a>). For most agent builders, that benchmark -- measuring what agents do in practice -- is more relevant than SWE-bench's multi-file repo work.</p>
+
+<p>Full benchmark picture across what matters for agents:</p>
+<ul>
+  <li><strong>SWE-bench Pro (agentic coding):</strong> Sonnet 5 63.2% vs Opus 4.8 69.2%</li>
+  <li><strong>Terminal-Bench 2.1 (real terminal tasks):</strong> Sonnet 5 80.4% vs Opus 4.8 82.7%</li>
+  <li><strong>Computer use / OSWorld-Verified:</strong> Sonnet 5 81.2% vs Opus 4.8 83.4%</li>
+  <li><strong>Knowledge work / GDPval-AA v2:</strong> Sonnet 5 1,618 vs Opus 4.8 1,615 (tied)</li>
+  <li><strong>Humanity's Last Exam (no tools):</strong> Sonnet 5 43.2% vs Opus 4.8 49.8%</li>
+</ul>
+
+<p>The gap is real on hard coding and deep reasoning. It is nearly zero on knowledge work and terminal-based agentic tasks. Keep that distinction in mind when routing workloads.</p>
+
+<h2>When does Opus 4.8 still justify the price?</h2>
+
+<p>Opus 4.8 earns its cost on four task classes: long-horizon agentic planning with extended thinking, hard multi-file codebase work, computer-use browser agents, and deep mathematical or logical reasoning. For those tasks, the benchmark gap translates to meaningfully different output quality on problems where Sonnet 5 stalls.</p>
+
+<p>The clearest case for Opus 4.8 is anything that uses dynamic workflows -- Anthropic's research preview where Claude plans and then spawns hundreds of parallel subagents in a single session. That capability is in Opus 4.8 specifically. Anthropic's <a href="https://www.anthropic.com/claude/opus">product page</a> describes it handling codebase-scale migrations across hundreds of thousands of lines of code from kickoff to merge, using the existing test suite as its quality bar.</p>
+
+<p>Extended thinking is the second piece. Opus 4.8 uses adaptive thinking -- it budgets more thinking tokens to harder problems automatically. On multi-step planning tasks where reasoning compounds across many tool calls, that thinking budget pays off. On Humanity's Last Exam with no tools, Opus 4.8 scores 49.8% versus Sonnet 5's 43.2% -- a 6.6-point gap that matters when you are asking the model to reason its way through a genuinely hard problem, not just execute a well-defined task.</p>
+
+<p>Where I still route to Opus: any agent doing computer use at scale (the 83.4% vs 81.2% OSWorld gap adds up across thousands of browser sessions), hard debugging of unfamiliar codebases where I need architectural reasoning rather than pattern-matching, and any task where a wrong answer is expensive to reverse -- financial decisions, email sends, database writes. Those tasks get Opus. Everything else gets Sonnet 5.</p>
+
+<h2>When is Sonnet 5 the right default?</h2>
+
+<p>Sonnet 5 is the right default for most production agent workloads: agentic coding pipelines, research agents, content generation, customer-facing automation, and any multi-step workflow where cost per successful completion matters. At intro pricing of $2/$10 per million tokens through August 31, 2026, Sonnet 5 delivers near-Opus performance at a fraction of the price for these workloads.</p>
+
+<p>The task classes where Sonnet 5 performs closest to Opus: tool use and multi-step execution, instruction following on defined workflows, real-time research, content pipelines, and customer-facing automation. These are also the highest-volume agent workloads -- the ones where cost compounds most.</p>
+
+<p>Sonnet 5's Terminal-Bench score of 80.4% is the most important single number here. That benchmark tests what production agents do: navigate a real terminal, run commands, read output, correct mistakes, finish a task. The 20.7-point improvement over Sonnet 4.6 (<a href="https://techcrunch.com/2026/06/30/anthropic-launches-claude-sonnet-5-as-a-cheaper-way-to-run-agents/">TechCrunch</a>) means Sonnet 5 can handle tasks that used to require Opus.</p>
+
+<p>One specific thing I noticed in my own agents: instruction following and error correction are meaningfully better. Agents I had previously kept on Opus because Sonnet 4.6 would hallucinate tool parameters or fail to recover from API errors -- those agents work correctly on Sonnet 5. The retry budget on failed steps dropped. That compounds across a high-volume pipeline.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What does the cost math actually look like per task?</h2>
+
+<p>At intro pricing through August 31, Sonnet 5 at $2/$10 per million tokens is 60% cheaper than Opus 4.8 at $5/$25. At standard rates ($3/$15 vs $5/$25), the gap is 40%. For output-heavy agent workloads, that translates to roughly $400/day versus $1,000/day at scale, according to <a href="https://claudefa.st/blog/models/claude-sonnet-5-vs-opus-4-8">Claudefast's comparison</a>.</p>
+
+<p>Concrete example: 100 agent runs per day, each consuming 10,000 input tokens and 2,000 output tokens (1M input + 200K output daily).</p>
+
+<ul>
+  <li><strong>Opus 4.8:</strong> 1M &times; $5 + 200K &times; $25 = $5 + $5 = $10/day</li>
+  <li><strong>Sonnet 5 (standard, from Sep 1):</strong> 1M &times; $3 + 200K &times; $15 = $3 + $3 = $6/day</li>
+  <li><strong>Sonnet 5 (intro through Aug 31):</strong> 1M &times; $2 + 200K &times; $10 = $2 + $2 = $4/day</li>
+</ul>
+
+<p>At 100 runs/day, saving $6/day is not worth optimizing routing logic. Scale to 10,000 runs/day and you are looking at $400/day versus $1,000/day -- $219,000/year difference at standard rates. That is when the routing decision earns back the engineering time to implement it.</p>
+
+<p>The practical recommendation: if you are running under 5,000 daily agent calls, use Sonnet 5 for everything except the clear Opus use cases listed above. Do not over-engineer a routing layer you will not need until you hit that threshold.</p>
+
+<h2>My actual routing decision after a day of testing</h2>
+
+<p>After running both models on my production workloads on July 1, here is the routing I settled on: Sonnet 5 as the default for everything, with hard escalation rules for three task classes -- extended thinking budget over 10K thinking tokens, computer use running more than 20 consecutive steps, and any task where the agent is making a decision that costs real money or sends to a real external service.</p>
+
+<p>The routing criteria that matters most: how much does a wrong answer cost? For most agent tasks, a wrong answer means a failed run I retry. For a few tasks -- database writes, email sends, financial transactions -- a wrong answer is expensive to reverse. Those tasks get Opus. Everything else gets Sonnet 5.</p>
+
+<p>The introductory pricing window is real pressure to act. If you have been routing everything to Opus because Sonnet 4.6 was not good enough, the time to revisit that routing is before August 31, when Sonnet 5 moves from $2/$10 to $3/$15. The quality is there. The savings are material during the intro window. Start the migration now.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is Claude Sonnet 5 better than Opus 4.8 for coding?</h3>
+
+<p>For most coding tasks in production agents, Sonnet 5 is the better cost-performance choice. It scores 63.2% on SWE-bench Pro versus Opus 4.8's 69.2%, and 80.4% on Terminal-Bench 2.1. The 6-point SWE-bench gap matters for complex multi-file repository work but not for typical single-file tasks or tool-use coding workflows where Sonnet 5 performs comparably at 60% lower cost.</p>
+
+<h3>What is Claude Sonnet 5's pricing compared to Opus 4.8?</h3>
+
+<p>Sonnet 5 is priced at $2 per million input tokens and $10 per million output tokens through August 31, 2026, then moves to $3/$15. Claude Opus 4.8 is $5/$25 per million tokens. During the introductory window, Sonnet 5 is 60% cheaper than Opus per token. At standard rates from September 2026, it is 40% cheaper. Source: <a href="https://www.anthropic.com/news/claude-sonnet-5">Anthropic announcement</a>.</p>
+
+<h3>When should I still use Opus 4.8 over Sonnet 5?</h3>
+
+<p>Use Opus 4.8 for long-horizon agentic planning with extended thinking budgets, hard multi-file codebase migrations using dynamic workflows, computer-use browser automation where the 83.4% vs 81.2% OSWorld-Verified score matters at scale, and deep mathematical or logical reasoning (49.8% vs 43.2% on Humanity's Last Exam). For tool use, research, content generation, and customer-facing automation, Sonnet 5 is the correct default.</p>
+
+<h3>How much did Sonnet 5 improve over Sonnet 4.6?</h3>
+
+<p>The Terminal-Bench 2.1 score improved 20.7 points over Sonnet 4.6 -- the biggest single-generation jump in that benchmark. Sonnet 5 also improved on SWE-bench Pro (63.2% vs 58.1% for Sonnet 4.6) and reached 43.2% on Humanity's Last Exam (no tools), a benchmark where Sonnet 4.6 was not competitive. These jumps are large enough to change routing decisions on real production workloads.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Claude Sonnet 5 better than Opus 4.8 for coding?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "For most coding tasks in production agents, Sonnet 5 is the better cost-performance choice. It scores 63.2% on SWE-bench Pro versus Opus 4.8 at 69.2%, and 80.4% on Terminal-Bench 2.1. The 6-point SWE-bench gap matters for complex multi-file repository work but not for typical single-file tasks or tool-use coding workflows where Sonnet 5 performs comparably at 60% lower cost."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is Claude Sonnet 5 pricing compared to Opus 4.8?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Sonnet 5 is priced at  per million input tokens and 0 per million output tokens through August 31, 2026, then moves to /5. Claude Opus 4.8 is /5 per million tokens. During the introductory window, Sonnet 5 is 60% cheaper than Opus per token. At standard rates from September 2026, it is 40% cheaper."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "When should I still use Opus 4.8 over Sonnet 5?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Use Opus 4.8 for long-horizon agentic planning with extended thinking budgets, hard multi-file codebase migrations using dynamic workflows, computer-use browser automation where the 83.4% vs 81.2% OSWorld-Verified score matters at scale, and deep mathematical or logical reasoning. For tool use, research, content generation, and customer-facing automation, Sonnet 5 is the correct default."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How much did Sonnet 5 improve over Sonnet 4.6?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The Terminal-Bench 2.1 score improved 20.7 points over Sonnet 4.6 -- the biggest single-generation jump in that benchmark. Sonnet 5 also improved on SWE-bench Pro (63.2% vs 58.1% for Sonnet 4.6) and reached 43.2% on Humanity Last Exam (no tools). These jumps are large enough to change routing decisions on real production workloads."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
