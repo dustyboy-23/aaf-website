@@ -1,0 +1,167 @@
+---
+id: claude-code-v2-1-198-background-agents
+uuid: claude-code-v2-1-198-background-agents
+slug: claude-code-v2-1-198-background-agents
+title: "Claude Code v2.1.198: Background Agents Now Commit, Push, and Open Draft PRs"
+excerpt: Claude Code v2.1.198, shipped July 1, 2026 with 32 total changes, closes the final gap in the background agent workflow. Agents in git worktrees now auto-commit, push the branch, and open a GitHub dra
+feature_image: null
+featured: false
+published_at: "2026-07-02T03:12:31-07:00"
+updated_at: "2026-07-02T03:12:31-07:00"
+reading_time: 9
+tags: [deployment, claude-code, background-agents, github, notification-hooks]
+tag_names: [Deployment, Claude Code, Background Agents, GitHub, Notification Hooks]
+primary_tag: deployment
+primary_tag_name: Deployment
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.198 Background Agents: Auto-Commit Guide"
+meta_description: Claude Code v2.1.198 auto-commits from background agents, opens draft PRs, and adds Notification hooks. Full breakdown for builders shipping agent workflows.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.198: Background Agents Now Commit, Push, and Open Draft PRs</h1>
+
+<p class="lede">Claude Code v2.1.198, shipped July 1, 2026 with 32 total changes, closes the final gap in the background agent workflow. Agents in git worktrees now auto-commit, push the branch, and open a GitHub draft PR when they finish -- no prompt, no pause. Two new Notification hook events let you wire Slack or desktop alerts to agent completions and blocked sessions.</p>
+
+<p>I have been running background agents against isolated worktrees since they shipped. The flow had one obvious hole: the agent finished editing, then sat waiting for me to run git commit and push manually. v2.1.198 removes that step entirely. Here is what changed, how to configure the Notification hooks, and what the Explore agent model upgrade actually costs you in tokens.</p>
+
+<h2>What shipped in Claude Code v2.1.198?</h2>
+
+<p>v2.1.198 landed July 1, 2026 with 32 total changes. The highlights: background agents now auto-commit, push, and open a draft PR in worktrees; the Explore agent upgraded from Haiku to inheriting the main session model (capped at Opus 4.8); Claude in Chrome reached general availability; and two new Notification hook events -- agent_needs_input and agent_completed -- shipped for the background agent lifecycle.</p>
+
+<p>This version builds on v2.1.197 (June 30), which made Claude Sonnet 5 the default model across all sessions. Starting with v2.1.198, Sonnet 5 is what Explore uses unless you pin something else, and background agent sessions inherit whatever model the parent session is running.</p>
+
+<p>Two quieter changes worth noting: subagents and context compaction now inherit the session's extended thinking configuration, so delegated tasks get the same reasoning depth as the main agent; and the new /dataviz skill ships with an executable color palette validator for chart and dashboard work. Sources: <a href="https://www.claudeupdates.dev/version/2.1.198">claudeupdates.dev</a>, <a href="https://dev.classmethod.jp/en/articles/20260702-cc-updates-v2-1-198/">DevelopersIO</a>.</p>
+
+<h2>How do background agents handle the full PR loop now?</h2>
+
+<p>Before v2.1.198, a background agent in a git worktree stopped after editing and waited for you to commit and push by hand. v2.1.198 automates the full sequence: the agent detects it has finished code work, commits the changes, pushes the branch, and opens a GitHub draft PR -- all without any user prompt. The draft flag is the safety boundary; merge authority stays with humans.</p>
+
+<p>The draft constraint matters. The PR is not marked ready-to-merge. It is a draft: no reviewer gets notified, no merge button is active, and CI runs its checks before any human looks at the diff. Anthropic is drawing a deliberate line here -- the agent handles authorship and transport, you handle the review and merge decision. This is the right boundary for agentic coding workflows right now.</p>
+
+<p>What changed in my actual workflow: I used to run a background agent, go work on something else for 20 minutes, come back to find edits sitting in the worktree, then spend two more minutes running git add, git commit, git push, and gh pr create --draft. That friction was small per task but compounded across 5-10 parallel agents in a day. v2.1.198 removes it entirely. The agent finishes when the draft PR is open, not when the edits exist on disk.</p>
+
+<p>This also changes how you run parallel agent sessions. With the old flow, spawning 5 agents against 5 different tasks meant 5 separate manual commit-push-PR sequences when they all finished within a few minutes of each other. With v2.1.198, all 5 create their own draft PRs autonomously. You get 5 Notification hook events, and your GitHub repo shows 5 draft PRs ready for review. That is a meaningfully different throughput ceiling for solo operators running agent-heavy workflows.</p>
+
+<p>The workflow: run <code>claude agents</code>, start a background session, give it a task with a clear branch name and completion criteria, and move on. When agent_completed fires, a draft PR is waiting in your GitHub repo. You open it, review the diff, and merge -- or leave comments and let the agent continue.</p>
+
+<h2>How do you wire Notification hooks for agent_needs_input and agent_completed?</h2>
+
+<p>v2.1.198 adds two background agent lifecycle events to the Claude Code Notification hook: agent_needs_input fires when an agent hits a decision it cannot resolve alone -- a merge conflict, missing credential, or scope ambiguity; agent_completed fires when an agent finishes its task and the draft PR is open. Both pipe through the existing hook configuration in settings.json.</p>
+
+<p>Here is a minimal Slack setup. Create an incoming webhook at api.slack.com/apps, then add this block to your <code>~/.claude/settings.json</code>:</p>
+
+<pre><code>&#123;
+  "hooks": &#123;
+    "Notification": [
+      &#123;
+        "matcher": "agent_completed",
+        "hooks": [
+          &#123;
+            "type": "command",
+            "command": "curl -s -X POST "$SLACK_WEBHOOK_URL" -H 'Content-type: application/json' -d "&#123;\"text\": \"Agent finished: $CLAUDE_NOTIFICATION_MESSAGE\"&#125;""
+          &#125;
+        ]
+      &#125;,
+      &#123;
+        "matcher": "agent_needs_input",
+        "hooks": [
+          &#123;
+            "type": "command",
+            "command": "curl -s -X POST "$SLACK_URGENT_WEBHOOK" -H 'Content-type: application/json' -d "&#123;\"text\": \"Agent blocked -- needs input: $CLAUDE_NOTIFICATION_MESSAGE\"&#125;""
+          &#125;
+        ]
+      &#125;
+    ]
+  &#125;
+&#125;</code></pre>
+
+<p>Set <code>SLACK_WEBHOOK_URL</code> and <code>SLACK_URGENT_WEBHOOK</code> in your shell environment. The two events warrant different severity levels: agent_completed is an FYI (work is staged, nothing is blocking), agent_needs_input means the agent is paused and waiting for you. I route completions to a low-noise monitoring channel and input requests to a high-priority channel with phone notifications enabled. Full hook docs: <a href="https://code.claude.com/docs/en/agent-sdk/hooks">code.claude.com/docs/en/agent-sdk/hooks</a>.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>What does the Explore agent model upgrade actually cost?</h2>
+
+<p>The Explore agent previously ran on Haiku regardless of your session model -- Anthropic's fastest and cheapest option. v2.1.198 changes that: Explore now inherits the main session model, capped at Opus 4.8. Run Sonnet 5 as your main model and Explore runs on Sonnet 5. Pin Opus 4.8 and Explore can use Opus. Haiku is no longer the floor for Explore searches.</p>
+
+<p>The cost difference is real. Claude Sonnet 5 intro pricing (through August 31, 2026) is $2.00 input / $10.00 output per million tokens, with standard pricing of $3.00 / $15.00 per million tokens after that. Claude Haiku 4.5 runs at $0.80 / $4.00 per million tokens. Explore runs targeted search operations -- not long reasoning chains -- so the token volume per call is modest. But if you run heavy Explore sweeps across large codebases, the cost delta adds up and is worth monitoring for the first week after upgrading.</p>
+
+<p>What you get in return: meaningfully better code comprehension. Claude Sonnet 5 hit 85.2% on SWE-bench Verified at launch on June 30, 2026, per Anthropic's announcement. Haiku-level searches in repos with complex module graphs, heavy abstraction, or non-obvious naming patterns routinely missed relevant files and returned shallow results. Sonnet 5's structural code reasoning is considerably stronger, which translates to fewer dead ends when Explore is looking for specific patterns across large codebases.</p>
+
+<h2>What does Claude in Chrome GA mean for browser automation?</h2>
+
+<p>Claude in Chrome reached general availability in v2.1.198. The integration lets Claude Code drive a real Chrome browser -- not a headless test environment -- to test web apps, capture console logs, fill forms, and extract page data. GA means Anthropic is committing to a production support envelope; the beta stability caveat is gone.</p>
+
+<p>I have been using the beta for automated QA: Claude Code runs through a defined set of UI steps, captures any JavaScript console errors, and returns a structured report. The main beta failure mode was session instability -- the browser connection would drop mid-run, the agent would error, and the whole run had to restart. GA means those stability issues are addressed to production standards.</p>
+
+<p>The combination that makes this interesting: Chrome GA plus the background agent PR loop. An agent can now edit code in a worktree, commit the change, open a draft PR, and immediately load the live preview URL in a real Chrome session to run a smoke test -- before any human looks at the diff. The agent does the write-test cycle; you review the PR after it has already validated against a real browser. Source: <a href="https://freeai.help/blog/claude-code-v21198-background-agents-can-now-commit_en">freeai.help</a>.</p>
+
+<h2>FAQ</h2>
+
+<h3>Do I need to configure anything to get the auto-commit behavior in v2.1.198?</h3>
+<p>No configuration required. If you are on v2.1.198 or later and using <code>claude agents</code> with a git worktree that has a GitHub remote, background agents auto-commit and open a draft PR when they finish code work. Verify your version with <code>claude --version</code> and confirm the worktree branch has push access to the remote. Update with <code>npm install -g @anthropic-ai/claude-code@latest</code>.</p>
+
+<h3>Can background agents merge pull requests or only open them as drafts?</h3>
+<p>Background agents open draft PRs only -- they cannot merge. The draft state prevents auto-merge and blocks reviewer assignment. Your branch protection rules, required CI checks, and status checks all remain in force. A human must explicitly promote the draft to ready-for-review and then approve the merge. That boundary is deliberate in v2.1.198 and is not configurable.</p>
+
+<h3>How do I control which model a background agent session uses?</h3>
+<p>Background agents inherit the model from the parent session. Start your main session with <code>claude --model claude-sonnet-5</code> and background agents launched from it use Sonnet 5. To pin Opus: <code>claude --model claude-opus-4-8</code>. The Explore agent follows the same inheritance rule, capped at Opus 4.8 regardless of what the main session is pinned to above that ceiling.</p>
+
+<h3>What is the difference between agent_needs_input and agent_completed?</h3>
+<p>agent_completed fires when an agent finishes its work and the draft PR is open -- it is an FYI that work is staged for your review. agent_needs_input fires when an agent hits a blocker it cannot resolve alone: a merge conflict, missing credential, or ambiguous instruction. The agent is paused and cannot continue until you respond. Route these to different channels with different urgency levels -- one for monitoring, one for paging.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Do I need to configure anything to get the auto-commit behavior in v2.1.198?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No configuration required. If you are on v2.1.198 or later and using claude agents with a git worktree that has a GitHub remote, background agents auto-commit and open a draft PR when they finish code work. Verify your version with claude --version and confirm the worktree branch has push access to the remote. Update with npm install -g @anthropic-ai/claude-code@latest."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can background agents merge pull requests or only open them as drafts?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Background agents open draft PRs only -- they cannot merge. The draft state prevents auto-merge and blocks reviewer assignment. Your branch protection rules, required CI checks, and status checks all remain in force. A human must explicitly promote the draft to ready-for-review and then approve the merge. That boundary is deliberate in v2.1.198 and is not configurable."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I control which model a background agent session uses?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Background agents inherit the model from the parent session. Start your main session with claude --model claude-sonnet-5 and background agents launched from it use Sonnet 5. To pin Opus: claude --model claude-opus-4-8. The Explore agent follows the same inheritance rule, capped at Opus 4.8 regardless of what the main session is pinned to above that ceiling."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between agent_needs_input and agent_completed?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "agent_completed fires when an agent finishes its work and the draft PR is open -- an FYI that work is staged for your review. agent_needs_input fires when an agent hits a blocker it cannot resolve alone: a merge conflict, missing credential, or ambiguous instruction. The agent is paused and cannot continue until you respond. Route these to different channels with different urgency levels."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
