@@ -1,0 +1,144 @@
+---
+id: mcp-stateless-july-28-spec-rc
+uuid: mcp-stateless-july-28-spec-rc
+slug: mcp-stateless-july-28-spec-rc
+title: "MCP Goes Stateless: What the July 28 Spec RC Breaks"
+excerpt: The MCP 2026-07-28 spec release candidate removes the initialize/initialized handshake entirely and kills the Mcp-Session-Id header that pinned clients to a server instance. Every Streamable HTTP requ
+feature_image: null
+featured: false
+published_at: "2026-07-06T03:11:27-07:00"
+updated_at: "2026-07-06T03:11:27-07:00"
+reading_time: 10
+tags: [news, mcp, model-context-protocol, agent-stack, mcp-migration]
+tag_names: [News, MCP, Model Context Protocol, Agent Stack, MCP Migration]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "MCP Goes Stateless: What the July 28 Spec RC Breaks"
+meta_description: "The MCP 2026-07-28 spec RC removes the initialize handshake and kills Mcp-Session-Id. Here's what breaks, what's deprecated, and how to migrate your server."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>MCP Goes Stateless: What the July 28 Spec RC Breaks</h1>
+
+<p class="lede">The MCP 2026-07-28 spec release candidate removes the initialize/initialized handshake entirely and kills the Mcp-Session-Id header that pinned clients to a server instance. Every Streamable HTTP request now needs three new required headers. Beta SDKs for Python, TypeScript, Go, and C# are live. Final spec ratifies July 28, 2026.</p>
+
+<p>I've been watching the MCP spec evolve since the protocol launched, and this is the first release candidate that will actually break production code. If you run an MCP server -- especially a remote one using Streamable HTTP transport -- there are concrete changes to make before July 28. Here's what changed and exactly what to fix.</p>
+
+<h2>What Is the MCP 2026-07-28 Spec RC?</h2>
+<p>The 2026-07-28 release candidate is the largest revision to the Model Context Protocol since the protocol launched. It was locked on May 21, 2026, opening a 10-week validation window for SDK maintainers and server authors before the spec goes final. Beta SDKs for Python v2, TypeScript v2, Go, and C# are available now on the modelcontextprotocol GitHub org -- details at <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">blog.modelcontextprotocol.io</a>.</p>
+<p>Two core breaking changes are structural: the initialize handshake is gone (SEP-2575), and protocol-level sessions are gone (SEP-2567). Everything else -- MCP Apps, caching headers, a revised Tasks lifecycle -- is additive. You can't use the additive features without addressing the transport layer changes first.</p>
+<p>The <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">full RC announcement</a> on blog.modelcontextprotocol.io lists every SEP in scope. I'll focus on the changes that affect server authors and client builders right now.</p>
+
+<h2>What's Actually Gone: The Initialize Handshake (SEP-2575)</h2>
+<p>Before this RC, every MCP connection opened with an initialize request from the client and a notifications/initialized acknowledgment back. Those two messages established protocol version, client identity, and capability negotiation before any real work happened. Under the 2026-07-28 spec (SEP-2575), both are gone entirely -- the handshake no longer exists in Streamable HTTP.</p>
+<p>Instead, each request carries its protocol version, client identity, and client capabilities inline in a <code>_meta</code> field, using three keys: <code>io.modelcontextprotocol/protocolVersion</code>, <code>/clientInfo</code>, and <code>/clientCapabilities</code>. The server reads capability context from the request itself, not from state established at connection time.</p>
+<p>If you have an <code>initialize</code> handler in your server today, the beta SDKs maintain backward-compatible behavior during the validation window. But under the new spec, the handler does nothing. Remove it before July 28 so you're not shipping dead code.</p>
+
+<h2>What Else Is Gone: Sessions and the Mcp-Session-Id Header (SEP-2567)</h2>
+<p>Sessions are removed entirely via SEP-2567. The Mcp-Session-Id header that tied a client to a specific server instance no longer exists in Streamable HTTP. Any server instance can serve any request from any client. If you configured sticky sessions at nginx, AWS ALB, or Cloudflare Workers, you can remove that configuration -- it's no longer required and adds unnecessary latency.</p>
+<p>The operational benefit is real: a remote MCP server can now run behind a plain round-robin load balancer with no shared session store. Previously you needed sticky routing or a Redis-backed session layer to ensure request N from a client landed on the same pod as request N-1. That entire complexity category is gone.</p>
+<p>One clarification worth making: removing protocol-level sessions does not force your application to be stateless. If your tools maintain state across calls -- a file-editing context, a shopping cart, a browser session -- you mint an explicit handle from a tool call (a <code>session_token</code>, a <code>resource_id</code>) and have the model pass it back as a normal argument on later calls. State lives in your application layer. The MCP protocol just stopped pretending to manage it.</p>
+
+<h2>New Headers Required on Every Streamable HTTP Request (SEP-2243)</h2>
+<p>Three new headers are required on every Streamable HTTP request under the 2026-07-28 spec (SEP-2243): <code>MCP-Protocol-Version</code> carries the protocol version string; <code>Mcp-Method</code> carries the JSON-RPC method being called (like <code>tools/call</code> or <code>resources/read</code>); <code>Mcp-Name</code> carries the name of the specific tool or resource being accessed. All three are required, not optional.</p>
+<p>The reason for putting <code>Mcp-Method</code> and <code>Mcp-Name</code> in HTTP headers rather than only in the JSON body: infrastructure tooling -- load balancers, API gateways, rate limiters -- can route and throttle on the operation without inspecting the request body. A gateway can rate-limit <code>tools/call</code> separately from <code>resources/read</code>. A load balancer can route by tool name. This is HTTP working as designed.</p>
+<p>If you're using a maintained SDK (Python v2 beta, TypeScript v2 beta), these headers are handled automatically after you upgrade. If you have a custom Streamable HTTP client implementation, add them before July 28. Clients that don't send these headers will be non-conformant under the final spec.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What's Deprecated But Not Yet Removed (SEP-2577)</h2>
+<p>Three features enter formal deprecation under SEP-2577: Roots, Sampling, and Logging. Deprecated means still functional -- the spec guarantees these features remain in every version published within 12 months of July 28, 2026, giving you a runway to at least mid-2027. If you build on them today, they keep working. Plan migration into your 2026-2027 roadmap; don't scramble in 2027.</p>
+<p>Roots is deprecated because tool parameters or config fields do the same job more explicitly without the protocol overhead. Sampling is deprecated because calling the LLM provider API directly (Anthropic, OpenAI) is cleaner than routing a generation request through the MCP host. Logging is deprecated in favor of stderr or OpenTelemetry -- conventional approaches that work with existing observability stacks out of the box.</p>
+<p>The older HTTP+SSE transport is also reclassified as Deprecated via SEP-2596. It works for 12 months post-ratification -- through at least July 2027. After that, Streamable HTTP is the only supported remote transport. If you still serve SSE transport, put the migration on your 2026-2027 roadmap alongside Roots/Sampling/Logging.</p>
+
+<h2>What's New: MCP Apps, Caching, and the Tasks Lifecycle</h2>
+<p>Three additive features ship alongside the breaking changes. MCP Apps (SEP-1865) lets servers deliver interactive HTML interfaces to hosts, rendered in sandboxed iframes. Servers declare UI templates ahead of time using a <code>ui://</code> URI scheme, hosts prefetch and security-review them before rendering, and UI-to-host communication flows over the same JSON-RPC channel as normal tool calls. The security model uses mandatory iframe sandboxing, pre-declared templates, and user-consent gating on UI-initiated tool calls.</p>
+<p>Caching is now first-class in the protocol via SEP-2549. List and resource responses carry <code>ttlMs</code> and <code>cacheScope</code> fields, modeled on HTTP Cache-Control. A client knows exactly how long a <code>tools/list</code> response stays fresh and whether it's safe to share the cached result across users. For servers with stable tool catalogs this is a meaningful efficiency improvement -- clients stop re-fetching the tool list on every conversation turn.</p>
+<p>The experimental async Tasks API gets a stable replacement: <code>tasks/get</code>, <code>tasks/update</code>, and <code>tasks/cancel</code>. According to the <a href="https://stacktr.ee/blog/mcp-2026-spec-changes">Stacktree spec breakdown</a>, the new lifecycle is a thin wrapper over the same state machine, so migrations are mostly renaming method calls. If you used the experimental Tasks API, migrate before July 28.</p>
+
+<h2>The 8-Item Migration Checklist for July 28</h2>
+<p>If you run a production MCP server or maintain an MCP client integration, eight changes need to happen before the spec ratifies on July 28, 2026. Most are removals -- delete old handling code. The additions are mostly handled by upgrading to the v2 beta SDK. Here's the full list from most to least urgent.</p>
+<ul>
+  <li><strong>Remove initialize/notifications/initialized handlers.</strong> They do nothing under the new spec. Delete them so future maintainers don't waste time tracing dead code.</li>
+  <li><strong>Stop reading Mcp-Session-Id.</strong> Compliant clients will no longer send it. If your server logic uses it for routing or identity, switch to an application-level token passed as a tool argument.</li>
+  <li><strong>Remove sticky session config at your load balancer</strong> -- nginx sticky cookies, ALB stickiness, Cloudflare session affinity. It's no longer required and adds latency for nothing.</li>
+  <li><strong>Add Mcp-Method, Mcp-Name, and MCP-Protocol-Version headers</strong> to all outbound Streamable HTTP requests if you maintain a custom client. Maintained SDK v2 betas do this automatically.</li>
+  <li><strong>Migrate experimental async Tasks</strong> to the tasks/get / tasks/update / tasks/cancel lifecycle if you used the experimental API.</li>
+  <li><strong>Add ttlMs to your tools/list and resources/list responses</strong> if your tool catalog is stable. Start conservative (3600000ms = 1 hour) and tune from observability data.</li>
+  <li><strong>Schedule Roots, Sampling, and Logging migrations</strong> for sometime before mid-2027. Not urgent -- but booking time now prevents a scramble later.</li>
+  <li><strong>Install and test against the beta SDK.</strong> Python v2 and TypeScript v2 are live on GitHub now. Run your integration tests before July 28 while feedback can still influence the spec.</li>
+</ul>
+
+<h2>What's Still Unclear in This RC</h2>
+<p>Three open questions remain as of July 6, 2026. First: how capability negotiation degrades when an older client without <code>_meta</code> support hits a new server -- the spec describes the mechanism but I haven't seen conformance tests covering this edge case. Second: the full security profile for MCP Apps across different host environments, since Claude Desktop and a custom web host handle sandboxing differently. Third: whether TypeScript v2's package split (monolithic <code>@modelcontextprotocol/sdk</code> into <code>@modelcontextprotocol/server</code> and <code>@modelcontextprotocol/client</code>) requires import path changes in monorepos that treat the old package as a peer dependency.</p>
+<p>The official RC feedback window is open until July 28. If you find edge cases -- especially around auth, backward compatibility, or MCP Apps security -- file them on the <a href="https://github.com/modelcontextprotocol/servers/releases/tag/2026.7.4">modelcontextprotocol GitHub</a>.</p>
+
+<h2>FAQ</h2>
+<h3>Does removing the initialize handshake break all existing MCP clients?</h3>
+<p>Not immediately. Beta SDKs maintain backward-compatible behavior during the 10-week validation window before July 28, 2026. Older clients using pre-RC SDK versions will continue to work until server maintainers choose to drop pre-spec support. After ratification, servers should document clearly whether they've dropped backward compatibility. The RC window exists precisely for surfacing and resolving these questions.</p>
+
+<h3>If protocol sessions are gone, how do I maintain state across tool calls?</h3>
+<p>Mint an application-level handle from a tool call -- a session token, a conversation ID, a resource handle -- and have the model pass it back as a normal argument on subsequent calls. This is identical to how stateless HTTP APIs have worked for decades. The MCP protocol no longer manages session state, but your application layer can maintain any state you need using any storage mechanism you choose.</p>
+
+<h3>Are the deprecated features (Roots, Sampling, Logging) safe to build on today?</h3>
+<p>Yes, through at least mid-2027. The spec guarantees they remain in every version published within 12 months of the July 28, 2026 ratification. The MCP spec team deprecated them because better alternatives now exist -- tool parameters replace Roots, direct LLM provider API calls replace Sampling, and stderr or OpenTelemetry replace Logging -- not because of security vulnerabilities or instability.</p>
+
+<h3>How do I test my MCP server against the RC before July 28?</h3>
+<p>Install the Python v2 or TypeScript v2 beta SDK from the modelcontextprotocol GitHub org, update your server or client to import from the beta package, and run your existing integration tests. The beta SDK emits warnings for deprecated patterns and errors for removed ones. Both the 2026-07-28 spec and the previous spec are supported in the beta, so you can validate both sides of the migration before committing.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does removing the initialize handshake break all existing MCP clients?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not immediately. Beta SDKs maintain backward-compatible behavior during the 10-week validation window before July 28, 2026. Older clients using pre-RC SDK versions will continue to work until server maintainers choose to drop pre-spec support. After ratification, servers should document clearly whether they have dropped backward compatibility. The RC window exists precisely for surfacing and resolving these questions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "If protocol sessions are gone, how do I maintain state across tool calls?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Mint an application-level handle from a tool call -- a session token, a conversation ID, a resource handle -- and have the model pass it back as a normal argument on subsequent calls. This is identical to how stateless HTTP APIs have worked for decades. The MCP protocol no longer manages session state, but your application layer can maintain any state you need using any storage mechanism you choose."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Are the deprecated features (Roots, Sampling, Logging) safe to build on today?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes, through at least mid-2027. The spec guarantees they remain in every version published within 12 months of the July 28, 2026 ratification. The MCP spec team deprecated them because better alternatives now exist -- tool parameters replace Roots, direct LLM provider API calls replace Sampling, and stderr or OpenTelemetry replace Logging -- not because of security vulnerabilities or instability."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I test my MCP server against the RC before July 28?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Install the Python v2 or TypeScript v2 beta SDK from the modelcontextprotocol GitHub org, update your server or client to import from the beta package, and run your existing integration tests. The beta SDK emits warnings for deprecated patterns and errors for removed ones. Both the 2026-07-28 spec and the previous spec are supported in the beta, so you can validate both sides of the migration before committing."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
