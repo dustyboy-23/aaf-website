@@ -1,0 +1,214 @@
+---
+id: how-to-build-claude-code-skill
+uuid: how-to-build-claude-code-skill
+slug: how-to-build-claude-code-skill
+title: How to Build a Claude Code Skill from Scratch in 2026
+excerpt: A Claude Code skill is a directory containing a SKILL.md file with YAML frontmatter and markdown instructions. When Claude detects a prompt matching your skill description, it loads the full skill bod
+feature_image: null
+featured: false
+published_at: "2026-07-07T03:10:15-07:00"
+updated_at: "2026-07-07T03:10:15-07:00"
+reading_time: 12
+tags: [tutorials, claude-code, skills, agent-development]
+tag_names: [Tutorials, Claude Code, Skills, Agent Development]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: How to Build a Claude Code Skill from Scratch (2026)
+meta_description: "Build your first Claude Code skill in 2026: step-by-step SKILL.md guide, frontmatter options, scripts, and community skills that actually work in production."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Build a Claude Code Skill from Scratch in 2026</h1>
+
+<p class="lede">A Claude Code skill is a directory containing a SKILL.md file with YAML frontmatter and markdown instructions. When Claude detects a prompt matching your skill description, it loads the full skill body into context and follows your instructions exactly. No API configuration, no upload step -- just a file in the right place. You can have a working skill in under 15 minutes.</p>
+
+<p>I build skills weekly for this site's research and publishing pipeline -- the research cron, the blog publisher, and the session shutdown flow are all skills. The file structure is dead simple. What trips most people up is the design question: what should a skill do versus what should stay in the system prompt? This tutorial covers both.</p>
+
+<h2>What Is a Claude Code Skill?</h2>
+<p>A Claude Code skill is a structured directory that teaches Claude a repeatable, scoped behavior. Skills live in ~/.claude/skills/ for global use across all projects, or in .claude/skills/ inside a specific project directory. Each skill contains a required SKILL.md file with YAML frontmatter and optional folders for scripts, references, and assets. Claude scans every installed skill description at session start -- roughly 100 tokens per skill -- and loads the full body only when your prompt triggers it.</p>
+<p>The ecosystem around skills exploded in 2026. The VoltAgent/awesome-agent-skills repository now hosts over 1,000 skills compatible with Claude Code, Codex, Gemini CLI, and Cursor, with 27,414 GitHub stars as of July 2026 (<a href="https://github.com/VoltAgent/awesome-agent-skills">VoltAgent/awesome-agent-skills</a>). The total number of catalogued Claude Code skills grew from roughly 50 in mid-2025 to 349 by May 2026 -- a 7x increase in under a year (<a href="https://www.openaitoolshub.org/en/blog/best-claude-code-skills-2026">OpenAI Tools Hub</a>). The most-installed skill, find-skills, had 418,600 installs as of March 2026, followed by vercel-react-best-practices at 176,400.</p>
+<p>Skills are different from CLAUDE.md entries. Your CLAUDE.md gives Claude persistent context across every session -- project structure, preferences, hard rules. A skill is a procedure: a specific workflow you invoke when needed. Skills are also portable -- you can share them, install them from GitHub, and run the same skill across different projects or machines.</p>
+
+<h2>The SKILL.md File: Anatomy of Every Skill</h2>
+<p>Every SKILL.md file has two parts: a YAML frontmatter block between --- markers that tells Claude when and how the skill runs, and a markdown body with the actual instructions Claude follows. Two fields are required -- name and description. The name becomes your slash command and must match the directory name exactly. The description is the trigger: Claude reads it semantically to decide when to load your skill.</p>
+<p>Here is a minimal SKILL.md:</p>
+<pre><code>---
+name: pr-reviewer
+description: Run when the user asks to review a pull request, check a diff, or audit code changes. Analyzes for bugs, security issues, and style problems.
+---
+
+# PR Reviewer
+
+Read the diff or PR the user provides. For each concern found, write one H2 starting with Issue: or Suggestion: Include file and line number when possible.
+
+If nothing major: say "No major issues found" and list minor notes below.
+
+Keep the review under 400 words. No filler, no praise for working code.
+</code></pre>
+<p>The description field is the most important line in the file. Claude matches it against your prompt semantically, not with keyword search. Write it as a plain-English sentence describing when a human would reach for this skill. Vague descriptions trigger on everything or nothing. Specific ones trigger exactly right.</p>
+<p>The name must be 1-64 characters, kebab-case, with no consecutive hyphens, and must match the directory name exactly. A skill named pr-reviewer lives at .claude/skills/pr-reviewer/SKILL.md.</p>
+<p>Optional directories inside the skill folder:</p>
+<ul>
+<li><strong>scripts/</strong> -- executable scripts (Python, Bash) Claude can invoke during the skill run</li>
+<li><strong>references/</strong> -- context docs too long for the main body (API specs, style guides, schema references)</li>
+<li><strong>assets/</strong> -- templates, binary files, or example outputs</li>
+</ul>
+<p>The Anthropic docs recommend keeping the SKILL.md body under 1,500-2,000 words and moving longer material into references/. Claude loads the full body on every trigger -- around 5,000 tokens max -- so trim aggressively.</p>
+
+<h2>Step-by-Step: Build Your First Skill in Under 15 Minutes</h2>
+<p>Building a skill takes five steps: create the directory, write the frontmatter, write the instructions, place it where Claude expects it, and test it with a real prompt. The hardest step is writing instructions specific enough to be useful but not so rigid that Claude breaks on natural variations. Treat the instructions like a procedure for a capable contractor who has never worked on your project before.</p>
+<p><strong>Step 1: Create the skill directory.</strong></p>
+<pre><code>mkdir -p ~/.claude/skills/pr-reviewer
+</code></pre>
+<p>Use ~/.claude/skills/ for skills you want available everywhere. Use .claude/skills/ inside a project directory for project-scoped skills.</p>
+<p><strong>Step 2: Write SKILL.md with full frontmatter.</strong></p>
+<pre><code>---
+name: pr-reviewer
+description: Run when the user asks to review a pull request, check a diff, or get a code review. Analyzes changes for bugs, security issues, and style.
+when_to_use: Activate when the user says review this PR, check this diff, code review, or pastes a GitHub PR URL.
+argument-hint: Provide the diff, file path, or GitHub PR URL to review.
+---
+
+# PR Reviewer
+
+You are reviewing code changes. Follow this sequence on every invocation.
+
+## Step 1: Identify the change category
+Bug fix, new feature, refactor, or config/infrastructure change.
+
+## Step 2: Review for
+- Correctness: Does the code do what the description says?
+- Edge cases: What inputs or states would break this?
+- Security: Any injection, auth bypass, or data exposure risks?
+- Performance: N+1 queries, unbounded loops, or memory leaks?
+
+## Step 3: Write the review
+One H2 per concern, labeled Issue: or Suggestion: Include line numbers when possible.
+If nothing significant: write "No major issues. Minor notes:" and list them.
+Keep the review under 400 words.
+</code></pre>
+<p><strong>Step 3: Test it.</strong> Open a Claude Code session in any directory. Type /pr-reviewer or paste a diff and say "review this." Claude should load your skill and follow the instructions. If it does not trigger, check that the directory name matches the name field in frontmatter exactly.</p>
+<p><strong>Step 4: Iterate.</strong> Run the skill five times with different inputs. Note where Claude does something unexpected -- adds filler, misses a concern category, formats output differently than you wanted. Update the instructions to close those gaps. The first version is never the best version.</p>
+<p><strong>Step 5: Add scripts if needed.</strong> If your skill needs to call external tools, add them to scripts/ and reference them in SKILL.md:</p>
+<pre><code>## Running the linter
+Before writing the review, run: bash scripts/run-lint.sh on the changed files.
+</code></pre>
+<p>Claude handles invocation via the Bash tool. Your script handles the logic. This is how production skills run validators, formatters, and external API calls without any Claude API configuration.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>Advanced Frontmatter: Control When and How Your Skill Runs</h2>
+<p>Beyond name and description, four optional frontmatter fields materially change skill behavior. disable-model-invocation blocks Claude from auto-triggering the skill (you invoke it explicitly with /skill-name). user-invocable: false hides it from manual invocation and makes it Claude-only. allowed-tools restricts which tools Claude can access inside the skill. context: fork runs the skill in an isolated context so verbose output does not pollute your main session.</p>
+<p>Here is when I use each one:</p>
+<ul>
+<li><strong>disable-model-invocation: true</strong> -- for any skill with side effects. My aaf-blog-engine skill uses this because it commits and pushes code to a live website. Every deployment skill, every send-to-Slack skill, every skill that writes to external systems should have this set.</li>
+<li><strong>user-invocable: false</strong> -- for passive context skills. A legacy-api-context skill that explains how an old internal API works does not need to be a slash command. Claude loads it quietly when it detects relevant questions. Good for internal documentation, glossary skills, and onboarding context.</li>
+<li><strong>allowed-tools</strong> -- for security-sensitive skills. A read-only security audit skill can restrict access to Read and Grep only, preventing accidental writes even if the instructions ask for them. Belt and suspenders for high-stakes workflows.</li>
+<li><strong>context: fork</strong> -- for verbose skills that produce a lot of output. Security audits, large code reviews, and research skills that dump many findings benefit from context isolation so they do not crowd your main session.</li>
+</ul>
+<p>Claude Code v2.1.202 (released July 6, 2026) added OpenTelemetry attributes -- workflow.run_id and workflow.name -- to skill invocations inside workflow runs (<a href="https://releasebot.io/updates/anthropic/claude-code">Releasebot changelog</a>). If you run skills inside automated cron workflows, that attribute lets you reconstruct exactly which skill ran, when, and as part of which workflow -- useful for debugging multi-step pipelines where failures are hard to trace.</p>
+
+<h2>Installing and Discovering Community Skills</h2>
+<p>The fastest path to a working skill library is to install existing community skills, read how they are structured, and adapt them for your own projects. Three sources cover most of the ecosystem: the official anthropics/skills repository on GitHub with Anthropic's own production skills, VoltAgent/awesome-agent-skills (27,414 stars, compatible with Claude Code, Codex, and Gemini CLI), and the skills.sh CLI for browsing by install count and category.</p>
+<p>To install from VoltAgent/awesome-agent-skills:</p>
+<pre><code># Clone the collection
+git clone https://github.com/VoltAgent/awesome-agent-skills ~/awesome-skills
+
+# Symlink a skill into your global skills directory
+ln -s ~/awesome-skills/skills/vercel-react-best-practices ~/.claude/skills/
+
+# Or copy to modify independently of upstream changes
+cp -r ~/awesome-skills/skills/web-design-guidelines ~/.claude/skills/
+</code></pre>
+<p>Use symlinks when you want upstream updates automatically. Copy when you plan to modify the skill -- otherwise a git pull will overwrite your changes.</p>
+<p>The install counts tell you what builders actually need. find-skills (418,600 installs) helps Claude discover which skills are installed on your system. vercel-react-best-practices (176,400 installs) applies Vercel's React conventions. web-design-guidelines (137,000 installs) enforces design standards. All three are behavioral constraints -- they make Claude follow a standard rather than invent one. That is the common pattern in the most-installed community skills: not new functionality, but guardrails.</p>
+<p>The anthropics/skills repo also contains a skill-creator skill -- a meta skill that helps you write new skills. It generates frontmatter and body structure from a description, then you edit for specifics. Worth installing if you are building more than two or three skills.</p>
+
+<h2>What Makes a Good Skill vs. a Bloated One</h2>
+<p>A good skill is narrow, testable, and opinionated. It handles one well-defined job and does it the same way every time. A bloated skill tries to handle five different things -- coding standards, API references, design guidelines, workflow instructions -- and fails at three of them. Claude struggles with coherence when given conflicting or overlapping directives in a single context block. Split it up and let each skill do one thing well.</p>
+<p>The two failure modes I see most often:</p>
+<p><strong>The mega skill.</strong> One SKILL.md with 3,000 words of mixed concerns. The body is too large, Claude loses track of priority mid-run, and output is inconsistent. Fix: break it into three separate skills, each under 1,000 words. The token cost per invocation drops and behavior becomes predictable.</p>
+<p><strong>The underbriefed skill.</strong> A SKILL.md that says "help with React" with no format requirements, no scope definition, no output structure. Claude fills in the blanks differently every time. Fix: brief the skill like you are onboarding a contractor. What does done look like? What format should the output take? What should the skill explicitly not do?</p>
+<p>A useful test before shipping a skill: can you write a passing/failing checklist for this skill's output? If you cannot define what a good run looks like, the instructions are not specific enough yet.</p>
+
+<h2>FAQ</h2>
+
+<h3>Where do Claude Code skills live on disk?</h3>
+<p>Global skills live in ~/.claude/skills/ and apply across every Claude Code session on your machine. Project-specific skills live in .claude/skills/ inside your project directory and activate only when you are working in that project. Both locations use the same directory structure: a named folder containing SKILL.md plus optional scripts/, references/, and assets/ subdirectories.</p>
+
+<h3>How does Claude know when to trigger a skill?</h3>
+<p>At session start, Claude reads the description field from each installed skill's YAML frontmatter -- costing roughly 100 tokens per skill. When your prompt semantically matches a description, Claude loads the full SKILL.md body (up to around 5,000 tokens) and follows the instructions. You can also invoke any skill directly with /skill-name, unless disable-model-invocation: true is set in the frontmatter.</p>
+
+<h3>Can a skill run external scripts or shell commands?</h3>
+<p>Yes. Place executable files in the scripts/ subdirectory of your skill folder. In your SKILL.md body, instruct Claude when and how to call them via the Bash tool -- for example, "run scripts/validate.py on the input before writing the review." Claude handles invocation; your script handles the logic. This is how production skills handle linting, validation, and external API calls without embedding shell logic in the SKILL.md body.</p>
+
+<h3>What is the difference between a skill and a CLAUDE.md file?</h3>
+<p>CLAUDE.md gives Claude persistent context across every session -- project structure, hard rules, preferences, operating posture. A skill is a discrete procedure that Claude loads only when triggered by a matching prompt. Think of CLAUDE.md as standing orders and skills as procedures you call when needed. Skills are also portable and shareable; CLAUDE.md is project-specific and lives in your repo.</p>
+
+<h3>Are Claude Code skills compatible with other AI coding tools?</h3>
+<p>Community collections like VoltAgent/awesome-agent-skills are designed cross-compatible with Claude Code, OpenAI Codex, Gemini CLI, and Cursor. The SKILL.md format itself is Claude Code-specific, but behavioral constraint skills -- style guides, coding standards, design rules -- port most easily since they contain no tool-specific syntax and express preferences rather than procedures.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Where do Claude Code skills live on disk?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Global skills live in ~/.claude/skills/ and apply across every Claude Code session on your machine. Project-specific skills live in .claude/skills/ inside your project directory and activate only when you are working in that project. Both locations use the same structure: a named folder containing SKILL.md plus optional scripts/, references/, and assets/ subdirectories."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does Claude know when to trigger a skill?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "At session start, Claude reads the description field from each installed skill YAML frontmatter -- roughly 100 tokens per skill. When your prompt semantically matches a description, Claude loads the full SKILL.md body (up to around 5,000 tokens) and follows the instructions. You can also invoke any skill directly with /skill-name, unless disable-model-invocation: true is set."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can a skill run external scripts or shell commands?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Place executable files in the scripts/ subdirectory of your skill folder. In your SKILL.md body, instruct Claude when and how to call them via the Bash tool. Claude handles invocation; your script handles the logic. This is how production skills handle linting, validation, and external API calls."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between a skill and a CLAUDE.md file?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "CLAUDE.md gives Claude persistent context across every session -- project structure, hard rules, preferences. A skill is a discrete procedure Claude loads only when triggered by a matching prompt. Think of CLAUDE.md as standing orders and skills as procedures you call when needed. Skills are portable and shareable; CLAUDE.md lives in your repo."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Are Claude Code skills compatible with other AI coding tools?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Community collections like VoltAgent/awesome-agent-skills are designed cross-compatible with Claude Code, OpenAI Codex, Gemini CLI, and Cursor. The SKILL.md format is Claude Code-specific, but behavioral constraint skills -- style guides, coding standards, design rules -- port most easily since they contain no tool-specific syntax."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
