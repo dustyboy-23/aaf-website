@@ -1,0 +1,146 @@
+---
+id: claude-code-vs-codex-cli-2026
+uuid: claude-code-vs-codex-cli-2026
+slug: claude-code-vs-codex-cli-2026
+title: "Claude Code vs Codex CLI vs Gemini CLI: Who Wins for Real Workloads in 2026?"
+excerpt: "On Terminal-Bench 2.1, Codex CLI with GPT-5.5 leads at 83.4% vs Claude Code's 78.9%. On SWE-bench Pro, Claude Code with Opus 4.8 leads at 69.2% vs GPT-5.5 at 58.6%. Gemini CLI stopped serving individu"
+feature_image: null
+featured: false
+published_at: "2026-07-08T03:12:01-07:00"
+updated_at: "2026-07-08T03:12:01-07:00"
+reading_time: 9
+tags: [reviews, claude-code, codex-cli, ai-cli-tools, gemini-cli]
+tag_names: [Reviews, Claude Code, Codex CLI, AI CLI Tools, Gemini CLI]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code vs Codex CLI 2026: Who Wins Real Workloads?"
+meta_description: "Claude Code vs Codex CLI 2026: honest benchmark breakdown. SWE-bench Pro, Terminal-Bench scores, pricing, and why Gemini CLI shut down -- pick the right tool."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code vs Codex CLI vs Gemini CLI: Who Wins for Real Workloads in 2026?</h1>
+
+<p class="lede">On Terminal-Bench 2.1, Codex CLI with GPT-5.5 leads at 83.4% vs Claude Code's 78.9%. On SWE-bench Pro, Claude Code with Opus 4.8 leads at 69.2% vs GPT-5.5 at 58.6%. Gemini CLI stopped serving individual developers on June 18, replaced by closed-source Antigravity CLI with a 98% free tier cut. Here is the practical breakdown.</p>
+
+<p>I run Claude Code as my primary coding agent and tested Codex CLI this week specifically after the Terminal-Bench 2.1 results came out. Gemini CLI is effectively dead for the 105,000 community developers who helped build it. This is the honest breakdown of who wins what, at what cost, and for which type of work.</p>
+
+<h2>What Do the Benchmarks Actually Show?</h2>
+
+<p>Two benchmarks dominate AI CLI comparisons in 2026, and they measure different things. Codex CLI with GPT-5.5 leads Terminal-Bench 2.1 at 83.4%, testing terminal automation and tool coordination. Claude Code with Opus 4.8 leads SWE-bench Pro at 69.2%, testing multi-file codebase reasoning and real GitHub bug fixes.</p>
+
+<p>That benchmark split maps to real workload differences. Terminal-Bench rewards procedural execution and shell automation -- tasks where GPT-5.5's instruction-following strengths show up. SWE-bench Pro rewards multi-file reasoning, understanding architectural context, and making correct changes across a large codebase -- tasks where Claude's reasoning architecture holds an edge. Gemini CLI with Gemini 3.1 Pro scores 70.7% on Terminal-Bench and 54.2% on SWE-bench Pro -- competitive but behind both leaders on each benchmark.</p>
+
+<p>There is also a practical benchmark worth noting. In a timed Express.js refactor test run by <a href="https://www.deployhq.com/blog/comparing-claude-code-openai-codex-and-google-gemini-cli-which-ai-coding-assistant-is-right-for-your-deployment-workflow">DeployHQ</a>, Claude Code finished in 1 hour 17 minutes with zero manual corrections. Codex CLI took 1 hour 41 minutes. Gemini CLI took 2 hours 4 minutes and required 3 manual corrections. Single benchmark, single task type -- treat it as a data point, not a verdict. But it tracks with my experience on multi-file refactors: Claude Code gets further without getting stuck.</p>
+
+<p>One note on the leaderboard: Claude Fable 5 hit 88.0% on Terminal-Bench 2.1 before being suspended June 12 due to the US export ban. That number is excluded from the active rankings per <a href="https://www.morphllm.com/ai-coding-agent">MorphLLM's leaderboard</a>. If Fable 5 returns to subscriptions, the Terminal-Bench lead could flip to Claude Code.</p>
+
+<h2>What Actually Happened to Gemini CLI?</h2>
+
+<p>Gemini CLI stopped serving individual developers on June 18, 2026. Google replaced it with Antigravity CLI -- a closed-source Go binary invoked as <code>agy</code>. The free tier dropped from roughly 1,000 requests per day to 20, a 98% reduction. Affected: 105,000 open-source contributors who built Gemini CLI and got no source code for the replacement.</p>
+
+<p>Google announced the shutdown at Google I/O on May 19 -- less than a month's notice -- per the <a href="https://github.com/google-gemini/gemini-cli/discussions/27274">official GitHub announcement</a>. The rationale was architectural: Gemini CLI's single-agent TypeScript design couldn't support async multi-agent workflows. Antigravity CLI is built in Go and designed to run multiple concurrent agents. That's a real capability improvement. The execution was the problem.</p>
+
+<p>CI/CD pipelines built on Gemini CLI's free tier broke on June 18 with no grace period. Teams on paid enterprise API keys kept access, but developers using the free open-source project were cut off immediately. Antigravity CLI requires a paid enterprise API contract -- Google has not published a public rate card and there is no meaningful self-serve option at 20 requests per day.</p>
+
+<p>The practical result: the AI CLI market went from three serious options to two. Claude Code and Codex CLI are now the primary choices for individual developers and small teams. Antigravity CLI is an enterprise product that builders should not plan around until Google publishes pricing and opens the quota.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>How Much Does Each Tool Actually Cost?</h2>
+
+<p>Claude Code ships inside Anthropic's subscription plans: Pro at $20/month, Max 5x at $100/month, Max 20x at $200/month. Codex CLI is bundled with ChatGPT Plus at $20/month. At the API level, Claude Sonnet 5 costs $2/$10 per million input/output tokens through August 31, 2026 ($3/$15 after), while GPT-5.5 bills at $5/$30 -- roughly 2.5x more expensive per token at current pricing.</p>
+
+<p>At subscription level, both tools start at $20/month. The differences compound at heavy usage. Anthropic's Max 20x tier at $200/month covers what would cost $600-$1,500/month in API billing for developers who saturate session limits, per <a href="https://www.morphllm.com/ai-coding-costs">MorphLLM's cost analysis</a>. One documented case showed 93% savings on Max vs direct API access over 8 months of heavy agent use.</p>
+
+<p>Codex CLI's open-source Apache 2.0 license means you can build on it without a subscription, paying only for GPT-5.5 API tokens directly. That matters if you're embedding CLI capabilities in your own tooling. GPT-5.5's $5/$30 API pricing is expensive for high-volume runs, but if you're already on ChatGPT Pro ($200/month), Codex CLI usage is effectively included in what you're already paying.</p>
+
+<p>Antigravity CLI has no published pricing. Enterprise API access is required. For individual developers, there is no practical cost path into Antigravity CLI right now.</p>
+
+<h2>Which Tool Wins for Which Workload?</h2>
+
+<p>Claude Code wins on multi-file codebase reasoning, complex bug fixes, and large-repo context. The 1M-token context window via Claude Sonnet 5 -- default since v2.1.197, with <a href="https://github.com/anthropics/claude-code/releases">v2.1.204 shipping today</a> -- is the differentiator when you need the model to hold an entire codebase in working memory. The 69.2% SWE-bench Pro score is the highest of any active CLI tool.</p>
+
+<p>Codex CLI wins on terminal automation, scripting workflows, and DevOps tasks. If you are chaining shell commands, writing bash automation, or building agents that drive the terminal procedurally, GPT-5.5's Terminal-Bench 2.1 lead at 83.4% maps to that kind of work. The Apache 2.0 license also matters for builders -- you can fork, modify, and redistribute Codex CLI without restriction. Claude Code's license terms prohibit commercial redistribution of the CLI itself.</p>
+
+<p>For former Gemini CLI users who lost access June 18: the choice depends on what you were doing. Multi-file code review, PR analysis, complex debugging -- Claude Code. Shell scripting, terminal automation, DevOps workflows -- Codex CLI or Claude Code, with a slight Terminal-Bench edge to Codex CLI. Both cost $20/month at entry. Neither has a meaningful free tier for serious workloads. If you are a ChatGPT Plus subscriber, Codex CLI is the easier immediate switch.</p>
+
+<h2>What I Actually Use and Why</h2>
+
+<p>I run Claude Code on Max 5x ($100/month). The SWE-bench Pro lead is the practical reason: most of my agent work involves reasoning across large codebases, reading PR diffs, and fixing bugs that require understanding why something was built a certain way. That is exactly what SWE-bench Pro measures, and the 69.2% vs 58.6% gap is not narrow.</p>
+
+<p>I tested Codex CLI this week on a terminal automation task -- scripting a set of file transformations across a directory tree. It performed well and finished faster than I expected. The Apache 2.0 license is genuinely appealing if you are building tooling that includes CLI capabilities, and the ChatGPT Plus bundle makes the entry price a no-brainer for anyone already in the OpenAI ecosystem.</p>
+
+<p>I have not used Antigravity CLI. Closed-source binary, 20 requests per day free tier, no published pricing -- that is not a product I can evaluate or recommend to builders working at any real scale. Google would need to open the source or publish actual developer pricing before I would consider it seriously.</p>
+
+<p>The honest summary: Claude Code and Codex CLI are the two real options in 2026. Pick Claude Code if your work is codebase-heavy reasoning. Pick Codex CLI if your work is terminal automation or if you are already in the ChatGPT ecosystem. The two tools have complementary strengths -- there is not a clear head-to-head winner. There is just a better fit depending on what you actually build.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is Claude Code better than Codex CLI in 2026?</h3>
+<p>It depends on the task. Claude Code leads SWE-bench Pro at 69.2% vs GPT-5.5 at 58.6%, making it stronger for complex, multi-file codebase reasoning and real GitHub bug fixes. Codex CLI leads Terminal-Bench 2.1 at 83.4% vs Claude Code at 78.9%, making it stronger for terminal automation, shell scripting, and DevOps workflows. Both cost $20/month at the entry subscription tier.</p>
+
+<h3>What replaced Gemini CLI after June 18, 2026?</h3>
+<p>Google replaced Gemini CLI with Antigravity CLI, a closed-source Go binary invoked as <code>agy</code>. The free tier dropped from roughly 1,000 requests per day to 20, a 98% reduction. Antigravity CLI targets enterprise API customers and has no public pricing. For individual developers, Claude Code or Codex CLI are the practical replacements for Gemini CLI's free-tier capabilities.</p>
+
+<h3>How much does Claude Code cost compared to Codex CLI in 2026?</h3>
+<p>Both offer entry-level access at $20/month: Claude Code through Anthropic's Pro plan, Codex CLI bundled with ChatGPT Plus. At the API level, Claude Sonnet 5 costs $2/$10 per million input/output tokens through August 31, 2026 (then $3/$15 standard), while GPT-5.5 costs $5/$30 -- roughly 2.5x more expensive per token. For heavy users, Anthropic's Max tiers offer substantially better cost efficiency than direct API billing.</p>
+
+<h3>Does Claude Code support terminal automation like Codex CLI?</h3>
+<p>Yes. Claude Code runs natively in the terminal and can drive the same shell tasks as Codex CLI. The key architectural difference is context depth: Claude Sonnet 5's 1M-token window holds larger codebases in memory. Codex CLI's Apache 2.0 open-source license makes it easier to build custom tooling on top of. On Terminal-Bench 2.1, Codex CLI scores 83.4% vs Claude Code's 78.9% -- a real gap for pure terminal automation tasks.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Claude Code better than Codex CLI in 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "It depends on the task. Claude Code leads SWE-bench Pro at 69.2% vs GPT-5.5 at 58.6%, making it stronger for complex, multi-file codebase reasoning. Codex CLI leads Terminal-Bench 2.1 at 83.4% vs Claude Code at 78.9%, making it stronger for terminal automation and shell scripting. Both cost $20/month at the entry subscription tier."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What replaced Gemini CLI after June 18, 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Google replaced Gemini CLI with Antigravity CLI, a closed-source Go binary invoked as agy. The free tier dropped from roughly 1,000 requests per day to 20, a 98% reduction. For individual developers, Claude Code or Codex CLI are the practical replacements."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How much does Claude Code cost compared to Codex CLI in 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Both offer entry-level access at $20/month. At the API level, Claude Sonnet 5 costs $2/$10 per million input/output tokens through August 31, 2026 (then $3/$15 standard), while GPT-5.5 costs $5/$30 -- roughly 2.5x more expensive per token."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Claude Code support terminal automation like Codex CLI?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Claude Code runs natively in the terminal. On Terminal-Bench 2.1, Codex CLI scores 83.4% vs Claude Code at 78.9% -- a real gap for pure terminal automation. Claude Code's 1M-token context window via Sonnet 5 is the edge for large-codebase reasoning tasks. Codex CLI's Apache 2.0 license makes it easier to build custom tooling on top of."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
