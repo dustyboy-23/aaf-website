@@ -55,9 +55,7 @@ export function ArticleBottomCTA() {
             Subscribe free
           </Link>
           <a
-            href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/go/site"
             className="inline-flex items-center gap-2 px-6 py-4 rounded-full font-semibold text-sm text-white border border-white/20 hover:border-white/40 hover:bg-white/5 transition-colors"
           >
             Join the community

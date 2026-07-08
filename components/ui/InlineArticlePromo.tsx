@@ -82,9 +82,7 @@ export function InlineArticlePromo({ kind }: InlineArticlePromoProps) {
             </p>
           </div>
           <a
-            href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/go/site"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm text-[#04050A] transition-transform hover:-translate-y-0.5 whitespace-nowrap"
             style={{
               background: "linear-gradient(135deg, #FF4FD1 0%, #8A63FF 100%)",

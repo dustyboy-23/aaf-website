@@ -1,39 +1,40 @@
 import { NextResponse } from "next/server";
-import { getPosts } from "@/lib/content";
+import { getAllArticles } from "@/lib/hub";
+import { SITE_NAME, SITE_TAGLINE, CORE_PROMISE, PILLARS } from "@/lib/site";
 
 export async function GET() {
-  const { posts } = await getPosts({ limit: 1000 });
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://aiagentsfirst.com").trim();
 
-  const articleLines = posts
-    .map((p) => `- [${p.title}](https://aiagentsfirst.com/${p.slug})`)
+  const articleLines = getAllArticles()
+    .map((a) => `- [${a.title}](${siteUrl}/articles/${a.slug})`)
     .join("\n");
 
-  const content = `# AI Agents First
+  const pillarLines = PILLARS.map(
+    (p) => `- /articles/topic/${p.slug} - ${p.label}: ${p.tagline}`,
+  ).join("\n");
 
-> The intelligence hub for the agent era.
+  const content = `# ${SITE_NAME}
+
+> ${SITE_TAGLINE}. ${CORE_PROMISE}
 
 ## About
-AI Agents First is a publication covering AI agents, autonomous systems, and the tools powering the next wave of software. We publish news, tutorials, deep analysis, and curated daily intelligence.
+${SITE_NAME} is a plain-language library for using AI to make money and make things, written for curious beginners rather than engineers. No hype, no jargon, real results.
 
-## Content Categories
-- /news - All articles, newest first
-- /tag/tutorials - Step-by-step build guides
-- /tag/comparisons - Tool and model comparisons
-- /tag/money - Revenue, pricing, and monetization
-- /tag/opinion - Analysis and strategic takes
-- /tag/news - Frontier dispatches and drops
-- /playbook - Free "Build Your First AI Agent" PDF
+## Topics
+${pillarLines}
 
 ## Articles
 ${articleLines}
 
+## Pages
+- /articles - The full library
+- /start-here - New here? Start with this path
+- /community - A free community for learning alongside others
+- /about - Why this exists
+
 ## Feeds
 - Sitemap: /sitemap.xml
 - RSS: /feed.xml
-
-## Contact
-- Website: https://aiagentsfirst.com
-- Community: https://www.skool.com/e-com-freedom-amazon-tiktok-4556
 `;
 
   return new NextResponse(content, {

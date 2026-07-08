@@ -2,59 +2,62 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* Void / atmosphere — cosmic black with subtle blue/violet shifts */
-  --color-void: #04050A;
-  --color-midnight: #09101B;
-  --color-dark-violet: #140B21;
+  /* ---- Editorial Operator palette: warm paper library, ink, one accent ---- */
+  --color-paper: #FAF7F0;        /* canvas */
+  --color-paper-2: #F1ECE0;      /* raised surfaces, quiet fills */
+  --color-paper-3: #E9E3D5;      /* deeper fill / hover */
+  --color-ink: #1B1A16;          /* primary text */
+  --color-ink-soft: #46433B;     /* secondary text */
+  --color-ink-mute: #77736A;     /* meta, captions, labels */
+  --color-hairline: #E2DCCE;     /* rules, borders */
+  --color-hairline-strong: #D3CBB8;
 
-  /* Legacy surface aliases (keep article pages compiling) */
-  --color-surface: #04050A;
-  --color-surface-raised: #09101B;
-  --color-surface-overlay: #140B21;
+  /* The single accent — archival green. Used once per view, never as fill soup. */
+  --color-accent: #2F5D4B;
+  --color-accent-ink: #244A3C;   /* accent text on paper (AA) */
+  --color-accent-soft: rgba(47, 93, 75, 0.10);
 
-  /* Signal / intelligence */
-  --color-electric-blue: #2C6DFF;
-  --color-neon-cyan: #45F0FF;
-  --color-ultraviolet: #8A63FF;
+  /* ---- Legacy token aliases (keep old /[slug] + /tag pages compiling) ---- */
+  --color-surface: #FAF7F0;
+  --color-surface-raised: #F1ECE0;
+  --color-surface-overlay: #E9E3D5;
+  --color-void: #FAF7F0;
+  --color-text-primary: #1B1A16;
+  --color-text-secondary: #46433B;
+  --color-text-tertiary: #77736A;
+  --color-border: #E2DCCE;
+  --color-border-hover: #D3CBB8;
+  --color-electric-blue: #2F5D4B;
+  --color-neon-cyan: #2F5D4B;
+  --color-neon-magenta: #244A3C;
+  --color-neon-violet: #244A3C;
+  --color-neon-orange: #77736A;
+  --color-neon-lime: #2F5D4B;
+  --color-ultraviolet: #244A3C;
 
-  /* Emotional accents (rare, hot spots only) */
-  --color-hot-magenta: #FF4FD1;
-  --color-acid-teal: #00F5C8;
-  --color-signal-orange: #FF8C37;
-  --color-signal-lime: #B7FF3C;
-
-  /* Primary accent (used throughout existing UI) */
-  --color-accent: #45F0FF;
-  --color-accent-dim: #45F0FF1e;
-
-  /* Text */
-  --color-text-primary: #ffffff;
-  --color-text-secondary: #e0e0e8;
-  --color-text-tertiary: #7a7a88;
-
-  /* Borders */
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(69, 240, 255, 0.3);
-
-  /* Category colors (legacy aliases still used by tags) */
-  --color-neon-magenta: #FF4FD1;
-  --color-neon-violet: #8A63FF;
-  --color-neon-orange: #FF8C37;
-  --color-neon-lime: #B7FF3C;
-
-  /* Typography */
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), monospace;
+  /* ---- Typography ---- */
+  --font-display: var(--font-fraunces), Georgia, serif;   /* headings, wordmark */
+  --font-serif: var(--font-newsreader), Georgia, serif;   /* reading / body */
+  --font-sans: var(--font-plex), system-ui, sans-serif;   /* nav, labels, meta */
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 html {
-  background-color: var(--color-void);
-  color: var(--color-text-primary);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   min-height: 100vh;
-  background-color: var(--color-void);
+  background-color: var(--color-paper);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-paper);
 }
 
 /* Lenis smooth scroll */
@@ -62,238 +65,172 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 
-/* Ghost prose */
-.prose img { border-radius: 0.75rem; margin-inline: auto; }
-
-/* Article body — editorial treatment for long-form reads */
-.article-body {
-  font-size: 1.08rem;
-  line-height: 1.75;
-  color: rgba(255, 255, 255, 0.88);
+/* ---- Editorial primitives ---- */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-mute);
 }
-.article-body p { margin-bottom: 1.4em; }
+.index-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.rule { height: 1px; background: var(--color-hairline); border: 0; }
+
+/* Focus visibility — quality floor */
+a:focus-visible, button:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---- Article body: light editorial long-form (Newsreader) ---- */
+.article-body {
+  font-family: var(--font-serif);
+  font-size: 1.19rem;
+  line-height: 1.72;
+  color: var(--color-ink-soft);
+  letter-spacing: -0.003em;
+}
+.article-body p { margin-bottom: 1.35em; }
+.article-body > p:first-of-type { color: var(--color-ink); }
 .article-body h2 {
-  font-size: clamp(1.5rem, 2.5vw, 1.875rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: #fff;
-  margin-top: 2.25em;
-  margin-bottom: 0.8em;
-  padding-top: 0.2em;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-weight: 420;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+  color: var(--color-ink);
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  padding-top: 1.1em;
+  border-top: 1px solid var(--color-hairline);
 }
 .article-body h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #fff;
-  margin-top: 1.8em;
-  margin-bottom: 0.6em;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin-top: 1.7em;
+  margin-bottom: 0.5em;
 }
 .article-body a {
-  color: #45F0FF;
+  color: var(--color-accent-ink);
   text-decoration: underline;
-  text-decoration-color: rgba(69, 240, 255, 0.35);
+  text-decoration-color: var(--color-accent-soft);
+  text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
   transition: text-decoration-color 0.2s ease;
 }
-.article-body a:hover { text-decoration-color: #45F0FF; }
+.article-body a:hover { text-decoration-color: var(--color-accent); }
+.article-body strong { color: var(--color-ink); font-weight: 600; }
 .article-body blockquote {
-  margin: 1.75em 0;
-  padding: 1em 1.4em;
-  border-left: 3px solid #8A63FF;
-  background: linear-gradient(90deg, rgba(138, 99, 255, 0.08), transparent);
+  margin: 1.6em 0;
+  padding: 0.2em 0 0.2em 1.4em;
+  border-left: 2px solid var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 380;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.9);
-  border-radius: 0 0.5rem 0.5rem 0;
+  line-height: 1.4;
+  color: var(--color-ink);
 }
-.article-body ul, .article-body ol { margin: 1.2em 0; padding-left: 1.5em; }
+.article-body ul, .article-body ol { margin: 1.2em 0; padding-left: 1.4em; }
 .article-body li { margin-bottom: 0.5em; }
-.article-body ul li::marker { color: #45F0FF; }
-.article-body ol li::marker { color: #8A63FF; font-weight: 700; }
+.article-body ul li::marker { color: var(--color-accent); }
+.article-body ol li::marker { color: var(--color-ink-mute); font-family: var(--font-mono); font-size: 0.85em; }
 .article-body code {
-  background: rgba(69, 240, 255, 0.1);
-  border: 1px solid rgba(69, 240, 255, 0.2);
-  color: #9BF0FF;
-  padding: 0.15em 0.4em;
-  border-radius: 0.3em;
-  font-size: 0.9em;
+  font-family: var(--font-mono);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-hairline);
+  color: var(--color-ink);
+  padding: 0.1em 0.38em;
+  border-radius: 4px;
+  font-size: 0.86em;
 }
 .article-body pre {
-  background: #0A0E1A;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.75rem;
-  padding: 1.2em;
+  background: #1B1A16;
+  border-radius: 8px;
+  padding: 1.15em 1.3em;
   overflow-x: auto;
   margin: 1.5em 0;
   font-size: 0.9rem;
 }
 .article-body pre code {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  color: #D6E4FF;
+  background: transparent; border: 0; padding: 0;
+  color: #EDE7DA;
 }
-.article-body img { margin: 1.75em auto; border-radius: 0.75rem; }
-.article-body hr {
-  border: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-  margin: 2.5em 0;
-}
+.article-body img { margin: 1.75em auto; border-radius: 8px; }
+.article-body hr { border: 0; height: 1px; background: var(--color-hairline); margin: 2.4em 0; }
+
+/* Drop cap — restrained, ink not gradient */
 .article-body > p:first-of-type::first-letter {
   float: left;
-  font-size: 3.8em;
-  line-height: 0.9;
-  font-weight: 900;
-  margin: 0.05em 0.12em 0 0;
-  color: #45F0FF;
-  background: linear-gradient(135deg, #45F0FF 0%, #8A63FF 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-family: var(--font-display);
+  font-size: 3.4em;
+  line-height: 0.82;
+  font-weight: 500;
+  padding: 0.06em 0.1em 0 0;
+  color: var(--color-ink);
 }
 
-/* FAQ accordion — server-side transform wraps h3+content pairs in <details> */
+/* FAQ accordion (server transform reused by legacy pages) */
 .article-body details.faq-item {
-  margin: 0.75em 0;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.75rem;
-  background: rgba(9, 16, 27, 0.55);
+  margin: 0.6em 0;
+  border: 1px solid var(--color-hairline);
+  border-radius: 8px;
+  background: var(--color-paper-2);
   overflow: hidden;
-  transition: border-color 0.2s ease, background 0.2s ease;
 }
-.article-body details.faq-item[open] {
-  border-color: rgba(69, 240, 255, 0.28);
-  background: linear-gradient(
-    135deg,
-    rgba(69, 240, 255, 0.05) 0%,
-    rgba(138, 99, 255, 0.04) 100%
-  ), rgba(9, 16, 27, 0.7);
-}
+.article-body details.faq-item[open] { border-color: var(--color-hairline-strong); }
 .article-body details.faq-item summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 1rem 1.25rem;
-  padding-right: 2.75rem;
-  position: relative;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: #fff;
-  line-height: 1.35;
-  user-select: none;
+  list-style: none; cursor: pointer;
+  padding: 0.95rem 1.15rem; padding-right: 2.6rem;
+  position: relative; font-family: var(--font-display); font-weight: 500;
+  font-size: 1.08rem; color: var(--color-ink); line-height: 1.35; user-select: none;
 }
-.article-body details.faq-item summary::-webkit-details-marker {
-  display: none;
-}
+.article-body details.faq-item summary::-webkit-details-marker { display: none; }
 .article-body details.faq-item summary::after {
-  content: "+";
-  position: absolute;
-  right: 1.1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1.5rem;
-  height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
-  font-weight: 400;
-  line-height: 1;
-  color: #45F0FF;
-  border: 1px solid rgba(69, 240, 255, 0.35);
-  border-radius: 9999px;
-  transition: transform 0.2s ease, background 0.2s ease;
+  content: "+"; position: absolute; right: 1rem; top: 1rem;
+  font-size: 1.2rem; line-height: 1; color: var(--color-accent);
 }
-.article-body details.faq-item[open] summary::after {
-  content: "−";
-  background: rgba(69, 240, 255, 0.12);
-  transform: translateY(-50%) rotate(0deg);
-}
-.article-body details.faq-item summary:hover {
-  color: #45F0FF;
-}
-.article-body details.faq-item .faq-answer {
-  padding: 0 1.25rem 1.15rem;
-  color: rgba(255, 255, 255, 0.82);
-}
-.article-body details.faq-item .faq-answer > :first-child {
-  margin-top: 0;
-}
-.article-body details.faq-item .faq-answer > :last-child {
-  margin-bottom: 0;
-}
-.article-body details.faq-item .faq-answer p {
-  margin-bottom: 0.9em;
-}
+.article-body details.faq-item[open] summary::after { content: "\2212"; }
+.article-body details.faq-item .faq-answer { padding: 0 1.15rem 1.1rem; color: var(--color-ink-soft); }
+.article-body details.faq-item .faq-answer > :first-child { margin-top: 0; }
+.article-body details.faq-item .faq-answer > :last-child { margin-bottom: 0; }
 
-/* Header blur */
+/* Legacy helper classes remapped to light so old pages stay coherent */
 .header-blur {
-  background: rgba(4, 5, 10, 0.75);
-  backdrop-filter: blur(18px) saturate(135%);
-  -webkit-backdrop-filter: blur(18px) saturate(135%);
-  border-bottom: 1px solid rgba(69, 240, 255, 0.08);
+  background: rgba(250, 247, 240, 0.82);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  border-bottom: 1px solid var(--color-hairline);
 }
-
-/* Article card */
 .article-card {
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px;
   overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
-.article-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--color-border-hover);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* Newsletter section */
-.newsletter-section {
-  background: linear-gradient(135deg, rgba(69, 240, 255, 0.08) 0%, rgba(138, 99, 255, 0.06) 100%);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-}
-
-/* Glass panel — brief's exact recipe for DOM overlay UI over the 3D scene.
-   backdrop-filter blur(18px) saturate(135%) + inset neon-cyan border. */
+.article-card:hover { transform: translateY(-2px); border-color: var(--color-hairline-strong); }
+.newsletter-section { border-top: 1px solid var(--color-hairline); border-bottom: 1px solid var(--color-hairline); }
 .glass-panel {
-  background: linear-gradient(
-    135deg,
-    rgba(20, 11, 33, 0.55) 0%,
-    rgba(9, 16, 27, 0.35) 100%
-  );
-  backdrop-filter: blur(18px) saturate(135%);
-  -webkit-backdrop-filter: blur(18px) saturate(135%);
-  border: 1px solid rgba(69, 240, 255, 0.18);
-  box-shadow:
-    inset 0 1px 0 rgba(69, 240, 255, 0.08),
-    0 12px 48px rgba(4, 5, 10, 0.6);
-  border-radius: 16px;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-hairline);
+  border-radius: 12px;
 }
 
-/* Reduced motion — full alternate mode per brief:
-   freeze scene motion, cut bloom intensity at the source, keep the palette. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
-  /* Scene motion kill-switches read by R3F components via CSS var probe */
-  :root {
-    --scene-motion: 0;
-    --bloom-intensity: 0.4;
-  }
-}
-
-/* Default scene motion vars (R3F components read these for live choreography) */
-:root {
-  --scene-motion: 1;
-  --bloom-intensity: 1.2;
 }

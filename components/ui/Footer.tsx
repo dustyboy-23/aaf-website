@@ -1,102 +1,68 @@
 import Link from "next/link";
+import { Wordmark } from "./Wordmark";
+import { SITE_TAGLINE, PILLARS } from "@/lib/site";
 
 export function Footer() {
+  const year = new Date().getFullYear();
   return (
-    <footer className="border-t border-border bg-surface">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="border-t border-hairline mt-24">
+      <div className="mx-auto max-w-[1180px] px-5 sm:px-8 py-16">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-[1.4fr_1fr_1fr]">
           <div>
-            <h3 className="font-bold text-base text-text-primary mb-3">
-              AI Agents First
-            </h3>
-            <p className="text-sm text-text-secondary max-w-xs leading-relaxed">
-              The intelligence hub for the agent era. News, tutorials, tools,
-              and community.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-xs font-medium tracking-[0.08em] uppercase text-text-tertiary mb-3">
-              Navigate
-            </h4>
-            <div className="flex flex-col gap-2">
-              {[
-                { href: "/news", label: "The Feed" },
-                { href: "/tag/tutorials", label: "Tutorials" },
-                { href: "/tag/comparisons", label: "Comparisons" },
-                { href: "/tag/money", label: "Money" },
-                { href: "/tag/opinion", label: "Takes" },
-              ].map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h4 className="text-xs font-medium tracking-[0.08em] uppercase text-text-tertiary mb-3">
-              Resources
-            </h4>
-            <div className="flex flex-col gap-2">
-              {[
-                { href: "/playbook", label: "Free Playbook" },
-                { href: "/#newsletter", label: "Newsletter" },
-                {
-                  href: "https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about",
-                  label: "Community",
-                  external: true,
-                },
-                { href: "/llms.txt", label: "llms.txt" },
-                { href: "/sitemap.xml", label: "Sitemap" },
-              ].map((link) =>
-                link.external ? (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-                  >
-                    {link.label}
-                  </a>
-                ) : (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                )
-              )}
-            </div>
-          </div>
-          <div>
-            <h4 className="text-xs font-medium tracking-[0.08em] uppercase text-text-tertiary mb-3">
-              Get the daily
-            </h4>
-            <p className="text-sm text-text-secondary leading-relaxed">
-              One email, every morning. Builds, tools, and frontier research
-              that actually matter.
+            <Wordmark />
+            <p className="mt-4 font-serif text-[1.05rem] leading-relaxed text-ink-soft max-w-sm">
+              {SITE_TAGLINE}. Everything here stays free to read. The community is
+              just where we go deeper together, if you want to.
             </p>
             <Link
-              href="/#newsletter"
-              className="inline-flex mt-4 px-5 py-2 rounded-md bg-accent text-surface text-xs font-semibold hover:bg-accent/90 transition-colors"
+              href="/community"
+              className="mt-4 inline-block text-[0.95rem] text-accent-ink underline decoration-accent/30 underline-offset-4 hover:decoration-accent transition-colors"
             >
-              Subscribe free
+              See what the community is
             </Link>
           </div>
+
+          <div>
+            <h4 className="eyebrow mb-4">Read</h4>
+            <ul className="flex flex-col gap-2.5">
+              {PILLARS.map((p) => (
+                <li key={p.slug}>
+                  <Link
+                    href={`/articles/topic/${p.slug}`}
+                    className="text-[0.95rem] text-ink-mute hover:text-ink transition-colors"
+                  >
+                    {p.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="eyebrow mb-4">Site</h4>
+            <ul className="flex flex-col gap-2.5">
+              {[
+                { href: "/articles", label: "All articles" },
+                { href: "/start-here", label: "Start here" },
+                { href: "/about", label: "About" },
+                { href: "/community", label: "Community" },
+                { href: "/sitemap.xml", label: "Sitemap" },
+              ].map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-[0.95rem] text-ink-mute hover:text-ink transition-colors">
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <div className="mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-text-tertiary">
-            &copy; {new Date().getFullYear()} AI Agents First. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4 text-xs text-text-tertiary">
-            <Link href="/privacy" className="hover:text-text-secondary transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-text-secondary transition-colors">Terms</Link>
+
+        <div className="mt-14 pt-6 border-t border-hairline flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[0.82rem] text-ink-mute">&copy; {year} All rights reserved.</p>
+          <div className="flex items-center gap-5 text-[0.82rem] text-ink-mute">
+            <Link href="/privacy" className="hover:text-ink transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-ink transition-colors">Terms</Link>
           </div>
         </div>
       </div>

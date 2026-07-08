@@ -1,11 +1,12 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const title = searchParams.get("title") || "AI Agents First";
+  const title = searchParams.get("title") || SITE_NAME;
   const tag = searchParams.get("tag") || "";
 
   return new ImageResponse(
@@ -17,62 +18,38 @@ export async function GET(req: NextRequest) {
           display: "flex",
           flexDirection: "column",
           justifyContent: "flex-end",
-          padding: "60px 80px",
-          background: "linear-gradient(145deg, #04050A 0%, #140B21 40%, #09101B 100%)",
-          fontFamily: "Inter, sans-serif",
+          padding: "64px 80px",
+          background: "#FAF7F0",
+          fontFamily: "serif",
         }}
       >
-        {/* Top bar - brand mark */}
+        {/* Wordmark */}
         <div
           style={{
             position: "absolute",
-            top: "50px",
+            top: "56px",
             left: "80px",
             display: "flex",
             alignItems: "center",
-            gap: "12px",
+            gap: "10px",
           }}
         >
-          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <circle cx="16" cy="16" r="14" stroke="#8A63FF" strokeOpacity="0.45" strokeWidth="1.2" />
-            <circle cx="16" cy="16" r="9" stroke="#45F0FF" strokeOpacity="0.85" strokeWidth="1.4" />
-            <circle cx="16" cy="16" r="4" fill="#45F0FF" />
-            <circle cx="16" cy="16" r="2" fill="#ffffff" />
-          </svg>
-          <span style={{ color: "#45F0FF", fontSize: "18px", fontWeight: 600, letterSpacing: "0.05em" }}>
-            AI AGENTS FIRST
+          <span style={{ color: "#2F5D4B", fontSize: "26px", fontWeight: 600 }}>/</span>
+          <span style={{ color: "#1B1A16", fontSize: "26px", fontWeight: 600, letterSpacing: "-0.01em" }}>
+            {SITE_NAME}
           </span>
         </div>
 
-        {/* Ambient glow */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: "600px",
-            height: "600px",
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(138,99,255,0.12) 0%, transparent 70%)",
-            transform: "translate(-50%, -50%)",
-          }}
-        />
-
-        {/* Tag pill */}
         {tag && (
-          <div
-            style={{
-              display: "flex",
-              marginBottom: "20px",
-            }}
-          >
+          <div style={{ display: "flex", marginBottom: "22px" }}>
             <span
               style={{
-                color: "#45F0FF",
-                fontSize: "14px",
+                color: "#244A3C",
+                fontSize: "15px",
                 fontWeight: 600,
-                letterSpacing: "0.15em",
+                letterSpacing: "0.16em",
                 textTransform: "uppercase",
+                fontFamily: "sans-serif",
               }}
             >
               {tag}
@@ -80,35 +57,32 @@ export async function GET(req: NextRequest) {
           </div>
         )}
 
-        {/* Title */}
         <div
           style={{
-            fontSize: title.length > 60 ? "42px" : "52px",
-            fontWeight: 700,
-            color: "#ffffff",
-            lineHeight: 1.2,
-            maxWidth: "900px",
+            fontSize: title.length > 60 ? "48px" : "60px",
+            fontWeight: 500,
+            color: "#1B1A16",
+            lineHeight: 1.1,
+            letterSpacing: "-0.02em",
+            maxWidth: "960px",
           }}
         >
           {title}
         </div>
 
-        {/* Bottom URL */}
         <div
           style={{
-            marginTop: "30px",
-            fontSize: "16px",
-            color: "rgba(255,255,255,0.35)",
-            letterSpacing: "0.05em",
+            marginTop: "28px",
+            fontSize: "18px",
+            color: "#77736A",
+            letterSpacing: "0.02em",
+            fontFamily: "sans-serif",
           }}
         >
-          aiagentsfirst.com
+          {SITE_TAGLINE}
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    },
+    { width: 1200, height: 630 },
   );
 }

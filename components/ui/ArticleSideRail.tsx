@@ -199,9 +199,7 @@ export function ArticleSideRail({ related, latest }: ArticleSideRailProps) {
           people shipping real agents.
         </p>
         <a
-          href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556/about"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/go/site"
           className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.25em] font-semibold text-white hover:text-[color:var(--color-hot-magenta)] transition-colors"
         >
           Join Skool
