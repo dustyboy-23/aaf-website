@@ -1,0 +1,86 @@
+---
+title: "How I Built a $3,000/Month Side Income Using AI Agents and No Code"
+excerpt: "I spent six months trying every AI workflow tool I could find. Most were overhyped. Two actually made me money. Here is the exact setup I use, step by step, with screenshots."
+category: "Make Money"
+date: "2024-01-12"
+readingTime: "18 min read"
+author: "Dustin"
+image: "/hero-featured.png"
+featured: true
+---
+
+I spent six months trying every AI workflow tool I could find. Most were overhyped. Two actually made me money. Here is the exact setup I use, step by step, with screenshots.
+
+## The First Thing I Tried (And Why It Failed)
+
+The first thing I tried was connecting a Zapier webhook to a GPT-4 prompt. It worked, but it cost me $47 in API calls to make $12. That was not a win.
+
+I was trying to automate a service I did not fully understand yet. I spent more time fixing broken workflows than actually delivering value. The lesson: do not automate something you have not done manually at least ten times.
+
+## What Actually Worked
+
+The thing that worked was simpler than I expected. I built a service that helps small e-commerce sellers write product descriptions. Not fancy. Not revolutionary. Just a real problem that real people have.
+
+Here is the workflow:
+
+1. A seller fills out a short form with product details
+2. An AI agent processes the input and generates three description options
+3. I review the output and send it to the client within 24 hours
+
+The key is that I still review every output. The AI does the heavy lifting, but I make sure the quality is there. Clients pay for that human check.
+
+## The Exact Tools I Use
+
+I use three tools, total. No more, no less.
+
+**Make.com** handles the automation. When a form comes in, it triggers the workflow.
+
+**Claude** generates the descriptions. I have a custom prompt that I refined over about fifty iterations. It knows the tone, the length, and what to avoid.
+
+**Notion** stores everything. Client info, project status, and my prompt library.
+
+## The Prompt That Makes It Work
+
+Here is the prompt I use for product descriptions. It took about two months to get this right:
+
+<PromptBlock prompt={`You are a product description writer for small e-commerce brands. Write a 150-word product description that:
+- Opens with the main benefit, not a feature
+- Uses sensory language (how it feels, looks, smells)
+- Includes one specific use case
+- Ends with a gentle call to action
+- Avoids hype words like "amazing," "revolutionary," "game-changing"
+- Sounds like a real person wrote it, not a marketer
+
+Product: {{product_name}}
+Category: {{category}}
+Key features: {{features}}
+Target customer: {{customer}}`} />
+
+I run this through Claude with a temperature of 0.7. Any higher and it gets too creative. Any lower and it sounds robotic.
+
+## The Numbers
+
+I started in March 2023. Here is how it grew:
+
+- Month 1: $140 (two clients, both friends)
+- Month 3: $680 (organic referrals)
+- Month 6: $1,400 (added a small ad spend)
+- Month 12: $3,100 (repeat clients + one retainer)
+
+My costs are about $200 per month. That includes the AI API calls, Make.com, and a virtual assistant who handles the admin stuff.
+
+## What I Would Do Differently
+
+If I started today, here is what I would change:
+
+1. **Start with a narrower niche.** I tried to serve everyone at first. It was a mess. Pick one type of product and own it.
+2. **Charge more, sooner.** I underpriced for the first four months. When I raised prices, my best clients stayed.
+3. **Document everything from day one.** I lost so much time recreating prompts I had already written.
+
+## Is This Right For You?
+
+This is not a get-rich-quick scheme. It is a service business with AI as a tool. You still need to deliver quality, communicate with clients, and handle the boring admin stuff.
+
+But if you are looking for a way to start making money with AI, this is the most honest path I have found. Start with a real problem. Use AI to solve it faster. Charge for the value you create.
+
+<SoftCommunityInvite context="article" />

@@ -1,0 +1,54 @@
+---
+title: "Claude vs. ChatGPT for Coding: I Tested Both for a Week"
+excerpt: "I built the same feature in both. One saved me four hours. The other gave me better architecture. Here is the honest breakdown."
+category: "AI Tools"
+date: "2024-01-10"
+readingTime: "12 min read"
+author: "Dustin"
+image: "/article-ai-tools.png"
+---
+
+I built the same feature in both Claude and ChatGPT. One saved me four hours. The other gave me better architecture. Here is the honest breakdown.
+
+## The Test Setup
+
+I gave both models the same prompt: build a simple API endpoint that takes a product ID, fetches data from a mock database, and returns formatted JSON with error handling.
+
+Same prompt. Same context. No hints about which library to use.
+
+## What ChatGPT Did
+
+ChatGPT wrote the whole thing in about thirty seconds. It chose Express.js, added validation, error handling, and even a basic rate limiter. It was impressive.
+
+But here is the problem: it over-engineered. The rate limiter used a library I had never heard of. The validation schema was three times longer than it needed to be. And when I asked it to simplify, it just kept adding more abstractions.
+
+## What Claude Did
+
+Claude took a different approach. It asked clarifying questions first. Then it wrote a clean, minimal version using just the standard library. No dependencies. No bloat.
+
+When I asked for error handling, it added exactly what was needed. When I asked for validation, it kept it simple. It felt like working with a senior developer who actually cares about maintainability.
+
+## The Speed Comparison
+
+| Task | ChatGPT | Claude |
+|------|---------|--------|
+| Initial code | 30 sec | 2 min (with questions) |
+| Refinement rounds | 5 | 2 |
+| Total time to usable code | 45 min | 18 min |
+
+ChatGPT was faster out of the gate. Claude was faster to a finished, clean solution.
+
+## When I Use Each
+
+Now I use both, but for different things:
+
+- **ChatGPT**: quick prototypes, brainstorming, one-off scripts
+- **Claude**: production code, architecture decisions, anything I will maintain
+
+## The Real Difference
+
+The real difference is not speed or accuracy. It is taste. Claude has better taste. It knows when to stop. ChatGPT does not.
+
+That matters more than you think when you are building something you will live with for months.
+
+<SoftCommunityInvite context="article" />

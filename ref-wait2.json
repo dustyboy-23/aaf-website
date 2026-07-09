@@ -1,0 +1,1 @@
+{"action":"evaluate","args":{"code":"(()=>{return new Promise(r=>{setTimeout(()=>{r(document.body.innerHTML.slice(0,2000));},5000)});})()"},"session":"ref-review"}
