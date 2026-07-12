@@ -1,0 +1,185 @@
+---
+id: claude-code-nested-sub-agents-guide
+uuid: claude-code-nested-sub-agents-guide
+slug: claude-code-nested-sub-agents-guide
+title: "Claude Code Sub-Agents Can Now Spawn Sub-Agents: What 5-Level Deep Chains Actually Enable"
+excerpt: Claude Code v2.1.172 (June 10, 2026) removed the two-year-old rule that prevented sub-agents from spawning their own sub-agents. Any sub-agent can now launch children up to 5 levels deep, each with a 
+feature_image: null
+featured: false
+published_at: "2026-07-12T03:08:22-07:00"
+updated_at: "2026-07-12T03:08:22-07:00"
+reading_time: 12
+tags: [tutorials, claude-code, multi-agent, agent-architecture, ai-engineering]
+tag_names: [Tutorials, Claude Code, Multi-Agent, Agent Architecture, AI Engineering]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Nested Sub-Agents: 5-Level Deep Chains Guide"
+meta_description: Claude Code v2.1.172 lets sub-agents spawn sub-agents 5 levels deep. Learn token math, design patterns, and 3 pitfalls before building a nested agent chain.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Sub-Agents Can Now Spawn Sub-Agents: What 5-Level Deep Chains Actually Enable</h1>
+
+<p class="lede">Claude Code v2.1.172 (June 10, 2026) removed the two-year-old rule that prevented sub-agents from spawning their own sub-agents. Any sub-agent can now launch children up to 5 levels deep, each with a fresh 200K context window. This unlocks genuine hierarchical agent pipelines but multiplies token costs by roughly 7x per branch -- here is when that math makes sense.</p>
+
+<p>I have been running flat sub-agent patterns since early this year -- one orchestrator, multiple parallel workers, everything at a single depth level. After v2.1.172 shipped, I rebuilt two production pipelines to use deeper chains. What I found is that nesting solves a specific problem extremely well, and creates debugging nightmares when applied to the wrong task.</p>
+
+<h2>What changed in Claude Code v2.1.172?</h2>
+<p>Claude Code v2.1.172, released June 10, 2026, removed the restriction that prevented sub-agents from calling the Agent tool. Any sub-agent can now spawn its own sub-agents, and those children can spawn their own, down to a hard ceiling of 5 levels deep. Each agent at every level starts with a fresh 200K context window and a custom system prompt.</p>
+<p>Until this release, Anthropic enforced one rule without exception: a background sub-agent cannot spawn another sub-agent. The reasoning was sound -- guard against infinite recursion, runaway costs, and debugging nightmares with no clear ownership. That restriction is now gone, replaced by a depth cap of 5.</p>
+<p>According to Boris Cherny (Claude Code lead), the motivation was "agents kicking off agents as a way to better manage context." The goal is not more parallelism at scale -- it is pushing noisy intermediate work further away from the session you actually care about. When a depth-2 agent reads 50 files and accumulates detailed findings, none of that raw output ever reaches the depth-0 orchestrator. Only a summary does.</p>
+<p>It is worth noting what week 28 (v2.1.202-v2.1.207, July 6-11) added on top of this foundation: workflow.run_id and workflow.name OTel attributes that let you trace a full nested chain in your telemetry stack, a dynamic workflow size setting in /config for tuning how many agents Claude spawns per task, and deny rules that gate on specific agent parameters like Agent(model:opus) or Agent(isolation:worktree). The core nesting capability shipped in June; week 28 made it observable and configurable at scale.</p>
+
+<h2>What do 5 levels of depth actually unlock?</h2>
+<p>Five-level sub-agent chains let you build genuine hierarchical pipelines -- an orchestrator that delegates to domain reviewers, which spawn their own concern-specific checkers, which spawn file readers. Each level owns a bounded scope, runs its workers in parallel, and passes structured summaries up to its parent. Most production workflows live at depth 2 or 3; the 5-level cap is a safety rail that covers the most extreme real-world cases.</p>
+<p>Before nested agents, complex multi-step work had two options: one giant session that tried to do everything (context fills up fast) or flat fan-out where the orchestrator manages every worker directly (becomes a bottleneck past about 7 workers). Nesting adds a third option -- hierarchical delegation -- where each level owns its domain and the orchestrator only manages the tier directly below it.</p>
+<p>Three workflows where nesting pays off in practice:</p>
+<ul>
+<li><strong>Code review pipelines:</strong> orchestrator parses a large PR diff, groups files by domain, spawns one reviewer per domain. Each domain reviewer spawns concern-specific checkers for security, performance, and style in parallel. Findings bubble up as structured summaries.</li>
+<li><strong>Research workflows:</strong> a topic orchestrator breaks a research question into sections, spawns one section agent per section. Each section agent spawns source readers for individual papers. Final output is a synthesized report, assembled from summaries, not raw notes.</li>
+<li><strong>CI orchestration:</strong> a test coordinator spawns per-module runners. Each runner spawns fixers for failing tests. The coordinator only sees pass/fail counts and a list of PR-ready fixes.</li>
+</ul>
+<p>The Alberta government deployment is the most dramatic published example of this pattern. Alberta Ministry of Technology and Innovation used Claude Code (Opus plus Sonnet in a hierarchical pipeline) to scan 466 million lines of code for vulnerabilities in 20 hours -- and built new security tooling as a byproduct of the audit. That is not a single-instance run. That is hierarchical delegation at scale.</p>
+
+<h2>What does nested agent work actually cost?</h2>
+<p>Nested sub-agents multiply token consumption by roughly 7x per branch because each new agent pays full context initialization, its own prompt prefix, and complete output tokens for summarization back to the parent. A 3-level chain doing the same task as a single session can use 350K tokens versus 50K -- a 7x multiplier confirmed by Anthropic's cost management documentation and validated by practitioners measuring real workloads.</p>
+<p>At Fable 5 pricing (0 per million input tokens, 0 per million output tokens), a task that costs /bin/bash.50 in a single session can cost .50 in a 3-level nested chain. At depth 4 or 5, the compounding pushes the same task past 5. That is the number that kills badly designed nested chains in production.</p>
+<p>Two controls that actually contain the cost:</p>
+<p><strong>1. Tier models by depth.</strong> The pattern production builders use: Fable or Opus at the root orchestrator where you need the best reasoning, Sonnet at level 1 where tasks are complex but delegatable, Haiku from level 2 onward for mechanical leaf work like reading individual files or running pattern checks. Sonnet costs roughly 3x less than Fable per million tokens; Haiku is another 5x cheaper than Sonnet. The savings compound at every depth level.</p>
+<p><strong>2. Narrow the context at each level.</strong> The more specific the system prompt at each depth, the shorter the initialization context. A level-3 agent checking SQL query patterns in a single file does not need to know the full product context -- just the file contents and the check to run. Narrow prompts keep per-call costs low even when the chain runs wide.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How to design a nested chain that works</h2>
+<p>A well-designed nested chain follows a clear decomposition contract: each level owns a bounded scope, returns a structured summary to its parent, and spawns children only for genuinely parallel sub-problems. If you cannot define what each level is responsible for in one sentence, the chain is not ready to build. Add depth only when a level's direct workload exceeds what one agent can manage cleanly.</p>
+<p>The decomposition test I run before adding a level:</p>
+<ul>
+<li>Can this level's job be defined precisely in under 50 words?</li>
+<li>Does this level produce a structured output its parent can act on without re-interpreting?</li>
+<li>Are the sub-tasks at this level genuinely independent -- can they run in parallel?</li>
+<li>Would a flat design require the orchestrator above to manage more than 7 direct workers?</li>
+</ul>
+<p>If the answer to any of the first three is no -- or the last is also no -- start with flat sub-agents and measure before adding depth.</p>
+<p>Here is a working 3-level code review chain structure:</p>
+<pre><code>Level 0 (Orchestrator -- Fable 5):
+  Input:  PR diff (large, 500+ files changed)
+  Job:    Parse diff, group files by domain, spawn one Level-1 reviewer per domain
+  Output: Final review report collated from L1 domain summaries
+
+Level 1 (Domain Reviewer -- Sonnet):
+  Input:  100-300 files in one domain (e.g., API layer, database layer)
+  Job:    Understand domain context, spawn one Level-2 checker per concern area
+  Output: Domain summary with severity-ranked issues list
+
+Level 2 (Concern Checker -- Haiku):
+  Input:  A single concern type (e.g., &quot;check SQL queries in these 20 files&quot;)
+  Job:    Read each file, flag issues against the concern pattern
+  Output: JSON findings list with file, line, severity, description
+</code></pre>
+<p>Each level has one job. Each level's output format is specified in its system prompt. The orchestrator never touches raw file contents -- only structured summaries from level 1, which themselves never touch raw findings -- only structured summaries from level 2.</p>
+<p>The transcript protection is a built-in benefit of this structure. Each sub-agent's full transcript is isolated from its parent's context. When a level-2 agent reads 30 files and accumulates 40K tokens of intermediate reasoning, none of that reaches the level-1 reviewer's context window. The level-1 reviewer sees only the JSON findings list. This is what keeps the orchestrator's context clean across a run that might involve 500 agents total.</p>
+
+<h2>When does nesting create debugging hell?</h2>
+<p>Nested agent chains are harder to debug than flat ones because failures can occur at any level, and the root orchestrator may not know whether bad output originated at level 1, 2, or 3. Three antipatterns consistently break nested chains: passing state the receiving level cannot parse, adding levels to handle work a flat fan-out would handle just as well, and using expensive models at every depth instead of tiering by task complexity.</p>
+<p>The three pitfalls I have hit in practice:</p>
+<p><strong>Pitfall 1: State serialization failures.</strong> Each level communicates via text summaries. If level 2 returns a JSON blob and level 1's system prompt does not specify how to parse it, level 1 will paraphrase instead of pass through -- and the structured data gets lost somewhere in the middle. Every handoff point needs an explicit output format in the system prompt. Specify this before running, not after the first broken chain.</p>
+<p><strong>Pitfall 2: Unnecessary depth.</strong> If your level-2 and level-3 agents are doing the same job with the same model and similar prompts, you have added a level for organizational tidiness and paid 7x for it. The 7x multiplier applies to the entire call stack. Adding a level to group work that a flat list would handle is the most common nested agent mistake. Ask: what does this level do that the level above could not delegate directly to workers?</p>
+<p><strong>Pitfall 3: Skipping model tiering.</strong> Running Fable at every depth because "quality matters" is a real pattern I have seen. At depth 3, you are paying 7x Fable pricing for context initialization on leaf work -- reading individual files, running pattern checks, extracting field values -- that Haiku handles at equal quality for a fraction of the cost. Tier by task complexity, not by anxiety about output quality.</p>
+
+<h2>What the week 28 observability additions mean for production</h2>
+<p>Week 28 (v2.1.202-v2.1.207, July 6-11) added the OTel attributes that make nested chains manageable in production. Before week 28, you could trace individual agent calls but could not group them by workflow run. Now every agent in a chain -- at every depth -- emits a shared workflow.run_id and workflow.name attribute, so you can reconstruct the full chain in your observability stack, measure per-level latency, and see exactly where token costs accumulated.</p>
+<p>The deny rule improvements are also useful for security-conscious deployments. You can now gate on specific agent parameters:</p>
+<pre><code># In settings.json
+&#123;
+  "permissions": &#123;
+    "deny": [
+      "Agent(model:claude-opus-*)",
+      "Agent(isolation:worktree)"
+    ]
+  &#125;
+&#125;
+</code></pre>
+<p>These rules match tool parameters directly, so you are not blocking the Agent tool altogether -- you are gating on what the agent is asking to do. Agent(model:claude-opus-*) with a wildcard matches any Opus variant. Agent(isolation:worktree) blocks worktree-isolated agents. You can ask instead of deny to require human approval before a nested agent uses a specific model or isolation mode.</p>
+<p>The /cd command from week 28 is less directly related to nesting but fills a related gap -- you can change the working directory mid-session without rebuilding prompt cache. For nested chains that switch between repositories or subdirectories across levels, this eliminates a significant setup cost.</p>
+
+<h2>FAQ</h2>
+
+<h3>Can a background agent at depth 3 spawn more sub-agents?</h3>
+<p>Yes. Any sub-agent at any depth can call the Agent tool to spawn its own children, as long as the total depth from the root session stays at or under 5 levels. A depth-3 agent can spawn depth-4 and depth-5 agents. Depth-5 agents cannot spawn further -- any Agent tool call from that level returns an error. The cap is enforced by the Claude Code runtime, not by the model's behavior.</p>
+
+<h3>Does each nested sub-agent have its own tool permissions?</h3>
+<p>Yes. Each sub-agent gets a custom system prompt and its own tool permission scope. You can give a depth-2 agent read-only file access while the depth-1 parent has read/write, and the root orchestrator has full permissions. This is the right pattern for leaf agents that only need to read files and return findings -- narrow the blast radius at the level where you spawn many parallel workers.</p>
+
+<h3>How does context window compaction work across nested levels?</h3>
+<p>Each sub-agent manages its own context window independently. When a sub-agent's context reaches compaction threshold, it compacts its own transcript without affecting the parent session. The parent only receives the final output text from the sub-agent -- not the intermediate work. This is one of the core benefits of nesting: a level-2 agent can run across hours of file analysis and hundreds of intermediate tool calls without filling up the level-0 orchestrator's context.</p>
+
+<h3>What is the practical maximum depth most workflows need?</h3>
+<p>Most production workflows that use nested agents cap at depth 2 or 3. Depth 1 is the classic orchestrator-plus-parallel-workers pattern. Depth 2 adds a domain-grouping tier before workers specialize. Depth 3 handles large-scale tasks like the Alberta government's 466-million-line codebase scan. Depths 4 and 5 exist for extreme-scale pipelines or cases where a mid-tier agent itself needs to run a parallel sub-investigation before reporting up.</p>
+
+<h3>What happens to token costs if I run 10 parallel branches at depth 3?</h3>
+<p>Token costs at depth 3 with 10 parallel branches per level multiply quickly. Each branch at depth 1 spawns 10 branches at depth 2, which each spawn 10 at depth 3 -- that is 10 + 100 + 1,000 = 1,110 agent calls total, each paying its own context initialization. Model tiering is essential at this scale. Using Haiku for depth-2 and depth-3 leaf work keeps the math manageable; running Sonnet or Fable at every level in a wide 3-deep tree will produce API bills that make the work unprofitable.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Can a background agent at depth 3 spawn more sub-agents?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Any sub-agent at any depth can call the Agent tool to spawn its own children, as long as the total depth from the root session stays at or under 5 levels. A depth-3 agent can spawn depth-4 and depth-5 agents. Depth-5 agents cannot spawn further -- any Agent tool call from that level returns an error. The cap is enforced by the Claude Code runtime, not by the model's behavior."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does each nested sub-agent have its own tool permissions?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Each sub-agent gets a custom system prompt and its own tool permission scope. You can give a depth-2 agent read-only file access while the depth-1 parent has read/write, and the root orchestrator has full permissions. This is the right pattern for leaf agents that only need to read files and return findings."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does context window compaction work across nested levels?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Each sub-agent manages its own context window independently. When a sub-agent's context reaches compaction threshold, it compacts its own transcript without affecting the parent session. The parent only receives the final output text from the sub-agent, not the intermediate work. This lets a level-2 agent run across hours of file analysis without filling up the level-0 orchestrator's context."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the practical maximum depth most workflows need?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Most production workflows cap at depth 2 or 3. Depth 1 is the classic orchestrator-plus-parallel-workers pattern. Depth 2 adds a domain-grouping tier before workers specialize. Depth 3 handles large-scale tasks like the Alberta government scan of 466 million lines of code in 20 hours. Depths 4 and 5 exist for extreme-scale pipelines."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens to token costs if I run 10 parallel branches at depth 3?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Token costs multiply quickly. Each branch at depth 1 spawns 10 at depth 2, which each spawn 10 at depth 3 -- 1,110 agent calls total, each paying its own context initialization. Model tiering is essential: use Haiku for depth-2 and depth-3 leaf work. Running Sonnet or Fable at every level in a wide 3-deep tree will produce API bills that make the work unprofitable."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
