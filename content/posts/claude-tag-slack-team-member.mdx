@@ -1,0 +1,154 @@
+---
+id: claude-tag-slack-team-member
+uuid: claude-tag-slack-team-member
+slug: claude-tag-slack-team-member
+title: "Claude Tag: What Actually Changes When Claude Joins Slack"
+excerpt: Claude Tag, launched June 23, 2026, adds Claude to Slack as an org-level AI teammate rather than a personal chatbot. One Claude per channel, visible to everyone, billable to the org, running on Opus 4
+feature_image: null
+featured: false
+published_at: "2026-07-13T03:07:45-07:00"
+updated_at: "2026-07-13T03:07:45-07:00"
+reading_time: 9
+tags: [news, anthropic, claude, enterprise-ai]
+tag_names: [News, Anthropic, Claude, Enterprise AI]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Tag: What Changes When Claude Joins Your Slack"
+meta_description: Claude Tag makes Claude a shared Slack teammate with ambient mode and org-level governance. Old integration retires August 3, 2026. What builders need to know.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Tag: What Actually Changes When Claude Joins Slack</h1>
+
+<p class="lede">Claude Tag, launched June 23, 2026, adds Claude to Slack as an org-level AI teammate rather than a personal chatbot. One Claude per channel, visible to everyone, billable to the org, running on Opus 4.8, with an ambient mode that acts without being tagged. The old Claude in Slack integration shuts down August 3 -- admins need to migrate now.</p>
+
+<p>This isn't a Slack integration upgrade. The underlying architecture shift is bigger than the announcement makes it look, and it changes how AI governance and billing work inside enterprise teams.</p>
+
+<h2>What Is Claude Tag and How Is It Different from Claude in Slack?</h2>
+
+<p>Claude Tag replaces the older Claude in Slack with a fundamentally different model: one shared Claude per channel, running under an org-level agent identity, with usage billed to the organization rather than individual users. Where the old integration gave each user their own Claude instance scoped to their permissions, Claude Tag is multiplayer -- anyone in the channel can tag it, see its work, and pick up where a teammate left off.</p>
+
+<p>The old Claude in Slack was personal. Your context, your permissions, your billing. If a teammate tagged @Claude to draft something, you couldn't see that thread's context unless they shared it. Claude Tag changes this: the channel is the unit of collaboration, not the user.</p>
+
+<p>Anthropic launched Claude Tag on June 23, 2026. It's available in beta for Claude Team and Claude Enterprise plans. Team Standard starts at $25/seat/month with a 5-seat minimum; Enterprise starts at $20/seat with annual billing and adds governance features including SCIM provisioning, audit logs, and a Compliance API. There's no separate charge for Claude Tag -- usage runs through your existing plan at API rates.</p>
+
+<p>The migration deadline is real: Anthropic is retiring the old Claude in Slack app on August 3, 2026. Existing customers have 30 days from the announcement to opt in, or their teams lose Claude access in Slack entirely.</p>
+
+<h2>What Does Ambient Mode Actually Do?</h2>
+
+<p>Ambient mode lets Claude Tag act proactively without being tagged. When enabled for a channel, Claude monitors conversations, flags relevant updates from connected tools and data sources, follows up on open threads that have gone quiet, and surfaces information it thinks the team needs -- all without an explicit @Claude mention.</p>
+
+<p>Most Slack AI integrations are purely reactive -- you tag, they respond. Ambient mode is different. Claude can notice that a task thread has gone 48 hours without resolution and post a follow-up. It can connect to GitHub, Jira, Notion, or your codebase and flag when something relevant changes. It can pull context from other channels you've given it access to and synthesize across them.</p>
+
+<p>The current beta supports around 14 connectors -- Slack-native, with a limited list compared to full Claude.ai integrations. But the behavior model is significantly different from a chatbot: it's closer to a junior teammate who reads the room and proactively surfaces things rather than waiting to be asked.</p>
+
+<p>Ambient mode is off by default and can be enabled or disabled per channel by admins. I'd recommend starting with it off in any channel where unexpected posts would be disruptive, and testing it in a lower-stakes channel first to understand what it actually surfaces before enabling it anywhere business-critical.</p>
+
+<h2>What Does the Agent Identity Shift Actually Mean for Teams?</h2>
+
+<p>Claude Tag introduces an agent identity model: Claude operates under your organization's identity with admin-defined permissions, not individual user credentials. This changes governance, billing, and collaboration dynamics simultaneously. Admins control which channels Claude can join and what tools, data sources, and codebases it can access per channel -- centrally, not per user.</p>
+
+<p>For builders integrating AI into team workflows, this is the key architectural change. In the old model, Claude's access was tied to whoever tagged it -- their OAuth scopes, their permissions, their context. Different users could get different responses from the same prompt because Claude saw different data. Claude Tag standardizes this: one set of admin-defined permissions per channel, visible to everyone in that channel.</p>
+
+<p>The multiplayer model has concrete practical consequences. If a teammate tags @Claude to draft a proposal and leaves for a meeting, another teammate can continue the thread without losing context. Claude maintains state across the channel, not just within a single DM or thread. That's a fundamentally different collaboration pattern from any previous AI Slack integration.</p>
+
+<p>Anthropic's own internal usage is the most compelling data point: 65% of their product team's code is now generated by their internal version of Claude Tag, per the launch announcement at anthropic.com. That number came from Anthropic directly, so weigh it accordingly, but it's production usage at the company that built it -- not a benchmark.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>How to Set Up Claude Tag Today</h2>
+
+<p>Claude Tag setup takes about 10 minutes for an admin on Claude Team or Enterprise. The process: add Claude Tag to selected Slack channels, connect it to the tools and data sources you want it to access per channel, set channel-level permissions, and decide on ambient mode per channel. The old Claude in Slack app needs to be retired before August 3.</p>
+
+<p>Here's the practical setup sequence:</p>
+
+<p><strong>1. Find Claude Tag in Slack's App Directory.</strong> It shows up separately from the old Claude app. Don't activate both -- the old one is being retired and running them in parallel will confuse your team and create inconsistent behavior.</p>
+
+<p><strong>2. Grant access to specific channels.</strong> Be intentional here. Don't give Claude Tag access to every channel by default. Start with channels where async AI assistance is clearly useful: engineering, content, ops. Keep it out of sensitive channels (HR, legal, executive) until you understand how ambient mode behaves in practice.</p>
+
+<p><strong>3. Connect tools per channel.</strong> Claude Tag currently supports about 14 connectors in beta. GitHub, Jira, and Notion are the most useful for most teams. Connect only what Claude needs for that channel's actual work -- don't give every channel access to every tool by default.</p>
+
+<p><strong>4. Set permissions explicitly.</strong> Decide what Claude can read versus what it can post to, create, or modify. The governance model gives admins fine-grained control. Use it. An agent that can post to a channel is very different from one that can only read and respond when tagged.</p>
+
+<p><strong>5. Test ambient mode in a low-stakes channel first.</strong> Enable it somewhere where an unexpected proactive post won't cause problems. Watch what it surfaces for a week before rolling it out to channels where spontaneous AI-generated messages would be disruptive.</p>
+
+<h2>What This Signals About Anthropic's Product Direction</h2>
+
+<p>Claude Tag is Anthropic's answer to a specific strategic question: where do AI agents actually live in a company's day-to-day workflow? The bet is Slack -- the async layer where real work already happens. By putting Claude there as a first-class teammate rather than a plugin, Anthropic is making a different architectural bet than Microsoft (Copilot embedded in Teams files) or Google (Workspace AI scoped to Docs and Sheets).</p>
+
+<p>The "team member" framing matters. Copilot in Teams is user-scoped and primarily document-centric. Claude Tag is channel-scoped and async-workflow-centric -- designed for the way real team communication actually works: threaded conversations over hours and days, not single-session document editing. That's a meaningfully different product bet on where AI earns its place in enterprise workflows.</p>
+
+<p>The enterprise momentum behind this push is significant. Anthropic's run-rate revenue surpassed $30B in 2026, up from $9B at the end of 2025, with more than 1,000 enterprise customers each spending over $1M annually. Claude Tag is part of a move from API access into direct enterprise deployment -- making Claude a line item in IT budgets, not just a developer tool that teams adopt bottom-up.</p>
+
+<p>What's still unclear: audit trails for ambient mode actions, rollback procedures when Claude Tag makes a mistake in a high-stakes channel, and the roadmap for the connector list beyond the current 14. The beta also locks model selection to Opus 4.8 with no option to choose a faster or cheaper model for simpler tasks. Those constraints may be deliberate for the beta phase, but they'll need to evolve for enterprise deployments where teams need more control over cost and behavior.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is Claude Tag replacing Claude in Slack?</h3>
+<p>Yes. Claude Tag replaces the existing Claude in Slack integration entirely. Anthropic announced on June 23, 2026 that the old Claude in Slack app will be retired on August 3, 2026. Admins with existing deployments need to opt in to Claude Tag within 30 days of the announcement, or their teams will lose Claude access in Slack when the old app shuts down.</p>
+
+<h3>What subscription plans include Claude Tag?</h3>
+<p>Claude Tag is available in beta for Claude Team and Enterprise plans. Team Standard is $25 per seat per month with a 5-seat minimum. Team Premium is $125 per seat. Enterprise starts at $20 per seat on annual billing and adds SCIM provisioning, audit logs, and the Compliance API for observability. There's no separate charge for Claude Tag -- usage bills through your existing plan at API rates.</p>
+
+<h3>What model does Claude Tag run on?</h3>
+<p>Claude Tag runs on Claude Opus 4.8, Anthropic's most capable model as of mid-2026. This is the same model tier available at the Max subscription level for individual users. In the current beta, administrators cannot choose a different model -- the model selection is locked to Opus 4.8 with no option to select a faster or cheaper model for simpler tasks.</p>
+
+<h3>What is ambient mode in Claude Tag?</h3>
+<p>Ambient mode lets Claude Tag act without being explicitly tagged. When enabled for a channel, Claude monitors conversations, follows up on open threads that have gone quiet, flags relevant updates from connected tools and data sources, and proactively surfaces information it thinks the team needs. Admins can enable or disable ambient mode per channel. It is off by default and should be tested in low-stakes channels before enabling in business-critical ones.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Claude Tag replacing Claude in Slack?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Claude Tag replaces the existing Claude in Slack integration entirely. Anthropic announced on June 23, 2026 that the old Claude in Slack app will be retired on August 3, 2026. Admins with existing deployments need to opt in to Claude Tag within 30 days of the announcement, or their teams will lose Claude access in Slack when the old app shuts down."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What subscription plans include Claude Tag?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Tag is available in beta for Claude Team and Enterprise plans. Team Standard is $25 per seat per month with a 5-seat minimum. Team Premium is $125 per seat. Enterprise starts at $20 per seat on annual billing and adds SCIM provisioning, audit logs, and the Compliance API. There is no separate charge -- usage bills through your existing plan at API rates."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What model does Claude Tag run on?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Tag runs on Claude Opus 4.8, Anthropic's most capable model as of mid-2026. In the current beta, administrators cannot choose a different model -- the model selection is locked to Opus 4.8 with no option to select a faster or cheaper model for simpler tasks."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is ambient mode in Claude Tag?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Ambient mode lets Claude Tag act without being explicitly tagged. When enabled for a channel, Claude monitors conversations, follows up on open threads, flags relevant updates from connected tools, and proactively surfaces information it thinks the team needs. It is off by default and admins can enable or disable it per channel."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
