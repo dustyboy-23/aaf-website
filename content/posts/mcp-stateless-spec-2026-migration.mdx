@@ -1,0 +1,159 @@
+---
+id: mcp-stateless-spec-2026-migration
+uuid: mcp-stateless-spec-2026-migration
+slug: mcp-stateless-spec-2026-migration
+title: "MCP Goes Stateless July 28: Migration Checklist for Server Builders"
+excerpt: The MCP 2026-07-28 spec removes protocol-level sessions entirely, mandates two new HTTP headers, and deprecates three core primitives -- sampling, roots, and logging. Beta SDKs for Python, TypeScript,
+feature_image: null
+featured: false
+published_at: "2026-07-14T03:14:18-07:00"
+updated_at: "2026-07-14T03:14:18-07:00"
+reading_time: 12
+tags: [tutorials, mcp, model-context-protocol, ai-engineering, server-migration]
+tag_names: [Tutorials, MCP, Model Context Protocol, AI Engineering, Server Migration]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "MCP Stateless Spec 2026: Server Migration Checklist"
+meta_description: MCP 2026-07-28 removes protocol sessions, requires two new headers, and deprecates 3 primitives. SDK betas are live. Migration guide for server builders.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>MCP Goes Stateless July 28: Migration Checklist for Server Builders</h1>
+
+<p class="lede">The MCP 2026-07-28 spec removes protocol-level sessions entirely, mandates two new HTTP headers, and deprecates three core primitives -- sampling, roots, and logging. Beta SDKs for Python, TypeScript, Go, and C# are live now. Server builders have until July 28 to migrate or risk breaking compatibility with every major MCP client.</p>
+
+<p>I've been watching the MCP stateless migration thread since May, and this is the first time the spec has enough specificity to actually write code against. The RC locked on May 21, 2026 -- the July 28 final publish date is not slipping. If you're running a production MCP server, here's every change that will break your code and exactly how to handle it.</p>
+
+<h2>What Is the MCP 2026 Spec Actually Changing?</h2>
+<p>The 2026-07-28 release candidate is the largest MCP revision since launch. The core change: remote servers no longer need sticky sessions, a shared session store, or gateway deep packet inspection. A plain round-robin load balancer now works. The spec also ships MCP Apps, Tasks, and formally deprecates sampling, roots, and logging.</p>
+<p>The RC was locked on May 21, 2026, giving SDK maintainers a ten-week validation window before the final spec publishes on July 28, 2026 (source: <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">MCP Blog</a>). Tier 1 SDKs are already in beta. The Python SDK shipped as <code>mcp 2.0.0b1</code> on PyPI. The TypeScript SDK ships under new package names at <code>2.0.0-beta.1</code>, separate from the v1 package that stays on its 1.x line (source: <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">SDK Betas announcement</a>). Go and C# betas are also live.</p>
+<p>The protocol touches four areas: the HTTP transport layer, the per-request envelope, the caching model, and three primitives being removed. Below is each change and what your code needs to do about it.</p>
+
+<h2>Breaking Change #1: Mcp-Session-Id Is Gone</h2>
+<p>The Mcp-Session-Id header and the protocol-level session it represents are removed in the 2026 spec (SEP-2567). Any server instance can now handle any request because protocol version, client identity, and capabilities travel in a <code>_meta</code> object on every request, instead of being negotiated once at connection time.</p>
+<p>If you've been keying state off Mcp-Session-Id, move to an explicit handle pattern: the client passes a handle in, the server passes a handle back, and your actual state lives in Redis, Cosmos, or any external store you already manage. The server itself becomes stateless at the protocol layer -- the same pattern used by every modern REST API.</p>
+<p>The practical win: you can now run your MCP server behind a standard AWS ALB or Nginx upstream with round-robin routing. No sticky sessions, no shared memory session store, no gateway doing deep packet inspection to route requests to the right pod. If you've ever tried to scale a multi-replica MCP deployment, this is the change you've been waiting for.</p>
+
+<h2>Breaking Change #2: Two New Required HTTP Headers</h2>
+<p>Every Streamable HTTP request now requires <code>Mcp-Method</code> and <code>Mcp-Name</code> headers (SEP-2243). These tell load balancers, gateways, and rate limiters which operation is being called without body inspection. If you're writing server middleware or built your own MCP gateway, these headers need to be forwarded and validated.</p>
+<p>On the server side, validate that both headers are present on every Streamable HTTP request. On the gateway side, you can now route <code>Mcp-Method: tools/call</code> to a high-memory instance tier and <code>Mcp-Method: tools/list</code> to a cheap cache layer without parsing any JSON bodies. For high-traffic MCP deployments, this is where the real performance gains show up.</p>
+
+<h2>Breaking Change #3: The Initialize Handshake Is Removed</h2>
+<p>The <code>initialize</code> request and <code>notifications/initialized</code> message are gone from the 2026 spec. Client identity, protocol version, and capabilities that used to be exchanged in that handshake now travel in a <code>_meta</code> object on every request, under keys like <code>io.modelcontextprotocol/protocolVersion</code>, <code>/clientInfo</code>, and <code>/clientCapabilities</code>.</p>
+<p>If your server logic gates on the initialize handshake -- checking client capabilities before responding to tool calls -- that code needs to move to per-request checking against <code>_meta</code>. The upside: your server no longer has a cold-start problem where the first request must be an initialize before any useful work happens. Implement <code>server/discover</code> as the replacement mechanism for clients that need server metadata before issuing requests.</p>
+
+<h2>Breaking Change #4: Add ttlMs and cacheScope to List Responses</h2>
+<p>The 2026 spec formalizes caching semantics for <code>tools/list</code> and resource reads. Servers can now attach <code>ttlMs</code> to list responses so clients and gateways know how long to cache them. A companion <code>cacheScope</code> field controls whether the cache is per-client or shared. This is new behavior, not a removal -- but omitting ttlMs means leaving free performance on the table.</p>
+<p>For static tool lists -- which most MCP servers have -- set <code>ttlMs: 86400000</code> (24 hours). Claude Code currently calls <code>tools/list</code> on every new conversation session. With proper ttlMs set, a CDN or gateway can serve that response from cache for the day without touching your server. For tool lists that vary by auth state, use <code>ttlMs: 300000</code> (5 minutes) and <code>cacheScope: "client"</code>. For fully static tool lists, use <code>cacheScope: "shared"</code>.</p>
+
+<h2>Breaking Change #5: W3C Trace Context Is Now Locked in _meta</h2>
+<p>Distributed trace propagation via W3C Trace Context is now formally specified (SEP-414). The <code>traceparent</code>, <code>tracestate</code>, and <code>baggage</code> keys in <code>_meta</code> are locked down with stable names. This matters if you're running multiple MCP servers in a chain or correlating traces across an agent's tool calls in Datadog, Honeycomb, or any OpenTelemetry backend.</p>
+<p>If you already propagate traceparent, make sure you're reading it from <code>_meta</code> rather than HTTP headers directly. If you haven't wired up distributed tracing yet, the spec now guarantees the key names -- so any instrumentation you add will work consistently across all compliant MCP clients.</p>
+
+<h2>Breaking Change #6: Sampling, Roots, and Logging Are Deprecated</h2>
+<p>The 2026 spec formally deprecates three primitives: sampling (a server asking a client to generate a completion), roots (listing filesystem roots), and logging (structured log emission via the protocol). Deprecated means the spec no longer requires clients to support them, and client support can be dropped in future revisions.</p>
+<p>If you have production servers using any of these three, they won't break on July 28 -- but the migration clock is running. Sampling is the most complex to replace if you've built orchestration logic that relies on it. The spec's position: sampling creates tight coupling between server and model choice, which breaks the composability that makes MCP useful. Replace sampling with explicit tool chaining in your orchestration layer. Roots and logging have straightforward application-layer alternatives.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What's New: MCP Apps and the Tasks Extension</h2>
+<p>The 2026 spec ships two major new capabilities alongside the breaking changes. MCP Apps (SEP-1865) lets servers ship interactive HTML interfaces that clients render in a sandboxed iframe. The Tasks extension enables long-running agent work via a handle-based lifecycle that fits the stateless model -- no held-open connections required.</p>
+<p>MCP Apps is worth understanding if you build tools that are awkward to invoke via text prompts. Your server declares HTML UI templates alongside its tools. The MCP client host renders them in a sandboxed iframe -- no separate web server, no separate auth flow. Every button click in that iframe triggers a standard MCP tool call that goes through the client's normal consent path. It renders automatically inside Claude Code, Cursor, or any MCP-compliant host. This is useful for approval UIs, form-based configurators, and any tool where the text interface creates friction.</p>
+<p>Tasks reshapes long-running work. Instead of holding open a connection while an agent runs, a server answers <code>tools/call</code> with a task handle. The client drives it with <code>tasks/get</code>, <code>tasks/update</code>, and <code>tasks/cancel</code>. If you shipped against the 2025-11-25 experimental Tasks API, you need to migrate -- that lifecycle doesn't carry forward. The new lifecycle is cleaner: task creation is server-directed, and the client polls rather than the server pushing.</p>
+
+<h2>The Migration Checklist: Six Steps Before July 28</h2>
+<p>Here's the exact checklist I'd run against any production MCP server today. Priority order -- start from the top because the session removal and new header requirements are the changes that break client compatibility first. All six need to be complete before July 28.</p>
+<p><strong>Step 1: Install the v2 SDK beta.</strong> Python: <code>pip install mcp==2.0.0b1</code>. TypeScript: use the new 2.0.0-beta.1 package names, not the v1 package. Go and C# betas are also available. Don't wait for the stable release -- validate against the beta now so you're not scrambling the week of July 21.</p>
+<p><strong>Step 2: Remove all Mcp-Session-Id logic.</strong> Search your codebase for <code>Mcp-Session-Id</code> and <code>mcp_session_id</code>. If you have zero session state (most read-only tools don't), you're already done. If you do maintain state keyed on session ID, move it to an explicit handle pattern with your external state store.</p>
+<p><strong>Step 3: Add Mcp-Method and Mcp-Name header validation.</strong> Add middleware that requires these headers on every Streamable HTTP request. Log them from day one -- they're useful for debugging and building request-level metrics before you wire up gateway routing.</p>
+<p><strong>Step 4: Move capability checks from initialize to _meta.</strong> If your server gates behavior on client capabilities, update that logic to read from <code>_meta</code> on each request. No capability-gating logic in your server? Skip this step.</p>
+<p><strong>Step 5: Add ttlMs to all list responses.</strong> Static tool lists: <code>ttlMs: 86400000</code> and <code>cacheScope: "shared"</code>. Auth-dependent tool lists: <code>ttlMs: 300000</code> and <code>cacheScope: "client"</code>. This is the easiest performance win in the spec and takes under five minutes to add.</p>
+<p><strong>Step 6: Audit deprecated primitives.</strong> Grep for <code>sampling</code>, <code>roots</code>, and <code>logging</code> in your server implementation. Flag any hits. They won't break July 28, but you want a migration plan before client support starts dropping.</p>
+
+<h2>When to Start and What to Test</h2>
+<p>Start the migration this week, not the week of July 21. The beta SDKs are stable -- the RC was locked May 21 and the betas are tracking it closely. Starting now gives you two weeks of runway if you hit unexpected behavior in the SDK betas or discover session state assumptions you missed.</p>
+<p>For testing, the most important scenario is statelessness under load: run two instances of your server behind a round-robin load balancer, fire 100 requests at it, and verify responses are consistent regardless of which instance handles each request. If they're not, you have session state that didn't get migrated to the handle pattern.</p>
+<p>The second test: verify a client can complete a full tool call lifecycle -- discover, list, call, result -- without an initialize handshake. If your server errors on the first non-initialize request, the handshake removal didn't land correctly in your implementation.</p>
+<p>Test the Tasks cancel path specifically if you're adopting the Tasks extension. That's where edge cases surface first in any async job system -- cancel races, partial results, and timeout behaviors are the scenarios the happy-path tests miss.</p>
+
+<h2>FAQ</h2>
+
+<h3>What breaks on July 28 if I don't migrate my MCP server?</h3>
+<p>Your server won't stop working the moment the spec publishes on July 28 -- clients need time to ship v2 protocol support. The real break comes when major MCP clients drop support for the old session-based protocol in a future update. The ten-week SDK window closes around July 28, but client v2 adoption will roll out over weeks that follow. Migrate now to stay ahead of that rollout rather than reacting when a client update breaks your users.</p>
+
+<h3>Do I need to rewrite my MCP server from scratch for the 2026 spec?</h3>
+<p>No. The six changes are all additive or targeted swap-outs: remove Mcp-Session-Id, add Mcp-Method/Mcp-Name headers, update _meta reads, add ttlMs. If you're using a Tier 1 SDK (Python or TypeScript), upgrading to the 2.0.0 beta package handles most of the heavy lifting. The biggest real work is migrating session state to an external store -- and that only applies to servers that maintain stateful session logic, which many don't.</p>
+
+<h3>What does MCP Apps actually look like in practice?</h3>
+<p>MCP Apps (SEP-1865) lets your server declare an HTML interface alongside its tools. The MCP client host renders it in a sandboxed iframe -- no separate web server, no separate auth flow. Every button click in that iframe triggers a standard MCP tool call through the client's normal consent path. Useful for approval UIs, form-based configurators, and preview panes for agent actions -- any tool where the text prompt interface creates confusion or friction.</p>
+
+<h3>Is the new Tasks extension the same as the experimental Tasks API from 2025-11-25?</h3>
+<p>No -- the Tasks extension is a redesign. The 2025-11-25 experimental API got enough production feedback to warrant a clean lifecycle. In the new design, the server answers <code>tools/call</code> with a task handle and the client drives it with <code>tasks/get</code>, <code>tasks/update</code>, and <code>tasks/cancel</code>. Task creation is server-directed. The old experimental response shape does not carry forward, so migration is required if you shipped against it.</p>
+
+<h3>Which SDKs have v2 beta support for the 2026-07-28 MCP spec?</h3>
+<p>Four SDKs have beta builds: Python (<code>mcp 2.0.0b1</code> on PyPI), TypeScript (<code>2.0.0-beta.1</code> under new package names separate from the v1 line), Go, and C#. The TypeScript v1 package stays on its 1.x line and will not receive v2 features, so if you're on TypeScript make sure you're pulling from the new package name. Source: <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">MCP SDK Betas blog post</a>.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What breaks on July 28 if I don't migrate my MCP server?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Your server won't stop working the moment the spec publishes on July 28 -- clients need time to ship v2 protocol support. The real break comes when major MCP clients drop support for the old session-based protocol in a future update. The ten-week SDK window closes around July 28, but client v2 adoption will roll out over weeks that follow. Migrate now to stay ahead of that rollout."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do I need to rewrite my MCP server from scratch for the 2026 spec?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The six changes are all additive or targeted swap-outs: remove Mcp-Session-Id, add Mcp-Method/Mcp-Name headers, update _meta reads, add ttlMs. If you are using a Tier 1 SDK (Python or TypeScript), upgrading to the 2.0.0 beta package handles most of the heavy lifting. The biggest real work is migrating session state to an external store -- and that only applies to servers that maintain stateful session logic."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What does MCP Apps look like in practice?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "MCP Apps (SEP-1865) lets your server declare an HTML interface alongside its tools. The MCP client host renders it in a sandboxed iframe -- no separate web server, no separate auth flow. Every button click triggers a standard MCP tool call through the client's normal consent path. Useful for approval UIs, form-based configurators, and preview panes for agent actions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is the new Tasks extension the same as the experimental Tasks API from 2025-11-25?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No -- the Tasks extension is a redesign. The 2025-11-25 experimental API got enough production feedback to warrant a clean lifecycle. In the new design, the server answers tools/call with a task handle and the client drives it with tasks/get, tasks/update, and tasks/cancel. Task creation is server-directed. The old experimental response shape does not carry forward."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Which SDKs have v2 beta support for the 2026-07-28 MCP spec?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Four SDKs have beta builds: Python (mcp 2.0.0b1 on PyPI), TypeScript (2.0.0-beta.1 under new package names), Go, and C#. The TypeScript v1 package stays on its 1.x line and will not receive v2 features. Source: blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/"
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
