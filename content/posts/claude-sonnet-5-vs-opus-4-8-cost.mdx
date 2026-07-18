@@ -1,0 +1,154 @@
+---
+id: claude-sonnet-5-vs-opus-4-8-cost
+uuid: claude-sonnet-5-vs-opus-4-8-cost
+slug: claude-sonnet-5-vs-opus-4-8-cost
+title: "Claude Sonnet 5 vs Opus 4.8: Which to Run Your Agents On"
+excerpt: "Claude Sonnet 5 costs $2 per million input tokens through August 31, then $3/$15 standard. Opus 4.8 runs $5/$25 with no step-up. But Sonnet 5's new tokenizer produces ~30% more tokens for the same tex"
+feature_image: null
+featured: false
+published_at: "2026-07-18T03:10:55-07:00"
+updated_at: "2026-07-18T03:10:55-07:00"
+reading_time: 10
+tags: [economics, claude, anthropic, pricing, agent-costs]
+tag_names: [Economics, Claude, Anthropic, Pricing, Agent Costs]
+primary_tag: economics
+primary_tag_name: Economics
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Sonnet 5 vs Opus 4.8: Agent Cost Math (2026)"
+meta_description: "Sonnet 5 costs $2/M input but a new tokenizer adds 30% more tokens. Full cost math on agent workloads vs Opus 4.8, with the September price cliff explained."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Sonnet 5 vs Opus 4.8: Which to Run Your Agents On</h1>
+
+<p class="lede">Claude Sonnet 5 costs $2 per million input tokens through August 31, then $3/$15 standard. Opus 4.8 runs $5/$25 with no step-up. But Sonnet 5's new tokenizer produces ~30% more tokens for the same text, and Artificial Analysis pegs real agent task cost at $2.29 for Sonnet 5 versus $1.97 for Opus 4.8. The math is less clean than the headline numbers suggest.</p>
+
+<p>I've been running both models in production agent pipelines since Sonnet 5 launched June 30. The "cheap inference, frontier performance" pitch is roughly accurate -- but only if you account for the tokenizer change, the September price cliff, and the API breaking changes that will silently fail your requests if you don't migrate your calling code first.</p>
+
+<h2>What does each model actually cost per token?</h2>
+
+<p>Claude Sonnet 5 costs $2 per million input tokens and $10 per million output tokens through August 31, 2026. On September 1, that steps to $3 input and $15 output -- standard pricing, no expiration. Claude Opus 4.8 costs $5 per million input and $25 per million output, with no introductory window. Opus 4.8's Fast Mode runs $10/$50, offering roughly 2.5x faster inference at double the standard token rate.</p>
+
+<p>Against Opus 4.8 standard pricing, Sonnet 5's August rate is 60% cheaper on input and 60% cheaper on output. That looks decisive. After September 1 -- with Sonnet 5 at $3/$15 versus Opus 4.8's $5/$25 -- both input and output are still 40% cheaper on Sonnet 5. Meaningful, but the September step-up is worth planning for before you lock in your budget.</p>
+
+<p>Claude Haiku 4.5 sits well below both at roughly $0.80 input and $4 output per million tokens -- the right call for high-frequency routing steps, classification, and triage tasks where quality is less critical than volume throughput.</p>
+
+<h2>What does Sonnet 5's new tokenizer do to your real bill?</h2>
+
+<p>Claude Sonnet 5's new tokenizer produces approximately 30% more tokens for the same text compared to Sonnet 4.6 and Opus 4.8. Measured multipliers from real workloads: 1.42x for English prose, 1.33x for Spanish, 1.27x for Python code. Per-token pricing parity with Sonnet 4.6 is not per-request parity -- you are billed for more tokens even when sending identical inputs.</p>
+
+<p>The practical impact on prompt caches: Anthropic's caching layer invalidated on the first Sonnet 5 request, because the new tokenizer assigns different token IDs to the same content. Any warm cache built on Sonnet 4.6 gets rebuilt from scratch on the first migration run, at full uncached list price. Factor that one-time rebuild cost into your migration budget.</p>
+
+<p>The timing problem compounds this. If you migrate in July or August and profile costs at introductory pricing, you are building a budget on $2/$10 with already-inflated token counts. When September 1 arrives, per-token rates jump 50% ($2 to $3 on input, $10 to $15 on output), applied to a token count that is already ~30% higher than Sonnet 4.6. Teams running stable workloads are reporting September run rates 40-50% above their July Sonnet 5 baseline. Budget off your August invoice at your own risk.</p>
+
+<h2>What does a real agent task actually cost end-to-end?</h2>
+
+<p>Artificial Analysis benchmarked full agent task cost -- including tool calls, context accumulation, and multi-turn loops -- at $2.29 for Sonnet 5 at standard pricing, $1.97 for Opus 4.8, and $1.20 for Sonnet 4.6. That inverts the headline pricing story. Sonnet 5 is cheaper per token but costs more per completed task than Opus 4.8 when you account for tokenizer inflation and output-heavy agentic patterns.</p>
+
+<p>The per-task gap -- $2.29 versus $1.97 -- is 16%, not 40-60% as raw token pricing implies. For simple, short queries the gap widens in Sonnet 5's favor. For long-context tasks with many tool-use rounds, the gap closes further. For nightly batch workloads where you can stack the Batch API discount on top, Sonnet 5 wins on cost even at standard pricing -- more on that below.</p>
+
+<p>Run your actual task profile against these numbers. The $2 input headline is accurate. The $2.29-per-completed-task reality is what your invoices will reflect in production.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>How does performance compare on real agentic benchmarks?</h2>
+
+<p>On SWE-bench Pro -- the hardest agentic coding benchmark -- Sonnet 5 scores 63.2% against Opus 4.8's 69.2%, a 6-point gap that represents a real capability difference on complex multi-step engineering work. On OSWorld-Verified (computer-use agent tasks), Sonnet 5 scores 81.2% versus Opus 4.8's 83.4% -- much closer. On Terminal-Bench 2.1, Sonnet 5 actually beats Opus 4.8: 80.4% versus 74.6%.</p>
+
+<p>On GDPval-AA v2, a knowledge work Elo benchmark, Sonnet 5 scores 1,618 against Opus 4.8's 1,615 -- statistically identical. Sonnet 5's SWE-bench Verified score is 85.2%, up from Sonnet 4.6's 58.1% on SWE-bench Pro (different benchmark tier, but the jump signals a meaningful capability gain for this generation).</p>
+
+<p>The benchmark pattern is consistent: Sonnet 5 trades within 5% of Opus 4.8 on most agentic tasks, outperforms it on terminal workflows and knowledge work, and trails by 6 points on the hardest automated multi-step coding benchmark. For routing, extraction, summarization, and tool-use chains in production, Sonnet 5 is close enough that cost matters more than the performance gap.</p>
+
+<h2>When does Opus 4.8 still win?</h2>
+
+<p>Opus 4.8 wins on three dimensions: the hardest autonomous coding tasks where the 6-point SWE-bench Pro gap is the tie-breaker, latency-sensitive workloads via Fast Mode, and any scenario where you have stable pipelines on Sonnet 4.6 and want to avoid the migration costs -- cache rebuild, API breaking changes, re-tuned token budgets. The $1.97 versus $2.29 per-task number is the honest cost comparison after accounting for Sonnet 5's tokenizer.</p>
+
+<p>Opus 4.8's Fast Mode is worth calling out separately. At $10/$50, it is twice the standard token price but delivers roughly 2.5x faster inference -- making it 20% cheaper per unit of throughput than standard Opus 4.8 when speed is the constraint. For real-time user-facing agents or any pipeline with a hard latency SLA, Fast Mode changes the math. No equivalent fast-inference tier exists for Sonnet 5 today.</p>
+
+<p>There is also a migration risk case. Moving to Sonnet 5 means updating calling code to remove manual <code>thinking</code> parameters (now a 400 error), stripping non-default temperature and top_p values (also a 400 error), and rebuilding prompt cache warm-up from scratch. For stable, working pipelines with no pressing reason to move, staying on Opus 4.8 is a reasonable call -- especially until the September price structure is in place and you can profile apples-to-apples.</p>
+
+<h2>Two levers that actually cut the bill</h2>
+
+<p>The Batch API cuts 50% off both input and output token costs for asynchronous workloads. Nightly document processing, bulk classification, evals, anything that does not need real-time response -- all qualify. At batch pricing, Sonnet 5 input drops to $1 per million tokens in August and $1.50 per million from September. That makes batched Sonnet 5 the cheapest quality option on the Anthropic platform by a large margin.</p>
+
+<p>Prompt caching is the second lever, though you need to account for the tokenizer rebuild. Any cache warm-up built on Sonnet 4.6 is invalid on Sonnet 5 -- pay full uncached price on the first run to rebuild it, then cached reads run at roughly $0.30 per million input tokens. Systems with long, repetitive context blocks (fixed system prompts, knowledge base passages, tool definitions) should prioritize cache hit rate as the primary cost metric, not raw per-token price.</p>
+
+<p>The two levers stack directly: a cached, batched Sonnet 5 workload can reach effective input costs below $0.50 per million tokens -- approaching Haiku 4.5 territory while maintaining Sonnet-class reasoning quality. That combination is the highest-leverage cost optimization available on the Anthropic API right now, and it works on both Sonnet 5 and Opus 4.8.</p>
+
+<h2>API breaking changes you need to patch before migrating</h2>
+
+<p>Three changes in Sonnet 5 will silently break existing code. First: manual extended thinking -- the <code>thinking: &#123;type: "enabled", budget_tokens: N&#125;</code> pattern used in Sonnet 4.6 -- is not supported on Sonnet 5 and returns a 400 error. Replace it with the <code>effort</code> parameter: "low", "medium", "high", "max", or "xhigh". Sonnet 5 allocates thinking tokens automatically based on effort level and task complexity.</p>
+
+<p>Second: non-default values for <code>temperature</code>, <code>top_p</code>, and <code>top_k</code> return a 400 error on Sonnet 5, regardless of whether thinking is active. If any part of your stack sets these parameters explicitly -- even to their technical default values -- scrub them before pointing requests at Sonnet 5. This catches a lot of legacy wrapper code that sets <code>temperature=1.0</code> "just to be explicit."</p>
+
+<p>Third, and subtle: the new tokenizer means <code>max_tokens</code> values tuned for Sonnet 4.6 need recalibration. If your agent loop sets tight output token budgets based on 4.6 behavior, Sonnet 5 may hit the ceiling earlier because the same response content requires more tokens under the new tokenizer. This does not throw an error -- it silently truncates output at the token limit. Audit your max_tokens settings as part of any migration.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is Claude Sonnet 5 actually cheaper than Opus 4.8 per task?</h3>
+<p>At list price, yes -- but by less than the headline numbers suggest. Artificial Analysis measured average agent task cost at $2.29 for Sonnet 5 at standard pricing versus $1.97 for Opus 4.8. The 30% tokenizer inflation closes the per-task gap significantly compared to raw per-token pricing. For simple, short queries Sonnet 5 wins on cost. For long multi-turn agent workloads the gap narrows to roughly 16%.</p>
+
+<h3>What happens to my Claude Sonnet 5 costs on September 1, 2026?</h3>
+<p>Per-token prices step up 50%: input goes from $2 to $3 per million tokens, output from $10 to $15. Combined with the ~30% tokenizer inflation versus Sonnet 4.6, teams running stable workloads are reporting September run rates 40-50% above their July Sonnet 5 baseline. If you budget from August invoices at introductory rates, you will underestimate your September bill by roughly half on a stable workload.</p>
+
+<h3>Can I still use extended thinking with Claude Sonnet 5?</h3>
+<p>No -- manual extended thinking via <code>thinking: &#123;type: "enabled", budget_tokens: N&#125;</code> returns a 400 error on Sonnet 5. The model uses adaptive thinking by default, which automatically allocates reasoning tokens based on task complexity. Control depth with the <code>effort</code> parameter ("low", "medium", "high", "max", "xhigh") rather than setting an explicit token budget. Temperature and top_p overrides also return 400 errors.</p>
+
+<h3>How do I get the lowest cost from Claude Sonnet 5?</h3>
+<p>Stack the Batch API (50% discount) with prompt caching (up to 90% discount on cache hits for repeated context). A batched, cached Sonnet 5 workload can reach effective input costs below $0.50 per million tokens -- close to Haiku 4.5 pricing with Sonnet-class output quality. After migrating to Sonnet 5, rebuild your prompt cache warm-up from scratch since the new tokenizer invalidates Sonnet 4.6 cache entries on first run.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is Claude Sonnet 5 actually cheaper than Opus 4.8 per task?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "At list price, yes -- but by less than the headline numbers suggest. Artificial Analysis measured average agent task cost at $2.29 for Sonnet 5 at standard pricing versus $1.97 for Opus 4.8. The 30% tokenizer inflation closes the per-task gap significantly compared to raw per-token pricing. For simple, short queries Sonnet 5 wins on cost. For long multi-turn agent workloads the gap narrows to roughly 16%."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens to my Claude Sonnet 5 costs on September 1, 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Per-token prices step up 50%: input goes from $2 to $3 per million tokens, output from $10 to $15. Combined with the ~30% tokenizer inflation versus Sonnet 4.6, teams running stable workloads are reporting September run rates 40-50% above their July Sonnet 5 baseline. If you budget from August invoices at introductory rates, you will underestimate your September bill by roughly half on a stable workload."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I still use extended thinking with Claude Sonnet 5?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No -- manual extended thinking via thinking: &#123;type: enabled, budget_tokens: N&#125; returns a 400 error on Sonnet 5. The model uses adaptive thinking by default, which automatically allocates reasoning tokens based on task complexity. Control depth with the effort parameter (low, medium, high, max, xhigh) rather than an explicit token budget. Temperature and top_p overrides also return 400 errors on Sonnet 5."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I get the lowest cost from Claude Sonnet 5?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Stack the Batch API (50% discount) with prompt caching (up to 90% discount on cache hits). A batched, cached Sonnet 5 workload can reach effective input costs below $0.50 per million tokens -- near Haiku 4.5 pricing with Sonnet-class quality. Rebuild your prompt cache warm-up after migrating since the new tokenizer invalidates Sonnet 4.6 cache entries on first run."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
