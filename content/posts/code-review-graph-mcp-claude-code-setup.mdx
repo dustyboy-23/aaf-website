@@ -1,0 +1,184 @@
+---
+id: code-review-graph-mcp-claude-code-setup
+uuid: code-review-graph-mcp-claude-code-setup
+slug: code-review-graph-mcp-claude-code-setup
+title: How to Set Up code-review-graph MCP for Claude Code (6.8x Context Reduction)
+excerpt: code-review-graph is a local-first MCP server that parses your codebase with Tree-sitter, stores a structural map in SQLite, and gives Claude Code only the nodes relevant to each query -- instead of r
+feature_image: null
+featured: false
+published_at: "2026-07-21T03:14:29-07:00"
+updated_at: "2026-07-21T03:14:29-07:00"
+reading_time: 9
+tags: [tutorials, claude-code, mcp, ai-engineering]
+tag_names: [Tutorials, Claude Code, MCP, AI Engineering]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "code-review-graph MCP for Claude Code: 6.8x Fewer Tokens"
+meta_description: Step-by-step setup for code-review-graph MCP with Claude Code. Benchmarked 6.8x fewer tokens on code reviews, up to 49x on monorepos. Real install guide.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Set Up code-review-graph MCP for Claude Code (6.8x Context Reduction)</h1>
+
+<p class="lede">code-review-graph is a local-first MCP server that parses your codebase with Tree-sitter, stores a structural map in SQLite, and gives Claude Code only the nodes relevant to each query -- instead of raw files. Independent benchmarks show 6.8x fewer tokens on code reviews and up to 49x on large monorepos.</p>
+
+<p>Built by developer Tirth Kanani, code-review-graph has accumulated ~20,000 GitHub stars and was trending on GitHub this week. If you haven't wired it into Claude Code yet, this guide covers the actual setup, what each of the 30 MCP tools does, and where it beats -- or loses to -- Graphify and codebase-memory-mcp.</p>
+
+<h2>What Does code-review-graph Actually Build?</h2>
+<p>code-review-graph builds a persistent structural map of your codebase using Tree-sitter to parse every file into an Abstract Syntax Tree. It stores every function, class, import, call relationship, inheritance chain, and test mapping as nodes and edges in a local SQLite database. When Claude needs context, it queries the graph instead of reading raw files.</p>
+<p>The graph lives at <code>.code-review-graph/</code> inside your repo. It indexes on first run, then updates incrementally -- only re-parsing files that changed. On a ~1,000-file project, an incremental update takes about 0.425 seconds. The database is entirely local: no telemetry, no cloud sync, no account required, MIT license.</p>
+<p>Supported languages: Python, TypeScript, JavaScript, Go, Rust, Java, C#, Ruby, Kotlin, Swift, PHP, and C/C++. The MCP server exposes 30 tools by default -- each a targeted graph query that Claude uses to pull structure-aware context before deciding whether to read files directly.</p>
+
+<h2>Why Does Context Size Matter for AI Code Reviews?</h2>
+<p>Without a code graph, Claude Code handles reviews by sending entire files to the model. A medium-sized TypeScript file runs 300-500 tokens. A 10-file change set with imported modules can hit 50,000-100,000+ tokens per review. Multiply that across a full workday and the cost difference between 6.8x and full-file context becomes significant -- both in API spend and in how much context remains for actual reasoning.</p>
+<p>The core insight in code-review-graph is that most review context is structural, not textual. To understand whether a change breaks an interface, you don't need every line of every file that imports it -- you need the call graph, the type signatures, and the test coverage map. Tree-sitter gives you that structural map without sending raw source. Claude gets the shape of the problem, not the entire codebase.</p>
+<p>Tirth Kanani documented the extreme case in a <a href="https://tirthkanani18.medium.com/i-built-a-knowledge-graph-that-cuts-claude-codes-token-usage-by-49x-9260d3cd1069">Medium post</a>: on a Next.js monorepo with 27,700+ files, the graph funneled review context from 739,000 tokens down to 15,000 -- a 49x reduction. That is not the median case, but it shows what the architecture is capable of at scale.</p>
+
+<h2>What Do the Benchmarks Actually Show?</h2>
+<p>The code-review-graph repository includes a reproducible benchmark suite -- run <code>python bench/run.py</code> to verify these numbers on your own repos. Across three open-source repos at different scales, code reviews averaged 6.8x fewer tokens compared to full-file context. Per-repo results: httpx (Python HTTP client) 26.2x, FastAPI 8.1x, Next.js 6.0x. The variance reflects how tightly coupled each repo's dependency graph is.</p>
+<p>For daily coding tasks beyond code review, the benchmarks show up to 49x reduction on large monorepos. Smaller single-service repos with under 500 files typically land in the 5x-15x range. The MCP tools return estimated token savings alongside each result -- so you can see what you're saving per query rather than relying on aggregate numbers.</p>
+<p>Competing tools claim larger numbers but with different methodology. <a href="https://letsdatascience.com/news/codebase-memory-mcp-speeds-ai-coding-agent-queries-a6a04a1b">codebase-memory-mcp</a> claims 99.2% token reduction using semantic embeddings and a static C binary. <a href="https://dev.to/coder11/code-review-graph-vs-graphify-vs-codebase-memory-mcp-the-best-code-intelligence-mcp-tools-for-ai-3ea">Graphify</a> (Y Combinator S26, ~75,000 stars) does not publish equivalent benchmark data. code-review-graph's numbers are reproducible from a public script. That matters when you're deciding what to put in a production workflow.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How Do You Install code-review-graph for Claude Code?</h2>
+<p>Installation is two commands: one to install the package from PyPI, one to auto-configure the Claude Code integration. The second command detects your Claude Code setup, writes the MCP configuration to your Claude settings, and injects graph-aware instructions into your platform rules file. After restarting Claude Code, the 30 MCP tools show up automatically in any session.</p>
+
+<p>Install the package:</p>
+<pre><code>pip install code-review-graph</code></pre>
+
+<p>Configure for Claude Code:</p>
+<pre><code>code-review-graph install --platform claude-code</code></pre>
+
+<p>Restart Claude Code, then build the initial graph:</p>
+<pre><code># Build the initial graph (one-time per repo)
+code-review-graph build
+
+# Verify the graph is working
+code-review-graph status</code></pre>
+
+<p>The build step runs Tree-sitter over your entire codebase and populates the SQLite database. On a 1,000-file Python repo, expect 30-60 seconds on first run. After that, incremental updates average 0.425 seconds and trigger automatically on file changes.</p>
+
+<p>The <code>install</code> command also adds a SessionStart hook that shows graph status at the top of every Claude Code session:</p>
+
+<pre><code># Example session start output after install:
+# code-review-graph: 1,247 functions, 89 classes, 3,412 edges | last updated 0.4s ago</code></pre>
+
+<p>For automated pipelines or token-constrained environments, you can limit which tools the MCP server exposes. The full 30-tool set adds schema overhead to every Claude request. For a CI review pipeline that only needs review context and impact analysis, export a trimmed set:</p>
+
+<pre><code>export CRG_TOOLS="get_review_context,get_impact_analysis,get_changed_functions"
+code-review-graph serve</code></pre>
+
+<p>For interactive development, keep the full 30-tool set. For automated pipelines, identify the 3-5 tools your workflow actually calls and export <code>CRG_TOOLS</code> accordingly.</p>
+
+<h2>What Do the 30 MCP Tools Do?</h2>
+<p>code-review-graph exposes 30 MCP tools organized into four functional groups: review context, impact analysis, architecture overview, and test tracking. Each tool returns structured graph data plus estimated context savings metadata. Claude calls these instead of reading files when the structural information is sufficient to answer the question.</p>
+
+<p>The tools you will use most in Claude Code:</p>
+
+<ul>
+<li><strong>get_review_context</strong> -- given a diff or changed file list, returns the relevant function signatures, callers, and test mappings. This is the primary driver of the 6.8x benchmark result.</li>
+<li><strong>get_impact_analysis</strong> -- traces transitive dependencies from changed functions to identify what else might break. Bounded by default to prevent runaway on deeply nested dependency graphs.</li>
+<li><strong>get_changed_functions</strong> -- extracts function-level changes from a git diff, not line-level. Critical for reviews on large files where a single method changed inside a 500-line file.</li>
+<li><strong>get_architecture_overview</strong> -- returns a compact community map of the codebase. Defaults to <code>detail_level="minimal"</code> to keep context tight. Pass <code>detail_level="full"</code> for the complete cross-community edge list.</li>
+<li><strong>get_test_coverage_map</strong> -- maps changed functions to their test coverage. Tells Claude whether the changed code has tests before it decides whether to write new ones.</li>
+</ul>
+
+<p>The remaining 25 tools cover docstring extraction, community detection metrics, dependency tree queries, multi-format export (JSON, Markdown, GraphML), call chain tracing, and inheritance hierarchy queries. Most developers end up using 5-8 tools regularly. The broader set is useful for architecture discovery sessions on an unfamiliar codebase.</p>
+
+<p>The 2026 feature release added bounded change analysis, which caps the transitive test frontier on large changed-function sets. If you touch a widely-imported utility function, <code>get_impact_analysis</code> does not return the entire graph -- it caps the frontier and notes what was excluded.</p>
+
+<h2>How Does code-review-graph Compare to Graphify and codebase-memory-mcp?</h2>
+<p>code-review-graph, Graphify, and codebase-memory-mcp all solve the same core problem -- too much context, not enough signal -- but with different architectures. code-review-graph uses pure AST structural analysis with SQLite and reproducible benchmarks. Graphify (YC S26, ~75,000 stars) adds semantic self-updating graphs. codebase-memory-mcp is a static C binary built for sub-millisecond queries at extreme scale.</p>
+
+<p><strong>Where code-review-graph wins:</strong></p>
+<ul>
+<li><strong>Benchmark transparency.</strong> The 6.8x and 49x numbers come from a public script you can run on your own repo. The competing tools do not publish equivalent reproducible data.</li>
+<li><strong>Pure local SQLite.</strong> No external graph database, no service process. The <code>.code-review-graph/</code> directory is self-contained and travels with your repo.</li>
+<li><strong>30 specialized tools.</strong> Review context, impact analysis, architecture, and test tracking are separate MCP tools rather than a single monolithic search. Claude can call precisely the right tool for each question.</li>
+<li><strong>12 language support</strong> covering the full stack most teams run: Python, TypeScript, Go, Rust, Java, C#, and more.</li>
+</ul>
+
+<p><strong>Where Graphify wins:</strong></p>
+<ul>
+<li><strong>Ecosystem size.</strong> ~75,000 stars vs ~20,000 means more community integrations, plugins, and support threads when something breaks.</li>
+<li><strong>Semantic graph updates.</strong> Graphify tracks semantic changes -- renamed functions, moved files, refactored interfaces -- not just AST diffs. That matters on codebases where large-scale refactors are common.</li>
+</ul>
+
+<p><strong>Where codebase-memory-mcp wins:</strong></p>
+<ul>
+<li><strong>Extreme scale.</strong> A static C binary that indexes the Linux kernel (28 million lines of code) in ~3 minutes and answers structural queries in under a millisecond is a different performance category. If you are indexing multi-million-line codebases, codebase-memory-mcp is worth considering.</li>
+</ul>
+
+<p>For most Claude Code users -- a standard service under 100,000 lines, Python or TypeScript, review-heavy workflow -- code-review-graph is the clear starting point. pip-installable, one-command Claude Code integration, and benchmarks you can verify on your own codebase before committing.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does code-review-graph work with Claude Code auto mode?</h3>
+<p>Yes. The 30 MCP tools are available to Claude in any mode -- auto, plan, or manual. In auto mode, Claude decides when to call graph tools versus reading files directly. In practice it learns to prefer get_review_context for diff-heavy tasks and falls back to direct file reads for small single-file edits where the graph overhead is not worth it.</p>
+
+<h3>Will code-review-graph slow down my Claude Code sessions?</h3>
+<p>The initial graph build takes 30-60 seconds for a ~1,000-file repo. After that, incremental updates average 0.425 seconds and run in the background. The 30-tool MCP schema adds a small fixed cost per Claude request. Export CRG_TOOLS with only the tools you use to reduce this to near-zero.</p>
+
+<h3>What happens when code-review-graph misses relevant context?</h3>
+<p>Claude falls back to reading files directly with the standard Read tool. code-review-graph adds a structural query layer on top of file reading -- it does not replace it. When the graph misses a dynamic import or a metaprogramming pattern Tree-sitter cannot parse, Claude finds it by reading the file. The two approaches are complementary.</p>
+
+<h3>Should I commit the code-review-graph database to my repo?</h3>
+<p>No. Add <code>.code-review-graph/</code> to your <code>.gitignore</code>. The SQLite database is local build output that regenerates from your source files on each machine. Committing it adds binary noise to your git history without benefit. The graph rebuilds in under 60 seconds on any new machine after running <code>code-review-graph build</code>.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does code-review-graph work with Claude Code auto mode?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The 30 MCP tools are available to Claude in any mode -- auto, plan, or manual. In auto mode, Claude decides when to call graph tools versus reading files directly. In practice it prefers get_review_context for diff-heavy tasks and falls back to direct file reads for small single-file edits."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Will code-review-graph slow down my Claude Code sessions?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The initial graph build takes 30-60 seconds for a ~1,000-file repo. After that, incremental updates average 0.425 seconds and run in the background. The 30-tool MCP schema adds a small fixed cost per Claude request. Export CRG_TOOLS with only the tools you use to reduce this to near-zero."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens when code-review-graph misses relevant context?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude falls back to reading files directly with the standard Read tool. code-review-graph adds a structural query layer on top of file reading -- it does not replace it. When the graph misses a dynamic import or metaprogramming pattern, Claude finds it by reading the file. The two approaches are complementary."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Should I commit the code-review-graph database to my repo?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Add .code-review-graph/ to your .gitignore. The SQLite database is local build output that regenerates from your source files. Committing it adds binary noise to your git history without benefit. The graph rebuilds in under 60 seconds on any new machine after running code-review-graph build."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
