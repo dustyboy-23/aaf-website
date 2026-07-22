@@ -1,0 +1,135 @@
+---
+id: autogen-maintenance-mode-framework-2026
+uuid: autogen-maintenance-mode-framework-2026
+slug: autogen-maintenance-mode-framework-2026
+title: "AutoGen Is in Maintenance Mode: Which Multi-Agent Framework to Use in 2026"
+excerpt: "Microsoft officially put AutoGen in maintenance mode on October 2, 2025, merging it with Semantic Kernel into the new Microsoft Agent Framework (GA: April 3, 2026). Bug fixes and security patches only"
+feature_image: null
+featured: false
+published_at: "2026-07-22T03:12:32-07:00"
+updated_at: "2026-07-22T03:12:32-07:00"
+reading_time: 8
+tags: [reviews, autogen, langgraph, crewai, multi-agent-frameworks]
+tag_names: [Reviews, AutoGen, LangGraph, CrewAI, Multi-Agent Frameworks]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "AutoGen Maintenance Mode: Best Multi-Agent Framework 2026"
+meta_description: "AutoGen is in maintenance mode. Here's how to choose between LangGraph, CrewAI, and Microsoft Agent Framework for production multi-agent workflows in 2026."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>AutoGen Is in Maintenance Mode: Which Multi-Agent Framework to Use in 2026</h1>
+
+<p class="lede">Microsoft officially put AutoGen in maintenance mode on October 2, 2025, merging it with Semantic Kernel into the new Microsoft Agent Framework (GA: April 3, 2026). Bug fixes and security patches only going forward. If your stack runs AutoGen, here is how the framework landscape looks now and where to move.</p>
+
+<p>I've been watching teams get burned by this one. AutoGen was a lot of builders' first multi-agent framework -- approachable, well-documented, and backed by genuinely useful research. But as of April 2026, the active development has moved to Microsoft Agent Framework, and the rest of the ecosystem has shifted fast.</p>
+
+<h2>What happened to AutoGen and when?</h2>
+<p>AutoGen entered maintenance mode on October 2, 2025, when maintainer Eric Zhu posted <a href="https://github.com/microsoft/autogen/discussions/7066">GitHub Discussion #7066</a> announcing the change. The framework had accumulated 98 releases, 3,776 commits, and 2,488 resolved issues before the shift. No new major features will be added; the team moved to building Microsoft Agent Framework instead.</p>
+<p>The announcement was direct: "AutoGen will still be maintained -- it has a stable API and will continue to receive critical bug fixes and security patches -- but we will not be adding significant new features to it." That is the definition of maintenance mode. The framework works, but the development energy is gone.</p>
+<p>What replaced it is <strong>Microsoft Agent Framework (MAF)</strong> -- a unified SDK combining AutoGen's multi-agent graph patterns with Semantic Kernel's enterprise integration layer. MAF shipped Release Candidate on February 19, 2026 and hit GA on April 3, 2026 for both Python and .NET. Microsoft published an official migration guide at <a href="https://learn.microsoft.com/en-us/agent-framework/migration-guide/from-autogen/">learn.microsoft.com</a> with a redirect shortlink at <code>aka.ms/autogen-to-af</code>.</p>
+
+<h2>Should AutoGen users migrate to Microsoft Agent Framework?</h2>
+<p>Microsoft Agent Framework is the right destination if you're running single-agent AutoGen patterns on Azure or .NET infrastructure. Single-agent migration is straightforward -- APIs are nearly identical. Multi-agent patterns require more work: transitioning from AutoGen's event-driven model to MAF's dataflow-based architecture means rethinking how agents communicate and share state.</p>
+<p>The case for migrating: MAF is where Microsoft's investment is going. You get Semantic Kernel's ecosystem, Azure integrations, and long-term enterprise support. If your team is .NET-first or heavily Azure-native, MAF is the logical destination.</p>
+<p>The case against rushing: AutoGen still runs fine. Maintenance mode means stable, not broken. If your production AutoGen system is working, there's no urgent reason to rewrite it. Migrate when you're adding new capabilities or when a security patch cycle creates friction.</p>
+
+<h2>Which framework fits your workload in 2026?</h2>
+<p>The four main options split cleanly by use case: LangGraph for stateful complex workflows, CrewAI for role-based orchestration and fast prototyping, OpenAI Agents SDK for OpenAI-native stacks with minimal overhead, and Microsoft Agent Framework for .NET and Azure-first teams. Your workload shape decides this -- not brand preference.</p>
+
+<p>Here's the decision logic I use:</p>
+<ul>
+<li><strong>Durable state + crash recovery + conditional branching:</strong> LangGraph. If your agent needs to survive failures, resume from checkpoints, and route to different paths based on runtime outcomes, LangGraph's graph model is purpose-built for it. Its 34.5M+ monthly PyPI downloads reflect real production adoption, not just tutorial installs.</li>
+<li><strong>Role-based orchestration, content pipelines, ops automation:</strong> CrewAI. Fastest from idea to working multi-agent system. General Assembly cut curriculum development time by 90% with a CrewAI agent team. Gelato now enriches 3,000+ leads monthly with 90% less manual work.</li>
+<li><strong>OpenAI stack, explicit control, minimal framework overhead:</strong> OpenAI Agents SDK. No graph DSL, no role abstractions -- just Python objects and explicit handoffs. The Assistants API is headed for deprecation mid-2026; Agents SDK is its production replacement.</li>
+<li><strong>Azure/enterprise/.NET, coming from AutoGen or Semantic Kernel:</strong> Microsoft Agent Framework. GA since April 3, 2026, with an official migration path from AutoGen and full Azure integration.</li>
+</ul>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>LangGraph: the production leader</h2>
+<p>LangGraph is the most-installed agent framework by volume -- 34.5M+ monthly PyPI downloads, roughly 30x AutoGen's numbers according to <a href="https://presenc.ai/research/multi-agent-orchestration-frameworks-2026">Presenc.ai's 2026 framework comparison</a>. That gap reflects where teams are shipping real production systems. Klarna used LangGraph and cut customer resolution time by 80%. Uber documented approximately 21,000 developer hours saved. AppFolio recovered 10+ hours per week per property manager. These are documented production deployments, not benchmarks.</p>
+<p>The technical edge is state management. Every LangGraph node receives the current State object and returns a partial update; the framework merges updates via reducers. Agents run in super-steps -- batches of concurrent node executions -- and state is durable via checkpointers (Postgres, SQLite, or managed Postgres through LangGraph Platform). A crashed agent can resume from the last checkpoint automatically.</p>
+<p>LangGraph Studio shipped GA in 2026 as part of LangGraph Platform -- a visual debugger for stepping through nodes, inspecting state at each checkpoint, and replaying from any point. v1.1.3 added deep agent templates and distributed runtime support. Most recent SDK release: 0.3.15 (May 22, 2026).</p>
+<p>The honest tradeoff: LangGraph requires more explicit code to define the graph and get the state model right. For complex conditional routing, you're writing more to get the flexibility. That's the cost, and it's a fair one if you need production durability.</p>
+
+<h2>CrewAI: fastest from zero to working agents</h2>
+<p>CrewAI v1.15.5 (released July 20, 2026) is the fastest path from idea to working multi-agent system. The role-based model -- assign roles, goals, and backstories to agents -- gets prototypes running faster than any other framework. CrewAI's internal benchmarks show 90.2% improvement in execution accuracy for correctness-critical tasks, which justifies the 4x token overhead vs. single-agent approaches for the right workloads.</p>
+<p>The 67% token reduction for multi-domain tasks vs. a single large-context agent is what makes CrewAI economically interesting for pipelines spanning multiple knowledge domains. That number comes from CrewAI's internal benchmarks -- validate it against your specific workload before building it into cost projections.</p>
+<p>Recent release highlights: v1.15.0 (June 25, 2026) shipped conversational telemetry, unified declarative flow loading, and DMN mode support. v1.15.4 moved the Skills Repository out of experimental status. Enterprise tier launched March 2026 with observability and scheduling. Real production results from the docs: Piracanjuba achieved 95% response accuracy replacing their RPA system. PwC saw a 7x improvement in function specification and code generation accuracy.</p>
+<p>The limitation to know: CrewAI prototypes faster but trails LangGraph on production-grade error recovery and stateful checkpointing. Teams regularly start with CrewAI for the ergonomics and migrate to LangGraph when production complexity grows. Both choices are defensible -- it's often a sequencing decision as much as a technical one.</p>
+
+<h2>OpenAI Agents SDK: explicit handoffs, minimal overhead</h2>
+<p>The OpenAI Agents SDK (Python v0.17.2 as of May 12, 2026) is the production successor to Swarm and the designated replacement for the Assistants API, which is heading for deprecation mid-2026. For OpenAI-native stacks where you don't need framework overhead, this is the path forward.</p>
+<p>Core primitives are minimal by design: Agent, Runner, Tools, Guardrails, Tracing, Sessions, and Handoffs. Handoffs are the key concept -- a first-class primitive for delegating control to specialist agents. No graph DSL, no role-based orchestration layer. You write Python objects and explicit handoffs. Multiple <a href="https://niteagent.com/blog/2026-07-08-openai-agents-sdk-production-guide/">2026 production guides</a> describe this SDK as "the common default for production agentic systems due to minimal magic and explicit design."</p>
+<p>Where it wins: for OpenAI-native stacks, the SDK removes the abstraction gap between your code and the API. No translation layer, no graph compilation step. Where it doesn't make sense: if you need durable state, crash recovery, or conditional routing across heterogeneous models, LangGraph or CrewAI have more native support for those patterns.</p>
+
+<h2>FAQ</h2>
+<h3>Is AutoGen dead?</h3>
+<p>AutoGen is in maintenance mode, not dead. It still receives critical bug fixes and security patches. The October 2025 announcement from maintainer Eric Zhu was explicit: stable API, no new features. Production AutoGen systems don't need to be rewritten immediately. Migrate when you need new capabilities or when Microsoft Agent Framework's feature set becomes a genuine pull factor.</p>
+
+<h3>What is the difference between Microsoft Agent Framework and AutoGen?</h3>
+<p>Microsoft Agent Framework (MAF) is the unified merger of AutoGen and Semantic Kernel, GA since April 3, 2026. Single-agent patterns from AutoGen migrate with minimal changes -- APIs are nearly identical. Multi-agent patterns require transitioning from AutoGen's event-driven model to MAF's dataflow architecture. Microsoft published an official migration guide at learn.microsoft.com/en-us/agent-framework/migration-guide/from-autogen/.</p>
+
+<h3>When should I choose LangGraph over CrewAI?</h3>
+<p>Choose LangGraph when you need durable state that survives crashes, conditional routing based on runtime outcomes, or production-grade checkpointing. Choose CrewAI when you want the fastest path to a working multi-agent prototype and your workflow maps naturally to role-based orchestration. Many teams prototype in CrewAI and migrate to LangGraph as production complexity grows.</p>
+
+<h3>Is the OpenAI Agents SDK worth using if I'm not on OpenAI models?</h3>
+<p>Probably not. The OpenAI Agents SDK is optimized for OpenAI-native stacks -- handoffs, tracing, and guardrails are designed around OpenAI APIs. For multi-model or model-agnostic architectures, LangGraph or CrewAI give you more flexibility without the OpenAI coupling. Neither LangGraph nor CrewAI restricts your model choices.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is AutoGen dead?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "AutoGen is in maintenance mode, not dead. It still receives critical bug fixes and security patches. The October 2025 announcement from maintainer Eric Zhu was explicit: stable API, no new features. Production AutoGen systems do not need to be rewritten immediately. Migrate when you need new capabilities or when Microsoft Agent Framework becomes a genuine pull."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between Microsoft Agent Framework and AutoGen?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Microsoft Agent Framework (MAF) is the unified merger of AutoGen and Semantic Kernel, GA since April 3, 2026. Single-agent patterns migrate with minimal changes. Multi-agent patterns require transitioning from AutoGen's event-driven model to MAF's dataflow architecture. Official migration guide at learn.microsoft.com/en-us/agent-framework/migration-guide/from-autogen/."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "When should I choose LangGraph over CrewAI?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Choose LangGraph when you need durable state that survives crashes, conditional routing based on runtime outcomes, or production-grade checkpointing. Choose CrewAI when you want the fastest path to a working multi-agent prototype and your workflow maps naturally to role-based orchestration. Many teams prototype in CrewAI and migrate to LangGraph as production complexity grows."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is the OpenAI Agents SDK worth using if I am not on OpenAI models?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Probably not. The OpenAI Agents SDK is optimized for OpenAI-native stacks -- handoffs, tracing, and guardrails are designed around OpenAI APIs. For multi-model or model-agnostic architectures, LangGraph or CrewAI give you more flexibility without the OpenAI coupling."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
