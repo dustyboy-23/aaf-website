@@ -1,0 +1,131 @@
+---
+id: mcp-stateless-2026-spec-migration-guide
+uuid: mcp-stateless-2026-spec-migration-guide
+slug: mcp-stateless-2026-spec-migration-guide
+title: "MCP Goes Stateless July 28: What Agent Builders Need to Audit Now"
+excerpt: The MCP 2026-07-28 spec removes protocol-level sessions entirely -- the initialize handshake is gone, the Mcp-Session-Id header is gone, and three features (Roots, Sampling, Logging) are formally depr
+feature_image: null
+featured: false
+published_at: "2026-07-25T03:12:12-07:00"
+updated_at: "2026-07-25T03:12:12-07:00"
+reading_time: 9
+tags: [tutorials, mcp, agent-architecture, migration]
+tag_names: [Tutorials, MCP, Agent Architecture, Migration]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "MCP Goes Stateless July 28: Migration Guide for Builders"
+meta_description: "MCP 2026-07-28 goes stateless, removing sessions and deprecating Roots, Sampling, Logging. Here's what breaks in your stack and how to migrate before Monday."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>MCP Goes Stateless July 28: What Agent Builders Need to Audit Now</h1>
+
+<p class="lede">The MCP 2026-07-28 spec removes protocol-level sessions entirely -- the initialize handshake is gone, the Mcp-Session-Id header is gone, and three features (Roots, Sampling, Logging) are formally deprecated. Beta SDKs are live in Python (mcp 2.0.0b1), TypeScript (2.0.0-beta.1), Go, and C#. If you run stateful MCP servers in production, you have three days to audit your stack.</p>
+
+<p>The MCP spec release candidate dropped this month and it is the most significant protocol revision since MCP launched. I have been tracking the spec discussion threads and beta SDK notes for two weeks. Here is what actually changes for builders running MCP in production -- and what to check before Monday.</p>
+
+<h2>What changed in the MCP 2026-07-28 spec?</h2>
+<p>The 2026-07-28 RC is the largest MCP revision since launch. Two SEPs remove sessions: SEP-2567 drops the Mcp-Session-Id header and protocol-level session tracking, and SEP-2575 drops the initialize/initialized handshake that previously negotiated protocol version, client info, and capabilities at connection start. Each request now carries protocol version and client info in _meta fields instead of a session header.</p>
+<p>Three additional SEPs round out the release. SEP-2577 formally deprecates Roots, Sampling, and Logging with a minimum 12-month removal window. SEP-1865 (MCP Apps) lets servers declare sandboxed iframe UIs. The Tasks extension ships as an optional extension -- not core spec -- for async long-running work. OAuth 2.1 and OpenID Connect alignment tightens enterprise auth: MCP servers are now formally defined as OAuth 2.1 resource servers, and clients must validate the iss parameter per RFC 9207 to prevent mix-up attacks.</p>
+<p>The full changelog is on the <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">MCP blog</a>. The RC is live now; stable v2 is targeted for July 27, with the final specification shipping July 28.</p>
+
+<h2>What breaks in your current MCP setup?</h2>
+<p>If your MCP server uses the Mcp-Session-Id header to track state across requests, or relies on the initialize handshake to negotiate client capabilities, those code paths break under the new spec. Load balancer sticky routing and shared session stores still work for now but become unnecessary -- and you need to audit that infrastructure before you can safely remove it.</p>
+<p>Three categories to check now:</p>
+<p><strong>Session routing at the load balancer.</strong> Any routing rule that pins a client to a specific MCP instance based on session ID needs to be replaced with round-robin load balancing after migration. In AWS ALB, remove target group stickiness. In nginx, remove ip_hash. In Azure App Service, disable ARR affinity (which is on by default). None of this can be removed until your server code is free of session-scoped state.</p>
+<p><strong>Initialize handshake handling in server code.</strong> Any code that explicitly handles the initialize/initialized message exchange is dead code under v2. Protocol version and capabilities move to _meta fields. The beta SDKs handle the transition automatically, but test that your handlers do not depend on handshake-phase state being set before they receive tool calls.</p>
+<p><strong>Active use of Roots, Sampling, or Logging primitives.</strong> These are deprecated, not removed -- the 12-month window means nothing breaks immediately. Starting the migration now avoids a harder cutoff when the removal deadline lands. All three have clear replacement paths.</p>
+
+<h2>What gets cheaper after migration?</h2>
+<p>The operational benefit from going stateless is structural: fewer moving parts, cheaper infrastructure, and standard horizontal scaling. A remote MCP server that needed sticky sessions and a shared session store can run behind a plain round-robin balancer after migration -- no shared state tier between instances, no session pinning at the gateway, no specialist routing configuration.</p>
+<p>For teams on managed cloud infrastructure, this translates to concrete candidates for removal: Redis or Memcached instances kept alive purely for MCP session storage, custom gateway rules for session affinity, and the autoscaling blockers that came from session pinning (you could not spin up a new instance mid-session without forcing a client reconnect).</p>
+<p>The Microsoft Azure App Service team published a breakdown on the <a href="https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222">Azure App Service blog</a> -- specific ARR affinity config changes and what the stateless model means for serverless MCP deployments. The dollar savings depend on your setup: if MCP shares a Redis cluster with other services, the win is minimal. If you have a dedicated session store for MCP alone, the math is real.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>The 3 deprecated features and what replaces them</h2>
+<p>Roots, Sampling, and Logging are deprecated via SEP-2577 with the 2026-07-28 spec. All three remain functional for a minimum 12 months, so nothing breaks immediately -- but the migration paths are clear and each replacement is an improvement over what it replaces.</p>
+<p><strong>Roots</strong> declared scope at the session level -- which directories or resource boundaries the server was authorized to work within. The replacement: pass scope explicitly as tool parameters or resource URIs on each call. More verbose per-call, but the right shape for a stateless model where there is no session to attach scope to.</p>
+<p><strong>Sampling</strong> let the server ask the client to make a model call and return the result. In practice, client support was patchy -- not all MCP clients implemented sampling, making it unreliable in production. The replacement is calling your LLM provider directly from the server. For Claude-based workflows, that is a direct Anthropic API call from your MCP server code. The model call moves server-side, removing the dependency on client capability flags that made sampling fragile.</p>
+<p><strong>Logging</strong> gave servers a way to send log messages back through the MCP protocol. The replacements: stderr for stdio-based servers, OpenTelemetry for everything else. The 2026-07-28 spec now documents W3C Trace Context propagation -- traceparent, tracestate, and baggage -- flowing through _meta fields. That gives you distributed trace context across the full agent call chain. If you are already on OTel, this is a config update. If you are not, the migration is an upgrade.</p>
+
+<h2>How to migrate your MCP server before July 28</h2>
+<p>The beta SDKs are the fastest migration path. Python is mcp 2.0.0b1 on PyPI; TypeScript is 2.0.0-beta.1; Go and C# betas are also live. Stable v2 is targeted for July 27. The v2 server answers both the 2026-07-28 and 2025-11-25 specs from one endpoint -- your existing clients keep connecting without a coordinated cutover.</p>
+<p>Seven-step audit checklist for a typical remote MCP server:</p>
+<p>1. Update to the beta SDK: mcp 2.0.0b1 for Python, 2.0.0-beta.1 for TypeScript, set <code>StreamableHTTPOptions.Stateless = true</code> for Go. 2. Remove session-scoped state from your server handlers -- any state that survives between requests needs to move to an explicit persistence layer or be eliminated. 3. Document load balancer sticky session rules and plan their removal once the server is stateless. 4. Replace Roots with explicit tool parameters carrying scope inline. 5. Replace Sampling with direct LLM provider API calls from the server. 6. Swap MCP Logging for stderr (stdio) or OpenTelemetry spans (HTTP). 7. Validate OAuth 2.1: confirm iss parameter validation per RFC 9207 and that Dynamic Client Registration includes the required application_type declaration.</p>
+<p>The <a href="https://mcpplaygroundonline.com/blog/migrate-mcp-server-2026-07-28-stateless">mcpplaygroundonline.com migration guide</a> walks through TypeScript-specific SDK changes. The <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">official SDK beta announcement</a> has Python and Go specifics. For backward compatibility during rollout: the v2 beta server handles the old initialize handshake automatically, giving you a clean transition window before forcing clients to upgrade.</p>
+
+<h2>MCP Apps and the Tasks extension: what they add</h2>
+<p>Two new capabilities ship alongside the stateless core: MCP Apps (SEP-1865) for server-rendered iframe UIs, and the Tasks extension for async long-running work. Neither breaks existing setups -- both are additive and opt-in. You can adopt them independently and on your own timeline, separate from the stateless migration work.</p>
+<p><strong>MCP Apps (SEP-1865)</strong> lets servers declare sandboxed iframe UIs. The rendered UI communicates back to the host over the same JSON-RPC base protocol used everywhere else in MCP. Every UI-initiated action goes through the same audit and consent path as a direct tool call -- not a separate channel that bypasses tool-call logging. In practice, this lets an MCP server expose configuration panels, forms, or dashboards without a separate web app or webhook endpoint.</p>
+<p><strong>The Tasks extension</strong> handles async long-running work. The flow: tools/call returns a task handle immediately, the client drives the lifecycle with tasks/get, tasks/update, and tasks/cancel. One notable removal: tasks/list is not in the extension because it cannot be scoped safely without protocol-level sessions. If your workflow needs to enumerate all in-flight tasks globally, track that in your own application layer.</p>
+
+<h2>FAQ</h2>
+<h3>Is the MCP 2026-07-28 spec backward compatible with existing clients?</h3>
+<p>Yes. The v2 server answers both the 2026-07-28 spec and the legacy 2025-11-25 initialize handshake from a single endpoint. This dual-mode behavior is built into the beta SDKs by default. You can migrate your server to v2 without coordinating with every client simultaneously -- clients on the old spec keep connecting until they update.</p>
+
+<h3>What happens to my existing MCP servers after July 28?</h3>
+<p>Nothing breaks immediately. July 28 is the spec publication date, not an enforcement cutoff. The deprecation timeline for Roots, Sampling, and Logging is a minimum 12-month window from the spec version that deprecated them, per the formal Active to Deprecated to Removed lifecycle. Your servers keep working; the migration clock starts from July 28.</p>
+
+<h3>How do I find out if my setup uses sticky sessions?</h3>
+<p>Check your load balancer for session affinity rules. In AWS ALB, look for stickiness on your target group. In nginx, check for ip_hash or the sticky module. In Azure App Service, look for ARR affinity -- it is on by default. Any config existing purely for MCP session pinning can be removed after migrating to stateless.</p>
+
+<h3>What replaces MCP Sampling after it is removed?</h3>
+<p>Sampling is replaced by direct LLM provider calls from the server side. If you used Claude via sampling, call the Anthropic API directly from your server code and handle the response in your tool logic. This moves the model call from client-coordinated to server-initiated -- more reliable since sampling client support was inconsistent across MCP clients.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is the MCP 2026-07-28 spec backward compatible with existing clients?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The v2 server answers both the 2026-07-28 spec and the legacy 2025-11-25 initialize handshake from a single endpoint. This dual-mode behavior is in the beta SDKs by default. You can migrate your server to v2 without coordinating with every client -- clients on the old spec keep connecting until they update."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens to my existing MCP servers after July 28?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Nothing breaks immediately. July 28 is the spec publication date, not an enforcement cutoff. The deprecation timeline for Roots, Sampling, and Logging is a minimum 12-month window per the Active to Deprecated to Removed lifecycle. Your servers keep working; the migration clock starts from July 28."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I find out if my setup uses sticky sessions?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Check your load balancer for session affinity rules. In AWS ALB, look for stickiness on your target group. In nginx, check for ip_hash or the sticky module. In Azure App Service, look for ARR affinity -- it is on by default. Any config existing purely for MCP session pinning can be removed after migrating to stateless."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What replaces MCP Sampling after it is removed?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Sampling is replaced by direct LLM provider calls from the server side. If you used Claude via sampling, call the Anthropic API directly from your server code and handle the response in your tool logic. This moves the model call from client-coordinated to server-initiated -- more reliable since sampling client support was inconsistent across MCP clients."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
