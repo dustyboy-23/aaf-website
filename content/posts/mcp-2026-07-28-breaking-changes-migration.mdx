@@ -1,0 +1,181 @@
+---
+id: mcp-2026-07-28-breaking-changes-migration
+uuid: mcp-2026-07-28-breaking-changes-migration
+slug: mcp-2026-07-28-breaking-changes-migration
+title: "MCP 2026-07-28 Ships Today: The Exact Breaking Changes and How to Migrate"
+excerpt: The MCP 2026-07-28 spec ships today, removing the initialize handshake, dropping the session ID header, renaming the TypeScript SDK packages, and formally deprecating Roots, Sampling, and Logging. Any
+feature_image: null
+featured: false
+published_at: "2026-07-28T03:14:54-07:00"
+updated_at: "2026-07-28T03:14:54-07:00"
+reading_time: 9
+tags: [tutorials, mcp, agent-architecture, migration]
+tag_names: [Tutorials, MCP, Agent Architecture, Migration]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "MCP 2026-07-28 Breaking Changes: Full Migration Guide"
+meta_description: MCP 2026-07-28 spec ships today. Initialize handshake gone, TypeScript packages renamed, Roots/Sampling/Logging deprecated. Here is your migration checklist.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>MCP 2026-07-28 Ships Today: The Exact Breaking Changes and How to Migrate</h1>
+
+<p class="lede">The MCP 2026-07-28 spec ships today, removing the initialize handshake, dropping the session ID header, renaming the TypeScript SDK packages, and formally deprecating Roots, Sampling, and Logging. Any MCP server running the 2025-11-25 protocol needs to evaluate these changes before clients start failing. Here is the migration checklist.</p>
+
+<p>I watched the RC land three days ago and have been tracking the GitHub issues since. The July 25 article covered what was coming -- now that the spec is live, this is the authoritative guide to what actually changed, what code you need to update, and what you can safely defer.</p>
+
+<h2>What exactly breaks today -- the stateless core change</h2>
+
+<p>The biggest breaking change: the initialize/initialized handshake is gone (SEP-2575) and the Mcp-Session-Id header is gone with it (SEP-2567). Protocol version, client info, and capabilities no longer travel once at connection time -- they travel in <code>_meta</code> on every request. Any server that expects an initialize message before serving requests will reject v2 clients.</p>
+
+<p>This affects every MCP server that uses sticky load balancer routing, shared Redis session stores, or gateway-level session state. The silver lining: you can now run MCP behind a plain round-robin load balancer without body inspection. No more session affinity configuration.</p>
+
+<p>Two new required HTTP headers ship alongside the stateless core: <code>Mcp-Method</code> and <code>Mcp-Name</code>. These let load balancers and API gateways route requests by operation type without parsing the JSON body. If your gateway does header-based routing, you need to add these. If it does body inspection today, you can simplify by switching to header routing.</p>
+
+<p>The GitHub MCP Server already declared support for the next spec as of July 23, 2026 -- that is how close the ecosystem is to flipping. If one of the largest MCP server deployments is already there, clients will start sending v2 traffic sooner than you expect.</p>
+
+<h2>How to update your server to handle v2 requests</h2>
+
+<p>A v2 server must handle two things: respond to <code>server/discover</code> (the replacement for the initialize handshake), and accept requests where capabilities arrive in <code>_meta</code> rather than from a prior initialize exchange. The good news -- a v2 server can still answer the legacy initialize handshake, so existing v1 clients keep connecting during your transition window.</p>
+
+<p>Here is the before-and-after for server capability negotiation. Under the old spec, your server waited for initialize, stored the client capabilities, then served requests. Under the new spec, expose capabilities via <code>server/discover</code> and read client capabilities from <code>_meta.clientInfo</code> on each incoming request:</p>
+
+<pre><code># Old flow (2025-11-25)
+# 1. Client sends initialize
+# 2. Server stores session state
+# 3. Client sends initialized
+# 4. Server serves requests using stored session
+
+# New flow (2026-07-28)
+# 1. Client optionally calls server/discover upfront
+# 2. Every request carries _meta.clientInfo + _meta.capabilities
+# 3. Server reads capabilities per-request, no session state needed
+</code></pre>
+
+<p>For HTTP transports, add <code>Mcp-Method</code> and <code>Mcp-Name</code> to your response headers. For stdio transports, these headers are not applicable -- stdio servers are not behind load balancers and are unaffected by this change.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>The SDK migration: Python and TypeScript both have breaking changes</h2>
+
+<p>The Python SDK beta installs as <code>pip install "mcp[cli]==2.0.0b1"</code>. The API surface is largely compatible but the session management code is gone, and any imports that reference session handling will break. For most servers that means removing the session middleware layer and reading client capabilities from request context instead.</p>
+
+<p>The TypeScript migration is more disruptive because it is a package rename, not a version bump. The old <code>@modelcontextprotocol/sdk</code> stays on v1. The new packages are <code>@modelcontextprotocol/server</code> and <code>@modelcontextprotocol/client</code>, both at version 2.0.0-beta.1. You cannot just bump a version number -- you need to update your imports and <code>package.json</code> dependencies.</p>
+
+<pre><code># TypeScript migration
+# Remove old package
+npm uninstall @modelcontextprotocol/sdk
+
+# Install new split packages
+npm install @modelcontextprotocol/server@2.0.0-beta.1
+npm install @modelcontextprotocol/client@2.0.0-beta.1
+
+# Update imports
+# OLD:
+import &#123; McpServer &#125; from "@modelcontextprotocol/sdk/server";
+# NEW:
+import &#123; McpServer &#125; from "@modelcontextprotocol/server";
+</code></pre>
+
+<p>One important note from the official SDK blog: upgrading the SDK does not automatically switch your server to the v2 protocol revision. You choose when to adopt v2 behavior. A server running the new SDK can still speak 2025-11-25 to clients that have not updated yet.</p>
+
+<h2>What is deprecated but not removed -- Roots, Sampling, and Logging</h2>
+
+<p>SEP-2577 formally deprecates three MCP features: Roots, Sampling, and Logging. Deprecated means they still work but are on the removal track. The spec adopts a formal deprecation policy (SEP-2596) guaranteeing a minimum 12-month window between a feature being marked Deprecated and becoming eligible for Removal. Security exceptions can shorten this to 90 days, but that applies only to active security issues.</p>
+
+<p>The recommended replacements are: explicit tool parameters or resource URIs for Roots; direct LLM provider API integration for Sampling; and stderr for stdio transports or OpenTelemetry for structured observability in place of Logging. None of these replacements are drop-in -- they require intentional migration -- but you have at least 12 months to do it.</p>
+
+<p>If your server currently uses sampling (letting the server request the client to make LLM calls on its behalf), this is the most significant work item. The v2 model pushes LLM calls to be the server's own responsibility -- your server calls the LLM provider directly rather than delegating through the client. That changes your auth model, your cost model, and your latency profile.</p>
+
+<h2>New features shipping with the spec -- Tasks, MCP Apps, OAuth 2.1</h2>
+
+<p>Three new capabilities graduate to first-class status in the 2026-07-28 spec, and they are worth knowing even if you do not need them immediately.</p>
+
+<p>The Tasks extension handles long-running operations cleanly. A server can respond to <code>tools/call</code> with a task handle instead of blocking the connection. The client then drives the task with <code>tasks/get</code>, <code>tasks/update</code>, and <code>tasks/cancel</code>. This is the correct pattern for any tool call that takes more than a few seconds -- file processing, code execution, API calls with rate limits. Previously, servers had to either block the connection or implement their own polling endpoints.</p>
+
+<p>MCP Apps allows servers to ship interactive HTML interfaces that MCP hosts render in a sandboxed iframe. This is early-stage but it opens the door to servers that expose rich configuration UIs, approval workflows, or visual outputs directly inside the client interface without requiring the user to leave.</p>
+
+<p>The OAuth 2.1 hardening is the most enterprise-relevant addition. MCP servers are now formally OAuth 2.1 resource servers. Servers must implement Protected Resource Metadata (RFC 9728) so clients can auto-discover the correct authorization server. Clients must implement Resource Indicators (RFC 8707) to scope tokens to a specific server -- this closes the attack where a malicious server obtains tokens meant for a different server. If you are building MCP into any multi-tenant or enterprise context, these two RFC requirements are not optional.</p>
+
+<h2>Is your server actually affected -- a quick audit checklist</h2>
+
+<p>Most public MCP servers fall into one of three categories: stdio-only servers that are minimally affected, HTTP servers that need stateless migration work, and servers that use deprecated features that need longer-term remediation. Running through this takes about 10 minutes.</p>
+
+<p>Run these checks against your server codebase:</p>
+
+<pre><code># Check for session-related code
+grep -r "Mcp-Session-Id\|initialize.*handshake\|session_id" ./src
+
+# Check for deprecated feature usage
+grep -r "sampling\|roots\|logging" ./src/mcp
+
+# Check which SDK version you are on
+# Python:
+pip show mcp
+# TypeScript:
+cat package.json | grep modelcontextprotocol
+</code></pre>
+
+<p>If the session grep returns results and you are running an HTTP server, you have breaking changes to address. If the deprecated feature grep returns results, you have 12 months but should start planning now. If you are stdio-only and do not use Roots, Sampling, or Logging, you are largely unaffected by the stateless core change.</p>
+
+<p>The 97 million monthly SDK downloads that flow through the MCP ecosystem mean that client-side updates will arrive faster than you might expect. Claude Desktop, Cursor, VS Code, and other major MCP hosts are all tracking the v2 spec -- some will begin advertising v2 capabilities within weeks of the stable release.</p>
+
+<h2>FAQ</h2>
+
+<h3>Will v1 MCP servers break immediately when clients update to v2?</h3>
+<p>No, not immediately. A v2 client is required to support the legacy initialize handshake for backward compatibility. Your v1 server will continue to receive traffic. However, v2-only features like Tasks and MCP Apps will not be available to v1 servers, and at some point clients may drop the legacy handshake. The 12-month deprecation window on the old spec gives you a firm deadline.</p>
+
+<h3>Do I need to migrate if I only use stdio transport?</h3>
+<p>The stateless core change -- removing the initialize handshake and Mcp-Session-Id -- applies to all transports. Stdio servers do not have HTTP headers, so the Mcp-Method and Mcp-Name header requirements do not apply. If your stdio server does not use Roots, Sampling, or Logging, the migration effort is minimal: update to the new SDK package names and remove any session-state handling from your code.</p>
+
+<h3>What is the fastest path to v2 compliance for a production HTTP server?</h3>
+<p>Install the SDK beta, implement <code>server/discover</code> alongside your existing initialize handler, move capability reading from session state to per-request <code>_meta</code> parsing, and add <code>Mcp-Method</code> and <code>Mcp-Name</code> to your HTTP responses. A server that does all four can serve both v1 and v2 clients simultaneously during the transition window. The TypeScript package rename requires a dependency update and import path changes, but no API surface changes beyond the session removal.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Will v1 MCP servers break immediately when clients update to v2?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No, not immediately. A v2 client is required to support the legacy initialize handshake for backward compatibility. Your v1 server will continue to receive traffic. However, v2-only features like Tasks and MCP Apps will not be available to v1 servers, and at some point clients may drop the legacy handshake. The 12-month deprecation window on the old spec gives you a firm deadline."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do I need to migrate if I only use stdio transport?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The stateless core change -- removing the initialize handshake and Mcp-Session-Id -- applies to all transports. Stdio servers do not have HTTP headers, so the Mcp-Method and Mcp-Name header requirements do not apply. If your stdio server does not use Roots, Sampling, or Logging, the migration effort is minimal: update to the new SDK package names and remove any session-state handling from your code."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the fastest path to v2 compliance for a production HTTP server?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Install the SDK beta, implement server/discover alongside your existing initialize handler, move capability reading from session state to per-request _meta parsing, and add Mcp-Method and Mcp-Name to your HTTP responses. A server that does all four can serve both v1 and v2 clients simultaneously during the transition window. The TypeScript package rename requires a dependency update and import path changes, but no API surface changes beyond the session removal."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
