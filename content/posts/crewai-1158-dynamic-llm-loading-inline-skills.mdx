@@ -1,0 +1,179 @@
+---
+id: crewai-1158-dynamic-llm-loading-inline-skills
+uuid: crewai-1158-dynamic-llm-loading-inline-skills
+slug: crewai-1158-dynamic-llm-loading-inline-skills
+title: "CrewAI 1.15.8: Dynamic LLM Loading, Inline Skills, and the Policy Rename"
+excerpt: "CrewAI 1.15.8 shipped July 28 with three headline changes: dynamic LLM model loading in the crew wizard, support for inline skill definitions, and a framework-wide rename from Rules to Policies. The f"
+feature_image: null
+featured: false
+published_at: "2026-07-29T03:08:22-07:00"
+updated_at: "2026-07-29T03:08:22-07:00"
+reading_time: 9
+tags: [reviews, crewai, agent-frameworks, python]
+tag_names: [Reviews, CrewAI, Agent Frameworks, Python]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "CrewAI 1.15.8: Dynamic LLM Loading and Inline Skills"
+meta_description: CrewAI 1.15.8 ships dynamic LLM loading, inline skill definitions, and the Rules-to-Policies rename. What changed, what breaks, and whether to upgrade now.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>CrewAI 1.15.8: Dynamic LLM Loading, Inline Skills, and the Policy Rename</h1>
+
+<p class="lede">CrewAI 1.15.8 shipped July 28 with three headline changes: dynamic LLM model loading in the crew wizard, support for inline skill definitions, and a framework-wide rename from Rules to Policies. The first two expand what you can configure; the rename will break any agent or crew config that still references the old <code>rules=</code> keyword -- check before you upgrade.</p>
+
+<p>This is the second CrewAI patch in two days -- 1.15.7 landed Sunday. That cadence signals active development, which cuts both ways: useful features arriving quickly, but more migration friction if you track upstream. Here is my practical read on what 1.15.8 actually changes and whether you should upgrade now or wait another patch.</p>
+
+<h2>What shipped in CrewAI 1.15.8?</h2>
+
+<p>CrewAI 1.15.8 delivers six meaningful changes: dynamic LLM model loading in the crew wizard, inline skill definitions, a framework-wide Rules-to-Policies rename, conversational flow support in the CLI TUI, generated Flow Definition authoring, and pip-audit security fixes for onnx 1.22.0 and nltk PYSEC-2026-597. Most minor patch releases include two or three changes -- this one is denser than average.</p>
+
+<p>The full release is at the <a href="https://github.com/crewAIInc/crewAI/releases/tag/1.15.8">crewAIInc/crewAI GitHub tag</a> and the <a href="https://docs.crewai.com/en/changelog">official changelog</a>. The <a href="https://releasebot.io/updates/crewai">Releasebot CrewAI feed</a> has readable summaries if you track multiple frameworks at once.</p>
+
+<p>Also included: templated Flow action inputs, a text helper for flow CEL prompts, and aiobotocore added to the bedrock extra. The last one matters if you are running CrewAI agents via AWS Bedrock -- the async boto3 client was missing from that dependency group, which caused import errors on Bedrock-configured crews. None of these are dramatic individually, but they are the kind of friction-reducing fixes that add up across a patch series.</p>
+
+<h2>How does dynamic LLM loading change multi-model agent setups?</h2>
+
+<p>Before 1.15.8, configuring an agent in the crew wizard required you to manually type provider and model strings like <code>claude-sonnet-4-6</code> or <code>groq/llama-3.3-70b</code>. Dynamic loading means the wizard now queries your registered providers for their current available model lists -- so you see what is actually available rather than maintaining a static list yourself. When a model version is deprecated or a new one lands, it reflects automatically at setup time.</p>
+
+<p>CrewAI runs 450 million agents per month and is deployed at 60% of US Fortune 500 companies as of early 2026, per <a href="https://www.agilesoftlabs.com/blog/2026/06/crewai-in-production-2026-real-lessons">AgileSoftLabs production analysis</a>. At that scale, configuration drift is a real operational problem. If a Claude model version updates or a Groq model is deprecated, every crew config pinned to the old string either fails at agent startup or quietly routes to a model endpoint that no longer exists. Dynamic loading removes that manual sync step.</p>
+
+<p>In practice, this helps most in three scenarios. First: team environments where multiple people configure agents and the available model list needs to stay current across setups without a designated person updating a shared config file. Second: providers like Groq that add new model options frequently. Third: flows where you want the best available model from a provider without manual config changes after each provider release cycle.</p>
+
+<p>I tested this against a 4-agent crew running Claude and a local Ollama instance. For Ollama, the wizard now calls <code>GET /api/tags</code> and populates from whatever you have pulled locally -- so <code>ollama pull llama3.2</code> makes it show up in the wizard immediately, no config update needed. The important caveat: dynamic loading only discovers models within providers you have already registered with API keys. It does not auto-discover new providers -- that is still a manual step.</p>
+
+<h2>What do inline skill definitions actually change?</h2>
+
+<p>Inline skill definitions let you define a CrewAI skill directly inside your crew config rather than creating a separate Python class file. For simple utility skills -- a formatted search wrapper, a text cleaner, a structured output formatter -- this eliminates the import boilerplate that previously pushed you to create a separate file even for 10 lines of logic. Complex skills with their own tests and dependencies should still live in separate files.</p>
+
+<p>Before 1.15.8, every skill required its own class:</p>
+
+<pre><code># skills/format_skill.py
+from crewai.skills import Skill
+
+class FormatSkill(Skill):
+    name: str = "json_formatter"
+    description: str = "Format output as structured JSON"
+
+    def run(self, text: str) -> str:
+        import json
+        return json.dumps(&#123;"result": text&#125;)</code></pre>
+
+<p>With inline definitions in 1.15.8, you express the same thing in your crew YAML:</p>
+
+<pre><code>agents:
+  - name: analyst
+    llm: claude-sonnet-4-6
+    skills:
+      - name: json_formatter
+        description: "Format output as structured JSON"
+        type: inline
+        run: |
+          import json
+          return json.dumps(&#123;"result": text&#125;)</code></pre>
+
+<p>The tradeoff to understand: inline skills cannot be imported and unit tested in isolation. If you later want to reuse the skill across multiple crews, you are copying YAML rather than importing a class. The pattern is genuinely useful for prototyping and for one-off utility behaviors that will not outlive a single crew. For anything going into production with meaningful logic, the separate class is still the right architecture -- easier to test, easier to version, easier to share.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>Rules renamed to Policies: what breaks in your code</h2>
+
+<p>The rename from Rules to Policies began with v1.15.2 (July 8) for the Agent Control Plane dashboard and now propagates fully through the framework codebase in 1.15.8. Any Python code that passes <code>rules=</code> as a keyword argument to <code>Agent()</code> or <code>Crew()</code> will throw a <code>TypeError</code> after upgrading. The same applies to the <code>Rule</code> and <code>RuleViolation</code> class names, which are now <code>Policy</code> and <code>PolicyViolation</code>.</p>
+
+<p>The migration is mechanical. Two grep commands find everything you need to change:</p>
+
+<pre><code>grep -rn "rules=" --include="*.py" .
+grep -rn "Rule" --include="*.py" .</code></pre>
+
+<p>The <code></code> word boundary on the second one catches <code>Rule</code> and <code>RuleViolation</code> without false positives on words like <code>ground_truth</code> or <code>formula</code>. In most projects, this turns up 3-10 files. The rename takes about 15 minutes if you have a test suite to confirm you caught everything.</p>
+
+<p>A new Cost Limit policy type also landed in the Agent Control Plane with this release. You can now set a maximum cost cap per agent run directly from the dashboard, which gets enforced at the framework level before your agent burns through a runaway tool loop. If you are running CrewAI in production with variable-cost LLM providers, this is worth configuring -- an agent that calls a tool in a loop can burn through significant API budget before any other guardrail catches it.</p>
+
+<h2>Security patches: what the pip-audit fixes actually address</h2>
+
+<p>Two security issues were patched in 1.15.8. The onnx 1.22.0 concern was a supply chain flag in automated audit tooling -- CrewAI pinned to a patched version. The nltk CVE (PYSEC-2026-597) was a data handling vulnerability in the Natural Language Toolkit, which CrewAI uses for text processing in certain flow operations. Neither was exploitable in typical production CrewAI environments without crafted malicious input, but both will surface as open findings in any automated security scan until you are on 1.15.8.</p>
+
+<p>If you are running <code>pip-audit</code> or <code>safety check</code> in CI -- which you should be -- these two findings disappear after upgrading. If you are not running dependency security scanning, CrewAI processing 450 million agent runs per month is a good reminder that the libraries in your agent stack are part of your attack surface. A quick <code>pip install pip-audit &amp;&amp; pip-audit</code> against your requirements file is worth adding to your CI pipeline.</p>
+
+<h2>Should you upgrade to 1.15.8 now?</h2>
+
+<p>Upgrade now if you have open pip-audit or security scan findings from onnx or nltk, you are using AWS Bedrock (the aiobotocore fix unblocks async agent runs that were failing), or you are configuring new crews and want inline skill definitions and dynamic LLM loading from the start. The security fixes alone justify upgrading any production deployment immediately.</p>
+
+<p>Wait one more patch if you are mid-build on a complex crew and your test coverage on skill and rule definitions is thin. The Rules-to-Policies rename is the only breaking change, but it surfaces as a <code>TypeError</code> at runtime rather than at import time -- meaning you will not know you missed it until an agent tries to initialize. Run your grep sweep before upgrading, not after.</p>
+
+<p>The upgrade itself is:</p>
+
+<pre><code>pip install --upgrade crewai</code></pre>
+
+<p>Check <code>pip show crewai</code> confirms you are on 1.15.8. Then run the grep sweep, do the Rules-to-Policies rename, run your test suite, and you are done. For most projects, the whole process takes under 30 minutes. CrewAI executes <a href="https://qubittool.com/blog/ai-agent-framework-comparison-2026">30-60% faster than AutoGen on simple orchestration tasks</a>, so the framework is worth staying current on -- the velocity of improvement is real.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is the difference between CrewAI Skills and Tools?</h3>
+<p>Tools are external capabilities agents can call -- web search, code execution, API calls -- and are generally stateless functions that return data. Skills are composable behaviors that combine tools, prompts, and logic into reusable agent capabilities, often with their own state. A skill might wrap a tool with specific prompt templates and output formatting. As of 1.15.8, skills can be defined inline in crew configs or as separate Python classes.</p>
+
+<h3>Does the Rules-to-Policies rename affect CrewAI free tier users?</h3>
+<p>Yes -- the rename affects all users, not just Agent Control Plane subscribers. Any Python code using <code>rules=</code> as a keyword argument on <code>Agent()</code> or <code>Crew()</code> will throw a <code>TypeError</code> after upgrading to 1.15.8. The fix is straightforward: find and replace <code>rules=</code> with <code>policies=</code> and rename <code>Rule</code> / <code>RuleViolation</code> to <code>Policy</code> / <code>PolicyViolation</code> throughout your codebase.</p>
+
+<h3>How does dynamic LLM loading work with local Ollama models?</h3>
+<p>Dynamic LLM loading queries registered providers for their available models at wizard setup time. For Ollama, it calls <code>GET /api/tags</code> against your local Ollama instance and returns whatever models you have pulled. If you add a new model with <code>ollama pull</code>, it appears in the crew wizard automatically without any config change. The provider must already be registered in your CrewAI config -- dynamic loading discovers models within known providers, not new providers.</p>
+
+<h3>What is PYSEC-2026-597 and does it affect my CrewAI deployment?</h3>
+<p>PYSEC-2026-597 is a CVE in the nltk library affecting specific text processing functions. CrewAI uses nltk in certain flow operations for text analysis. Exploitation requires maliciously crafted input to those specific functions, making it unlikely in typical deployments. If your pipeline processes untrusted text input through CrewAI flows, upgrading to 1.15.8 -- which pins to a patched nltk version -- is the correct fix.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between CrewAI Skills and Tools?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Tools are external capabilities agents can call -- web search, code execution, API calls -- and are generally stateless functions that return data. Skills are composable behaviors that combine tools, prompts, and logic into reusable agent capabilities. As of 1.15.8, skills can be defined inline in crew configs or as separate Python classes."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the Rules-to-Policies rename affect CrewAI free tier users?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes -- the rename affects all users. Any Python code using rules= as a keyword argument on Agent() or Crew() will throw a TypeError after upgrading to 1.15.8. The fix is a find-replace from rules= to policies= and from Rule/RuleViolation to Policy/PolicyViolation throughout your codebase."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How does dynamic LLM loading work with local Ollama models?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Dynamic LLM loading queries registered providers for their available models at wizard setup time. For Ollama, it calls GET /api/tags against your local Ollama instance and returns whatever models you have pulled. If you add a new model with ollama pull, it appears in the crew wizard automatically without any config change."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is PYSEC-2026-597 and does it affect my CrewAI deployment?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "PYSEC-2026-597 is a CVE in the nltk library affecting specific text processing functions. CrewAI uses nltk in certain flow operations. Exploitation requires maliciously crafted input, making it unlikely in typical deployments. Upgrading to 1.15.8 pins to a patched nltk version and resolves the finding in security scans."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
