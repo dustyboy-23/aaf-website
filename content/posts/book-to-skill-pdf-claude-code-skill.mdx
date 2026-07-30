@@ -1,0 +1,185 @@
+---
+id: book-to-skill-pdf-claude-code-skill
+uuid: book-to-skill-pdf-claude-code-skill
+slug: book-to-skill-pdf-claude-code-skill
+title: "book-to-skill: How to Turn Any PDF Into a Claude Code Skill (Step-by-Step)"
+excerpt: book-to-skill converts any technical PDF into a structured Claude Code skill with a single command. You pay roughly $1 per book during the one-time conversion. After that, the skill uses 24--51x fewer
+feature_image: null
+featured: false
+published_at: "2026-07-30T03:11:00-07:00"
+updated_at: "2026-07-30T03:11:00-07:00"
+reading_time: 9
+tags: [tutorials, claude-code, agent-skills, token-optimization]
+tag_names: [Tutorials, Claude Code, Agent Skills, Token Optimization]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "book-to-skill: Turn Any PDF Into a Claude Code Skill"
+meta_description: book-to-skill turns any PDF into a Claude Code skill with 24-51x token savings. Install, convert, and reference books directly inside Claude Code sessions.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>book-to-skill: How to Turn Any PDF Into a Claude Code Skill (Step-by-Step)</h1>
+
+<p class="lede">book-to-skill converts any technical PDF into a structured Claude Code skill with a single command. You pay roughly $1 per book during the one-time conversion. After that, the skill uses 24--51x fewer tokens per session than loading the raw PDF into context -- and the same skill file works in Claude Code, GitHub Copilot CLI, and Amp.</p>
+
+<p>I've been tracking this repo since it appeared in my research feed. Yesterday it picked up +1,421 GitHub stars in a single day and now sits at 13.3k total stars with 1.4k forks. That kind of momentum usually means the tool is solving a real, painful problem. In this case: the "context dump" problem that anyone referencing technical books inside an AI coding session hits immediately.</p>
+
+<h2>What does book-to-skill actually do?</h2>
+
+<p>book-to-skill takes a PDF, EPUB, DOCX, or other document format and converts it into a Claude Code skill directory. The conversion extracts chapters into summary files, builds a glossary and patterns reference, and writes a SKILL.md index. Chapter files load on demand -- only what you ask about hits your token count.</p>
+
+<p>The output is a folder structure your Claude Code skills directory already knows how to read. At session start, Claude scans the SKILL.md frontmatter -- about 100 tokens -- and knows the book's content is available. When you ask something that references a specific chapter, that chapter file loads then, not before.</p>
+
+<p>This solves the main failure mode of context injection: you dump a 400-page book into context, burn 150,000--250,000 tokens before writing a single line of code, and then start the session hoping nothing pushes you past the context limit. book-to-skill flips that -- the knowledge is available but the tokens only spend when they're needed.</p>
+
+<h2>What's the real token cost compared to raw context injection?</h2>
+
+<p>A 400-page technical book loaded raw into Claude Code context runs 150,000--250,000 tokens before you type a single question. A book-to-skill compiled version loads roughly 100 tokens at session start -- just the SKILL.md frontmatter description -- then 800--1,500 tokens per chapter you actually reference during the session.</p>
+
+<p>The repo's PERFORMANCE.md documents 24--51x fewer tokens than the raw context dump approach, measured on real books. The 51x figure applies to focused single-chapter queries; 24x is the floor when pulling several chapters across a broader session.</p>
+
+<p>Working through the math: at Claude Sonnet pricing of $3 per million input tokens, loading a 200,000-token book raw costs about $0.60 in input tokens per session. Over 10 sessions that's $6. Converting the book with book-to-skill costs about $1 once, then each session spends roughly $0.003--$0.010 on the chapters you actually load. Break-even is roughly 2 sessions in, and every session after that costs ~98% less on input tokens for that knowledge.</p>
+
+<h2>How do you install book-to-skill?</h2>
+
+<p>There are two installation modes: CLI mode for the standalone extraction engine, and skill mode for a /book-to-skill slash command directly inside Claude Code. Most people want both. The CLI converts books from your terminal; the skill mode lets you trigger conversions inside a Claude Code session without switching context.</p>
+
+<p><strong>CLI installation (standalone extraction engine):</strong></p>
+
+<p>Basic install:</p>
+<pre><code>pip install book-to-skill</code></pre>
+
+<p>With PDF, EPUB, and DOCX support:</p>
+<pre><code>pip install "book-to-skill[pdf,epub,docx]"</code></pre>
+
+<p>Or install from source with all optional extractors:</p>
+<pre><code>git clone https://github.com/virgiliojr94/book-to-skill
+pip install docling ebooklib beautifulsoup4 PyPDF2 pdfminer.six</code></pre>
+
+<p><strong>Skill installation (Claude Code slash command):</strong></p>
+
+<p>Clone it directly into your Claude skills directory:</p>
+<pre><code>git clone https://github.com/virgiliojr94/book-to-skill ~/.claude/skills/book-to-skill</code></pre>
+
+<p>That's the full install. Claude Code scans the skills directory at session start and reads the SKILL.md frontmatter automatically. The /book-to-skill command is available from the next session forward -- no configuration file changes required.</p>
+
+<h2>How do you convert a PDF step by step?</h2>
+
+<p>Converting a book takes one command. Point book-to-skill at a PDF, specify an output directory inside your Claude Code skills folder, and it runs the extraction pipeline automatically. For a 300-page book, the process takes 3--8 minutes and costs around $1 in Claude Sonnet API calls for the one-time compilation.</p>
+
+<p><strong>Option A -- CLI conversion:</strong></p>
+<pre><code>book-to-skill convert /path/to/clean-code.pdf --output ~/.claude/skills/clean-code/</code></pre>
+
+<p>The tool detects whether the content is technical or non-technical and adjusts extraction depth accordingly. Technical books get deeper chapter extractions and a richer patterns file. Non-technical books get shallower extractions but still produce a usable summary layer.</p>
+
+<p><strong>Option B -- Claude Code slash command:</strong></p>
+<pre><code>/book-to-skill /path/to/pragmatic-programmer.pdf</code></pre>
+
+<p>Claude Code runs the skill's instructions inline. It prompts for cost confirmation before starting, showing the estimated API spend, then writes the output skill to your default skills directory. No terminal context-switching required -- the conversion happens inside the session.</p>
+
+<p><strong>What the output looks like:</strong></p>
+<pre><code>~/.claude/skills/clean-code/
+  SKILL.md              # frontmatter + index + usage instructions
+  chapters/
+    01-clean-code.md    # per-chapter summary (800-1,500 tokens each)
+    02-functions.md
+    03-comments.md
+    ...
+  glossary.md           # key terms extracted from the book
+  patterns.md           # design patterns and techniques index
+  cheatsheet.md         # fast-reference key concepts</code></pre>
+
+<p>The chapter files average 800--1,500 tokens each. They stay on disk until you ask about a topic that triggers their load. The SKILL.md frontmatter is the only piece Claude reads at every session start.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How do you use the generated skill in Claude Code?</h2>
+
+<p>After converting, the skill appears automatically at the next Claude Code session start. Claude reads the SKILL.md description and knows the book's content is available without you saying anything. Reference topics naturally in prompts -- Claude loads the relevant chapter file and grounds its answer in the book's actual content.</p>
+
+<p>Practical example: you're refactoring a module and ask "how does Clean Code define a good function?" Claude loads chapter 2 of the skill, returns an answer grounded in the book's specific content and examples, and the chapter stays loaded for the rest of that session.</p>
+
+<p>If you know you'll need several chapters for a deep session, you can pre-load them explicitly:</p>
+<pre><code>/book-to-skill load chapters/02-functions.md chapters/03-comments.md</code></pre>
+
+<p>This is useful for long pair-programming sessions where you want the reference knowledge available upfront without the latency of on-demand loads mid-task. The two chapters together add roughly 2,000--3,000 tokens to the session context -- still orders of magnitude less than the full book.</p>
+
+<p>I've found the most practical use case is pairing book skills with active coding sessions. Instead of searching Stack Overflow for "what does Clean Code say about function length," I get the actual passage from the book, in the same coding session, without switching tools or burning a full context slot on a 200,000-token PDF.</p>
+
+<h2>Does it work with GitHub Copilot CLI and Amp, or just Claude Code?</h2>
+
+<p>book-to-skill outputs standard SKILL.md files -- the open Agent Skills format supported by at least 8 AI coding tools as of mid-2026. The same skill directory works in GitHub Copilot CLI, Amp, and any other tool that reads SKILL.md frontmatter. Convert once, reference the same book across every tool in your stack.</p>
+
+<p>The portability is by design. The SKILL.md format was built as a cross-tool standard -- the same format that mattpocock/skills (164K stars as of late July 2026) and VoltAgent's 1,000+ skill directory both use. book-to-skill is built on top of that standard, so every tool that adopts it gets your compiled books without any additional setup.</p>
+
+<p>One practical note: on-demand chapter loading behavior varies by host tool. Claude Code's chapter loading is most granular -- it pulls specific chapter files when they're relevant to your query. Some tools load the full skill content at session start, which reduces the token savings slightly but still outperforms raw PDF dumps because the content has been compressed and structured during compilation.</p>
+
+<h2>What file formats and book types work best?</h2>
+
+<p>book-to-skill supports PDF, EPUB, DOCX, Markdown, HTML, RTF, and MOBI. Technical books extract most effectively because they have clear chapter boundaries, code samples, and term definitions that map cleanly to the glossary and patterns output files. The tool has a built-in technical content detector that adjusts extraction depth based on the document structure it finds.</p>
+
+<p>Books that extract particularly well: programming language references (strong chapter structure, clear syntax examples), framework documentation (patterns and API references fill the cheatsheet), architecture books (patterns.md becomes a dense reference), and algorithm textbooks (per-chapter complexity analyses and pseudocode extract cleanly).</p>
+
+<p>Books that extract less effectively: narrative non-fiction, heavily visual technical references where diagrams carry most of the meaning, and anything without clear chapter-level conceptual boundaries. The text content still extracts -- but you lose the structural density that makes technical references useful.</p>
+
+<p>For format-specific installs: EPUB support requires <code>pip install "book-to-skill[epub]"</code>. DOCX requires <code>pip install "book-to-skill[docx]"</code>. Both combine cleanly: <code>pip install "book-to-skill[pdf,epub,docx]"</code> installs all three extractors at once.</p>
+
+<h2>FAQ</h2>
+
+<h3>How much does it cost to convert a book with book-to-skill?</h3>
+<p>Converting a typical 300--400 page technical book costs roughly $1 on Claude Sonnet, which charges $3 per million input tokens. The cost comes from the one-time extraction pass where chapter content is processed and summarized. After that, each session costs a fraction of a cent -- only the specific chapter files you reference during that session count against your per-session token spend.</p>
+
+<h3>Can I use book-to-skill with copyrighted PDFs I own?</h3>
+<p>book-to-skill processes files locally on your machine -- it doesn't download books or connect to any library service. You supply the PDF. Whether converting a copyrighted book you own for personal AI-session use is permissible depends on your jurisdiction and the book's license. For DRM-free technical books purchased from O'Reilly, Packt, or similar publishers, most practitioners treat personal-use extraction as equivalent to reading and annotating the book yourself.</p>
+
+<h3>Does book-to-skill require a separate Anthropic API key, not just a Claude Code subscription?</h3>
+<p>Yes. The conversion pipeline calls Claude Sonnet to process and summarize chapter content during the extraction pass. You need a valid Anthropic API key from console.anthropic.com. If you run Claude Code via the Claude Max subscription ($100/mo plan), that subscription credit doesn't cover API calls -- the ~$1 conversion cost comes from your API balance billed separately through the console.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "How much does it cost to convert a book with book-to-skill?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Converting a typical 300-400 page technical book costs roughly $1 on Claude Sonnet at $3 per million input tokens. The cost comes from the one-time extraction pass. After that, each session costs a fraction of a cent -- only the chapter files you actually reference count against your per-session token spend."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I use book-to-skill with copyrighted PDFs I own?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "book-to-skill processes files locally on your machine -- it doesn't download books or connect to any library service. You supply the PDF. Whether converting a copyrighted book you own for personal AI-session use is permissible depends on your jurisdiction and the book's license. For DRM-free technical books from O'Reilly or Packt, most practitioners treat personal-use extraction as equivalent to reading and annotating the book yourself."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does book-to-skill require a separate Anthropic API key, not just a Claude Code subscription?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The conversion pipeline calls Claude Sonnet to process chapter content during extraction. You need a valid Anthropic API key from console.anthropic.com. If you run Claude Code via Claude Max ($100/mo), that subscription doesn't cover API calls -- the ~$1 conversion cost comes from your API balance billed separately through the console."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
