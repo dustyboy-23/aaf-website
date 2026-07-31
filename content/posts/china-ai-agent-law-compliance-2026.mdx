@@ -1,0 +1,183 @@
+---
+id: china-ai-agent-law-compliance-2026
+uuid: china-ai-agent-law-compliance-2026
+slug: china-ai-agent-law-compliance-2026
+title: "China's AI Agent Law Is Live: What Builders Must Do Now"
+excerpt: "China's Implementation Opinions on Intelligent Agents became binding law on July 15, 2026 -- the world's first regulatory framework dedicated entirely to AI agents. Issued jointly by the CAC, NDRC, an"
+feature_image: null
+featured: false
+published_at: "2026-07-31T03:15:12-07:00"
+updated_at: "2026-07-31T03:15:12-07:00"
+reading_time: 11
+tags: [playbooks, ai-regulation, agent-deployment, china, compliance]
+tag_names: [Playbooks, AI Regulation, Agent Deployment, China, Compliance]
+primary_tag: playbooks
+primary_tag_name: Playbooks
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "China's AI Agent Law Is Live: What Builders Must Do Now"
+meta_description: "China's AI agent rules took effect July 15, 2026. Here's the three-tier decision framework, mandatory algorithm filing, and compliance steps for builders."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>China's AI Agent Law Is Live: What Builders Must Do Now</h1>
+
+<p class="lede">China's Implementation Opinions on Intelligent Agents became binding law on July 15, 2026 -- the world's first regulatory framework dedicated entirely to AI agents. Issued jointly by the CAC, NDRC, and MIIT, it requires a three-tier decision authorization policy, mandatory algorithm filing, and human override capabilities for every organization deploying agents in China.</p>
+
+<p>If you're building agents that serve Chinese users, or working with Chinese enterprises on agent deployments, this isn't coming -- it's already in effect. Enforcement started 16 days ago.</p>
+
+<h2>What Is China's AI Agent Law?</h2>
+
+<p>China's "Implementation Opinions on the Standardized Application and Innovative Development of Intelligent Agents" was issued jointly by the CAC, NDRC, and MIIT on May 8, 2026, and became enforceable July 15. It defines AI agents as systems capable of autonomous perception, memory, decision-making, interaction, and execution, and creates binding compliance obligations for every organization operating those systems in Chinese markets.</p>
+
+<p>This isn't general AI regulation adapted for agents -- it's a framework written specifically for agent behavior, autonomy levels, and the consequences of autonomous decisions in real-world environments. The government set a stated target of 70% adoption of intelligent agents in smart terminals by 2027 (<a href="https://www.machinebrief.com/news/china-ai-agent-regulations-enforceable-july-15-2026">source: MachineBrief</a>). The regulation is positioned as the compliance foundation for that rollout, not an obstacle to it.</p>
+
+<p>The framework covers a wide deployment surface: customer service agents, enterprise automation agents, healthcare decision-support systems, transportation coordination agents, and consumer-facing agents embedded in apps. If your system meets the definition of "autonomous perception, memory, decision-making, interaction, and execution," it's in scope.</p>
+
+<p>A second concurrent regulation -- the Interim Measures for the Administration of Artificial Intelligence Anthropomorphic Interaction Services -- also took effect July 15. It governs companion bots, virtual personas, and AI NPCs under a separate compliance track. I'll cover that in section 4, because it affects a different class of builders.</p>
+
+<h2>How the Three-Tier Decision Authorization Framework Works</h2>
+
+<p>Article 6 requires classifying every agent action into one of three tiers before deployment: Tier 1 (agent decides autonomously), Tier 2 (requires user approval), or Tier 3 (reserved for humans only). This classification must be documented and filed with Chinese regulators -- it cannot be implicit or completed after the fact. Organizations without a formal decision-authorization policy are in regulatory non-compliance as of July 15, 2026.</p>
+
+<p>Here's what each tier requires in practice:</p>
+
+<ul>
+  <li><strong>Tier 1 -- Fully Autonomous:</strong> Low-consequence, reversible actions. Reading data, formatting outputs, routing requests, sending notifications within defined parameters. Requires basic registration and documented scope. You decide what belongs here, but you have to document and justify each classification.</li>
+  <li><strong>Tier 2 -- User-Approved:</strong> Moderate-consequence actions requiring explicit user confirmation before the agent executes. Sending emails on behalf of a user, making purchases, modifying records, initiating calendar events. Requires documented human-approval workflows and periodic compliance audits of those workflows.</li>
+  <li><strong>Tier 3 -- Human-Reserved:</strong> High-consequence, irreversible, or legally significant actions that only a human may authorize. The CAC's scope explicitly covers financial decisions, health-related decisions, transportation control, and anything affecting public safety. Tier 3 deployments require mandatory pre-deployment regulatory review, real-time monitoring infrastructure, and quarterly compliance reporting to the CAC.</li>
+</ul>
+
+<p>The approval workflows for Tier 2 need to exist in the code, not just in a policy document. If your agent is supposed to ask before sending an email but the code path allows it to send without waiting for confirmation, you're non-compliant regardless of what your policy says. The same logic applies to Tier 3 human override -- the handoff mechanism needs to be a real execution path with an audit trail, not a theoretical escape valve.</p>
+
+<p>I've seen builders in Western markets take an implicit approach to this: "the agent will ask before doing anything important." That doesn't meet this bar. You need explicit tier classification, documented, filed, and verifiable in the code.</p>
+
+<h2>What You Have to File and Who Has to File It</h2>
+
+<p>Mandatory algorithm filing applies to any organization operating AI agents that serve users in China, regardless of where the company is incorporated. The obligation follows the user, not the operator's country of registration -- the same jurisdictional logic China applied in the Personal Information Protection Law. You file with the CAC and submit: agent description, capability scope, the three-tier decision authorization map, human override documentation, security assessment results, and user disclosure mechanisms.</p>
+
+<p>Agents deployed in sensitive sectors face additional requirements on top of the baseline filing:</p>
+
+<ul>
+  <li><strong>Healthcare:</strong> Mandatory compliance testing before deployment, product recall provisions, real-time monitoring</li>
+  <li><strong>Transportation:</strong> Pre-deployment regulatory review, real-time monitoring infrastructure, quarterly compliance reporting</li>
+  <li><strong>Media:</strong> Content governance requirements, mandatory AI disclosure for AI-generated outputs</li>
+  <li><strong>Public safety:</strong> Highest oversight tier -- pre-deployment regulatory review is mandatory, quarterly reporting to the CAC required</li>
+</ul>
+
+<p>For Tier 3 deployments in sensitive sectors, you can't ship and file later. The pre-deployment regulatory review must complete before launch. Based on how the CAC has handled similar algorithm filing under the 2022 algorithm recommendation rules, budget 4-8 weeks for the review cycle before launching a high-autonomy agent in a sensitive sector.</p>
+
+<p>Foreign organizations without a Chinese legal entity need to work through a local representative or compliance partner to file. The CAC's algorithm filing portal is accessible, but submissions must meet Chinese-language documentation standards and the review process is conducted in Mandarin.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>The Anthropomorphic AI Rules: Companion Bots, Personas, and NPCs</h2>
+
+<p>A separate regulation -- the Interim Measures for AI Anthropomorphic Interaction Services -- also took effect July 15, 2026. It covers any AI that presents itself with human-like characteristics: companion chatbots, virtual influencers, AI NPCs in games, and digital assistants with named personas. It was issued jointly by five government agencies: the CAC, NDRC, MIIT, Ministry of Public Security, and State Administration for Market Regulation.</p>
+
+<p>The key compliance requirements under this regulation:</p>
+
+<ul>
+  <li><strong>Mandatory AI disclosure at every session start.</strong> Users must be informed they are interacting with an AI before the conversation begins. This must happen at account creation and at the start of every subsequent session. Storing the acknowledgment timestamp is standard for demonstrating compliance.</li>
+  <li><strong>Minors under 14:</strong> Explicit guardian consent required for any AI interaction service. Providers must implement supervised usage controls including spending restrictions and session duration limits.</li>
+  <li><strong>Virtual intimate relationships with users under 18: entirely prohibited.</strong> No virtual romantic partners, virtual family relationships, or virtual life partners for minors. The regulation contains no exceptions.</li>
+  <li><strong>Emotional dependency safeguards:</strong> Technical and operational controls must prevent the service from fostering psychological dependency or harmful emotional influence. The regulation uses deliberately broad language, giving regulators wide enforcement discretion.</li>
+</ul>
+
+<p>This matters for a broader class of builders than it might initially seem. If you're building an AI customer service agent with a name and personality, an onboarding assistant with a defined character, or an AI coach that maintains a consistent persona across sessions -- the disclosure requirement applies to you. "You are interacting with an AI" at session start is now a legal requirement for Chinese users, not just a UX best practice.</p>
+
+<p>Two major Chinese AI services had to take significant action before the July 15 deadline: Doubao (ByteDance) and Qwen (Alibaba) both deleted existing virtual companion data and halted certain companion features (<a href="https://byteiota.com/china-ai-agent-ban-hits-july-15-doubao-and-qwen-shut-down/">source: ByteIota</a>). These aren't companies that could claim ignorance of the rules -- which signals how seriously the CAC is treating compliance.</p>
+
+<h2>Why Illinois Matters Here: The Dual Compliance Deadline</h2>
+
+<p>Illinois Governor JB Pritzker signed SB 315, the Artificial Intelligence Safety Measures Act, on July 6, 2026 -- nine days before China's agent rules went live. The law targets frontier AI model developers with annual revenue exceeding $500 million and mandates annual independent third-party safety audits, with results published publicly. The audit requirement kicks in January 1, 2028.</p>
+
+<p>The reason both laws appear in the same compliance analysis: July 15, 2026 became a global convergence point for AI governance. The AI Governance Institute noted that no single jurisdiction's requirements can substitute for another's -- China's three-tier decision authorization framework, Illinois's audit mandate, and the EU's deployment classification system each impose distinct, non-interchangeable obligations (<a href="https://aigovernance.com/news/chinas-agent-rules-take-effect-july-15-and-illinois-mandates-third-party-safety-audits">source: AI Governance Institute</a>). Meeting one doesn't cover the others.</p>
+
+<p>For most individual builders and small teams, the Illinois law doesn't apply today -- the $500 million revenue threshold is deliberately high, aimed at companies like Anthropic, OpenAI, and Google. China's requirements have no comparable revenue floor. A SaaS product with a handful of Chinese enterprise customers qualifies for the agent filing requirements without anywhere near that revenue. The geographic scope of China's rules is broader than the entity size might suggest.</p>
+
+<h2>The Builder's Compliance Checklist</h2>
+
+<p>This is the eight-step operational sequence that maps directly to the published CAC filing guidelines and Implementation Opinions requirements. It's not legal advice -- for production deployments at scale in China, get qualified local counsel. This is the path I'd follow if I were shipping an agent to Chinese users right now.</p>
+
+<ol>
+  <li><strong>Inventory every agent action.</strong> List every capability your agent has: read files, send messages, make API calls, update records, initiate payments, modify configurations. Full inventory, no exclusions. If the agent can do it, it goes on the list.</li>
+  <li><strong>Classify each action into the three-tier framework.</strong> Assign Tier 1 (autonomous), Tier 2 (user-approved), or Tier 3 (human-reserved) to every action. Document the criteria you used for each classification. This document is the core of your regulatory filing.</li>
+  <li><strong>Implement the approval workflows in code.</strong> For Tier 2 actions, build the confirmation step into the agent's execution loop: agent proposes, user approves, then execution. For Tier 3, build the human handoff path with a full audit trail.</li>
+  <li><strong>Add session-start AI disclosure.</strong> If your agent has any persona characteristics -- a name, defined personality, consistent character -- add mandatory disclosure at the start of every session. Store the acknowledgment timestamp in your logs.</li>
+  <li><strong>Build the human override mechanism.</strong> Every Tier 2 and Tier 3 deployment needs a logged, accessible path for a human to stop or reverse any agent action. Not just a kill switch -- a full audit trail of agent decisions and human overrides, retrievable for compliance review.</li>
+  <li><strong>Complete the security assessment.</strong> For sensitive sectors, mandatory before filing. For all others, still required documentation. The assessment must cover the agent's decision-making process, failure modes, and how it handles ambiguous situations.</li>
+  <li><strong>File with the CAC.</strong> Submit the full documentation package. For sensitive sectors with Tier 3 deployments, budget 4-8 weeks for the pre-deployment regulatory review before you can launch.</li>
+  <li><strong>Set up quarterly compliance reporting if applicable.</strong> Tier 3 deployments require quarterly reporting to the CAC. Build the logging infrastructure before deploying -- you need logs capturing every Tier 3 decision event and the corresponding human authorization.</li>
+</ol>
+
+<p>If you're not serving Chinese users and have no Chinese enterprise customers, most of this doesn't apply today. But the regulatory direction is clear. China moved first, and other jurisdictions are watching. The three-tier authorization framework is a sound design pattern regardless of your target market -- it maps cleanly onto least-privilege principles. Build it now and you'll be ahead when your own jurisdiction catches up.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does China's AI agent law apply to companies outside China?</h3>
+<p>Yes. The rules apply to any organization operating AI agents that serve users in China, regardless of where the company is incorporated. China's jurisdictional logic follows the user, not the operator's country of registration -- the same approach used in the Personal Information Protection Law for data localization. A foreign SaaS product with Chinese enterprise customers qualifies for the filing requirements.</p>
+
+<h3>What is the three-tier decision authorization framework?</h3>
+<p>The three-tier framework requires classifying every AI agent action into one of three categories before deployment: Tier 1 (agent decides autonomously), Tier 2 (requires user approval before execution), and Tier 3 (reserved for human decision-makers only). This classification must be documented and filed with the CAC. Organizations without this policy in place are in regulatory non-compliance as of July 15, 2026.</p>
+
+<h3>What are the extra requirements for AI agents in healthcare and transportation?</h3>
+<p>Agents in sensitive sectors -- healthcare, transportation, media, and public safety -- face additional requirements beyond baseline filing: mandatory compliance testing, product recall provisions, real-time monitoring infrastructure, mandatory pre-deployment regulatory review, and quarterly compliance reporting to the CAC. For these sectors, the regulatory review must complete before you launch. You cannot ship and file after the fact.</p>
+
+<h3>How is China's agent law different from the anthropomorphic AI rules?</h3>
+<p>China's Implementation Opinions governs autonomous agent deployments across all sectors, focusing on decision authorization tiers and algorithm filing. The Interim Measures for AI Anthropomorphic Interaction Services is a separate regulation targeting AI systems with human-like characteristics -- companion bots, virtual personas, AI NPCs -- requiring mandatory session-start disclosure and a complete ban on virtual intimate relationships with users under 18. Both took effect July 15, 2026.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does China's AI agent law apply to companies outside China?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The rules apply to any organization operating AI agents that serve users in China, regardless of where the company is incorporated. China's jurisdictional logic follows the user, not the operator's country of registration -- the same approach used in the Personal Information Protection Law for data localization. A foreign SaaS product with Chinese enterprise customers qualifies for the filing requirements."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the three-tier decision authorization framework?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The three-tier framework requires classifying every AI agent action into one of three categories before deployment: Tier 1 (agent decides autonomously), Tier 2 (requires user approval before execution), and Tier 3 (reserved for human decision-makers only). This classification must be documented and filed with the CAC. Organizations without this policy are in regulatory non-compliance as of July 15, 2026."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What are the extra requirements for AI agents in healthcare and transportation?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Agents in sensitive sectors -- healthcare, transportation, media, and public safety -- face additional requirements beyond baseline filing: mandatory compliance testing, product recall provisions, real-time monitoring infrastructure, mandatory pre-deployment regulatory review, and quarterly compliance reporting to the CAC. For these sectors, the regulatory review must complete before you launch."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How is China's agent law different from the anthropomorphic AI rules?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "China's Implementation Opinions governs autonomous agent deployments across all sectors, focusing on decision authorization tiers and algorithm filing. The Interim Measures for AI Anthropomorphic Interaction Services targets AI systems with human-like characteristics -- companion bots, virtual personas, AI NPCs -- requiring mandatory session-start disclosure and a complete ban on virtual intimate relationships with users under 18. Both took effect July 15, 2026."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
