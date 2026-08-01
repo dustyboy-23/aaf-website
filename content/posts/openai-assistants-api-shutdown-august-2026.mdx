@@ -1,0 +1,171 @@
+---
+id: openai-assistants-api-shutdown-august-2026
+uuid: openai-assistants-api-shutdown-august-2026
+slug: openai-assistants-api-shutdown-august-2026
+title: OpenAI Assistants API Shuts Down August 26 -- Your 25-Day Migration Checklist
+excerpt: The OpenAI Assistants API shuts down permanently on August 26, 2026. Every call to /v1/assistants, /v1/threads, and /v1/runs returns an error that day -- no grace period, no extension, no degraded mod
+feature_image: null
+featured: false
+published_at: "2026-08-01T03:12:26-07:00"
+updated_at: "2026-08-01T03:12:26-07:00"
+reading_time: 8
+tags: [news, openai, api-migration, responses-api]
+tag_names: [News, OpenAI, API Migration, Responses API]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "OpenAI Assistants API Shuts Down Aug 26: Migration Guide"
+meta_description: "OpenAI Assistants API shuts down August 26, 2026 -- no extensions. Here's the exact 25-day checklist to migrate to Responses API before your app breaks."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>OpenAI Assistants API Shuts Down August 26 -- Your 25-Day Migration Checklist</h1>
+
+<p class="lede">The OpenAI Assistants API shuts down permanently on August 26, 2026. Every call to /v1/assistants, /v1/threads, and /v1/runs returns an error that day -- no grace period, no extension, no degraded mode. The replacement is the Responses API (stateless) paired with the Conversations API (opt-in persistence). Migration takes 2-6 weeks of real engineering work.</p>
+
+<p>I audited three projects this week that are still running fully on Assistants. Twenty-five days is enough time to migrate -- but not if you wait until next week. Here is the exact sequence to follow.</p>
+
+<h2>What exactly shuts down on August 26?</h2>
+
+<p>Every endpoint in the Assistants API family goes offline simultaneously on August 26, 2026. That includes /v1/assistants (create, list, retrieve, modify, delete), /v1/threads, /v1/threads/&#123;thread_id&#125;/runs, /v1/threads/&#123;thread_id&#125;/messages, and /v1/threads/&#123;thread_id&#125;/runs/&#123;run_id&#125;/steps. OpenAI's official deprecations page at <a href="https://developers.openai.com/api/docs/deprecations">developers.openai.com/api/docs/deprecations</a> lists the sunset with no extension noted.</p>
+
+<p>OpenAI announced the deprecation exactly one year in advance -- August 26, 2025 -- via the <a href="https://community.openai.com/t/assistants-api-beta-deprecation-august-26-2026-sunset/1354666">OpenAI Developer Community forums</a>. The announcement was explicit: no extension option. No grace period, no read-only window, no soft deprecation. The API is live on August 25. It is gone on August 26. One developer in the thread put the mood plainly: "I've been building a product around it. And now I'm being told there is a new API."</p>
+
+<p>The shutdown has real reach. OpenAI has roughly 2.1 million developers actively building on the platform, per <a href="https://www.socialcrawl.dev/blog/openai-assistants-api-2026-shutdown-migration-guide">SocialCrawl's migration analysis</a>. Assistants represents a "single-digit slice" of that total -- but the slice includes a large number of production customer support bots, document Q&A systems, and multi-step agent workflows built during the 2024-25 builder rush.</p>
+
+<h2>What replaces the Assistants API?</h2>
+
+<p>OpenAI maps old concepts directly to new ones. Assistants become Prompts (configuration bundles stored in the OpenAI dashboard). Threads become Conversations (a durable conversation_id you pass between requests). Runs become Responses (the synchronous API call). Run Steps become Items. The Responses API is stateless by default; the Conversations API adds opt-in persistence. This is a new architecture, not a renamed wrapper.</p>
+
+<p>The operational change is significant. In Assistants, state lived server-side inside Thread and Run objects -- you created a Run, polled it until completion, then listed Thread messages for output. That is six API operations minimum for one exchange. In Responses, you make one synchronous call: send input items, get output items back. No polling loop, no thread management, no run lifecycle. If you need multi-turn memory, you pass a conversation_id. Persistence is a choice, not the default.</p>
+
+<p>Three capabilities are on Responses API that were never in Assistants: deep research (web browsing with citations), remote MCP server connections, and computer use. Migrating is the only path to access them.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What the code change actually looks like</h2>
+
+<p>The Assistants API required an async polling loop because runs were asynchronous -- you created a run, then checked its status until it moved from "queued" to "in_progress" to "completed." The Responses API is synchronous: one call returns the full response immediately. Here is the before and after for a typical assistant interaction in Python.</p>
+
+<p><strong>Before -- Assistants API (polling loop required):</strong></p>
+
+<pre><code>import asyncio
+import openai
+
+# Create run and poll until complete
+run = openai.beta.threads.runs.create(
+    assistant_id=ASSISTANT_ID,
+    thread_id=thread_id
+)
+while run.status in ("queued", "in_progress"):
+    await asyncio.sleep(1)
+    run = openai.beta.threads.runs.retrieve(
+        thread_id=thread_id,
+        run_id=run.id
+    )
+
+# Read output from thread messages list
+messages = openai.beta.threads.messages.list(thread_id=thread_id)
+print(messages.data[0].content[0].text.value)
+</code></pre>
+
+<p><strong>After -- Responses API (synchronous, no polling):</strong></p>
+
+<pre><code>import openai
+
+response = openai.responses.create(
+    prompt=&#123;"id": PROMPT_ID&#125;,
+    input=[&#123;"role": "user", "content": message&#125;],
+    conversation=conversation_id,  # None for first turn
+)
+print(response.output_text)
+</code></pre>
+
+<p>The polling loop is gone. The run lifecycle is gone. For a first-turn call, set conversation=None and store the returned conversation_id. Pass it on the next call to maintain context. The full API reference is at <a href="https://developers.openai.com/api/docs/assistants/migration">developers.openai.com/api/docs/assistants/migration</a>.</p>
+
+<h2>The 25-day migration checklist</h2>
+
+<p>Production-grade migrations from Assistants to Responses take 2-6 weeks of real engineering effort, per multiple practitioners who have tracked this transition. With 25 days remaining, the window is tight but workable if the audit starts today. Here is the prioritized sequence.</p>
+
+<p><strong>Days 1-3: Audit every Assistants API touchpoint.</strong> Search your codebase for openai.beta.assistants, openai.beta.threads, client.beta, /v1/assistants, and any Assistant IDs hardcoded in environment variables or config files. List every file and every environment -- dev, staging, prod. Do not estimate scope; run the search and count the actual files.</p>
+
+<p><strong>Days 4-7: Build a Responses API prototype.</strong> Before touching production, create one end-to-end flow using the Responses API. Send a stateless call, confirm the output_text field maps to whatever downstream code reads the response, and verify your prompt configuration matches your existing Assistant's instructions behavior.</p>
+
+<p><strong>Days 8-12: Decide your state management strategy.</strong> If your app has genuine multi-turn conversations that persist across sessions, prototype the Conversations API now and confirm conversation_id chaining works end-to-end. If your app is effectively stateless -- single-turn classification, session-scoped chatbots that reset, batch processing jobs -- you may not need Conversations at all. Stateless Responses is architecturally simpler than Threads was.</p>
+
+<p><strong>Days 13-17: Migrate your Assistants configuration to Prompts.</strong> Every Assistant has instructions, a model setting, and tool configurations. Recreate these as named Prompts in the OpenAI dashboard, then reference them by ID in your Responses calls via the prompt parameter. OpenAI has confirmed they will not provide an automated migration tool for Assistants-to-Prompts. This step is manual.</p>
+
+<p><strong>Days 18-22: Rebuild tool calls and file handling.</strong> If you use file_search or function_calling in Assistants, the integration pattern differs in Responses. Code Interpreter was priced at $0.03 per session and File Search at $0.10 per GB per day in Assistants -- <a href="https://www.socialcrawl.dev/blog/openai-assistants-api-2026-shutdown-migration-guide">pricing on Responses differs and is worth auditing separately</a>. Test every tool integration against the <a href="https://developers.openai.com/api/docs/assistants/migration">official migration guide</a> before moving to production.</p>
+
+<p><strong>Days 23-25: Feature-flag cutover.</strong> Route 10% of production traffic to the Responses path, watch error rates and output quality, then increment to 100%. Keep the old Assistants code in a disabled branch -- not deleted -- until after August 26. Old code is useful for debugging behavior differences that surface post-cutover, and deleting it before the deadline removes your fallback reference.</p>
+
+<h2>The hard part: migrating thread history</h2>
+
+<p>OpenAI will not automatically migrate your Thread data to Conversations. Threads and Conversations are separate data models with no built-in conversion path. OpenAI's official guidance is to migrate new user sessions to Conversations first, then backfill historical thread data as needed -- meaning if you need old conversation history to carry forward, you write your own export-and-import pipeline before August 26.</p>
+
+<p>For most production systems, letting historical threads expire naturally is the practical choice. New sessions start on Conversations; old threads remain readable through August 25. If your product depends on long-term conversation memory -- customer support bots with multi-month ticket history, assistants that reference prior sessions by name -- the backfill pipeline needs to start this week.</p>
+
+<p>A useful shortcut for systems where historical context is mostly about continuity rather than complete recall: dump the last N thread messages into your first Conversations turn as initial context items when a returning user starts a new session. It preserves the feeling of continuity without requiring a full data migration pipeline.</p>
+
+<h2>Azure OpenAI: your deadline is different</h2>
+
+<p>If you are running on Azure OpenAI, the August 26 shutdown does not apply to you directly. Microsoft has confirmed the Azure OpenAI Assistants API retires in February 2027 -- approximately six months after the direct OpenAI API. You have more runway, but the migration target also differs: Azure routes to Microsoft Foundry Agents, not OpenAI's Responses API. Before following this checklist, check <a href="https://learn.microsoft.com/en-us/answers/questions/5571874/openai-assistants-api-will-be-deprecated-in-august">Microsoft's Azure migration guidance</a> -- the architecture and timeline are different.</p>
+
+<h2>FAQ</h2>
+
+<h3>Will the OpenAI Assistants API be extended past August 26, 2026?</h3>
+<p>No. OpenAI stated explicitly in the <a href="https://community.openai.com/t/assistants-api-beta-deprecation-august-26-2026-sunset/1354666">original deprecation announcement</a> that there is no extension option. Every request to /v1/assistants, /v1/threads, and /v1/runs returns an error after August 26, 2026. There is no degraded mode, no read-only grace period, and no announced exception for legacy integrations.</p>
+
+<h3>Does Azure OpenAI Assistants also shut down on August 26?</h3>
+<p>No. Microsoft confirmed the Azure OpenAI Assistants API has a separate retirement date of February 2027, not August 26, 2026. Azure users have roughly six additional months. The recommended migration target for Azure is Microsoft Foundry Agents, not OpenAI's Responses API directly. Check <a href="https://learn.microsoft.com/en-us/answers/questions/5790094/will-azure-openai-assistants-api-specifically-be-d">Microsoft's Azure deprecation Q&A</a> for current guidance before starting your migration.</p>
+
+<h3>How long does migration from Assistants to Responses API take?</h3>
+<p>Production-grade migrations take 2-6 weeks of real engineering effort. Simple stateless assistants migrate in days; systems with heavy thread history, file_search integrations, and complex function-calling loops sit toward the longer end. OpenAI confirmed they will not provide an automated Thread-to-Conversations migration tool -- any history backfill requires custom code. Start the audit today if you have not already.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Will the OpenAI Assistants API be extended past August 26, 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. OpenAI stated explicitly in the original deprecation announcement that there is no extension option. Every request to /v1/assistants, /v1/threads, and /v1/runs returns an error after August 26, 2026. There is no degraded mode, no read-only grace period, and no announced exception for legacy integrations."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Azure OpenAI Assistants also shut down on August 26?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Microsoft confirmed the Azure OpenAI Assistants API has a separate retirement date of February 2027, not August 26, 2026. Azure users have roughly six additional months. The recommended migration target for Azure is Microsoft Foundry Agents, not OpenAI's Responses API directly."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How long does migration from Assistants to Responses API take?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Production-grade migrations take 2-6 weeks of real engineering effort. Simple stateless assistants migrate faster; systems with heavy thread history, file_search, and complex function-calling loops take longer. OpenAI confirmed they will not provide an automated Thread-to-Conversations migration tool -- any history backfill requires custom engineering."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
