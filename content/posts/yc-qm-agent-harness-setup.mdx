@@ -1,0 +1,166 @@
+---
+id: yc-qm-agent-harness-setup
+uuid: yc-qm-agent-harness-setup
+slug: yc-qm-agent-harness-setup
+title: "How to Set Up YC's QM Agent Harness for Your Whole Company"
+excerpt: "QM is Y Combinator's open-source multiplayer agent harness for teams. It gives each employee a scoped Slack and web workspace backed by isolated memory, permissions, files, and a durable sandbox. The "
+feature_image: null
+featured: false
+published_at: "2026-08-03T03:08:22-07:00"
+updated_at: "2026-08-03T03:08:22-07:00"
+reading_time: 11
+tags: [tutorials, agent-infrastructure, claude-code, yc-qm, multi-agent]
+tag_names: [Tutorials, Agent Infrastructure, Claude Code, YC QM, Multi-Agent]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "How to Set Up YC's QM Agent Harness (Open-Source)"
+meta_description: "How to deploy YC's open-source QM multiplayer agent harness: init command, scoped memory per person and room, Slack integration, and Fly.io or AWS deployment."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>How to Set Up YC's QM Agent Harness for Your Whole Company</h1>
+
+<p class="lede">QM is Y Combinator's open-source multiplayer agent harness for teams. It gives each employee a scoped Slack and web workspace backed by isolated memory, permissions, files, and a durable sandbox. The init command -- <code>npm exec --yes --package=@yc-software/qm@latest -- qm init .</code> -- provisions Postgres, Slack bot credentials, and the web interface in one shot. MIT licensed, released July 31, 2026, deployable to Fly.io or AWS.</p>
+
+<p>I've been running personal AI setups for a while, but QM is architecturally different -- it's built for the company, not the individual. When YC open-sourced it and it landed 638 HN upvotes and 1,940 GitHub stars inside of a week, I pulled the repo and started mapping out what a real setup looks like.</p>
+
+<h2>What makes QM different from a personal AI assistant?</h2>
+
+<p>QM is a company-wide multiplayer agent harness -- every employee gets their own isolated AI workspace, and those workspaces can collaborate in shared Slack channels and projects. Each user gets scoped memory, files, a keychain, permissions, crons, web apps, and a durable sandbox. None of that bleeds between people or rooms unless you explicitly share it.</p>
+
+<p>The architectural split that matters: personal tools like OpenClaw or Claude Code give one person a powerful terminal agent. QM adds the company OS layer on top -- identity management, PostgreSQL-backed state, per-person and per-room scopes, admin policy controls, and Slack/web plugins that work across the organization. There are now three categories of agent harness: terminal coding agents (Claude Code, Codex), personal assistants (OpenClaw), and company-wide systems (QM). QM is the only one designed from day one for per-employee isolation at company scale.</p>
+
+<p>YC runs QM across accounting, legal, events, and engineering -- including using it to build QM itself. The repo hit 177 forks in the first week, which tells you a lot of builders are already extending it, not just evaluating it. The HN thread has 150 comments worth reading -- the real gaps surface there alongside the genuine enthusiasm for the architecture.</p>
+
+<h2>What do you need before starting?</h2>
+
+<p>Before running the init command, you need Node.js installed, admin access to a Slack workspace for the bot install, and an account on Fly.io or AWS. You also need API keys for at least one AI harness -- Anthropic for Claude Code is the most common starting point. QM stores those in per-user keychains, not a flat <code>.env</code> file, which is one of the things that separates it from a typical personal agent setup.</p>
+
+<p>The <code>@yc-software/qm</code> npm package is the only upfront dependency. Everything else -- Postgres, the Slack plugin, the web interface -- gets provisioned during init. For small teams, Fly.io is the faster path. AWS gives more control if you have an existing VPC or need enterprise networking constraints.</p>
+
+<h2>Step 1: Initialize QM in your project directory</h2>
+
+<p>The init command provisions the full stack in one shot: Postgres, web interface, Slack bot credentials, and the core harness. Run this from the directory you want to use as your QM root:</p>
+
+<pre><code>npm exec --yes --package=@yc-software/qm@latest -- qm init . --org your-company-slug --target fly</code></pre>
+
+<p>Swap <code>--target fly</code> for <code>--target aws</code> for AWS deployment. The <code>--org</code> flag sets your organization slug -- the identifier for your QM instance. Init then walks you through interactively: Slack bot token, deployment region, and which AI harness to activate first. For Claude Code, you provide your Anthropic API key here. QM stores it in the encrypted keychain -- it never lands in a plaintext config file. You can add Codex, Pi, or OpenCode later through the admin panel without redeploying the full stack. On a clean Fly.io account, initialization typically finishes in under 10 minutes.</p>
+
+<h2>Step 2: Configure scoped memory per person and room</h2>
+
+<p>QM's isolation model works on two axes: person-level (individual memory, files, keychain) and room-level (shared memory and files for a Slack channel or project). Each scope gets its own Postgres namespace. No memory crosses between scopes unless you explicitly grant it through skills and permissions in the admin panel.</p>
+
+<p>This matters for real company use. Your accounting agent and your engineering agent don't share context -- they have separate memory stores backed by the same Postgres instance but with hard per-scope isolation. You configure what's shared at the admin level via skills grants and permissions policies. The admin panel controls which harnesses are available to which employees, what crons can fire, and which web artifacts are shareable across rooms.</p>
+
+<p>Each employee customizes their personal scope by editing their own <code>CLAUDE.md</code> (or the equivalent for other harnesses) inside their QM workspace. This is the same pattern as Claude Code's project-level CLAUDE.md, but scoped per person inside the company instance. Room-level configuration lives in a shared <code>qm-room.md</code> file that anyone with write access to that room can edit. Start with the accounting team's room -- it's usually the most immediate use case for automated summaries.</p>
+
+<h2>Step 3: Connect Slack and the web interface</h2>
+
+<p>QM surfaces in two places: Slack and a web UI. Both use the same identity -- your employee's scoped workspace follows them across both surfaces. In Slack, the agent appears in channels and DMs. The web UI adds file management, cron controls, and artifact viewing that the Slack interface can't surface cleanly.</p>
+
+<p>After init, you'll see a Slack bot installation URL in the terminal output. Install it to your workspace and invite the bot to the channels where you want it active. Room-level memory activates automatically when the bot is added to a channel -- it starts accumulating shared context for that room immediately. Personal scopes activate when each employee opens a DM with the bot for the first time and introduces themselves or sends their first prompt.</p>
+
+<p>The web interface is served from your Fly or AWS deployment. It gives you a full admin panel for: allowed models, harness selection, organization policy, employee permissions, and shared artifact management. The agent browser inside the web UI shows you active agent sessions, recently fired crons, and web apps that agents have published -- the visibility layer that Slack alone doesn't provide.</p>
+
+<h2>Step 4: Add crons and webhook triggers</h2>
+
+<p>QM has a built-in cron system. Each employee and each room can have its own scheduled tasks -- crons that fire the agent with a given prompt at a set interval. This is how you build company-level automation that runs without anyone typing a message.</p>
+
+<p>A concrete example that maps to how YC uses it: fire an accounting room agent every Monday morning to pull last week's transaction data and write a summary back to that Slack channel. The cron lives in the room scope, runs against the room's shared memory, and posts output as a Slack message. Webhooks are also supported -- you can trigger agent runs from GitHub, Stripe, or your own APIs by pointing at a webhook endpoint that the init command provisions for you.</p>
+
+<p>Crons are configured in JSON through the admin panel or the QM CLI. The format is straightforward: a cron expression, a prompt string, and a scope identifier (person slug or room slug). Per-person crons run against that employee's isolated memory. Room crons run against the shared room memory and are visible to everyone in that room.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>Step 5: Swap harnesses without touching your infrastructure</h2>
+
+<p>QM's model-agnostic design means you can run Claude Code for some employees, Codex for others, and Pi for personal use cases -- all on the same QM infrastructure. Harness selection is a per-user setting, not a global one. Switching harnesses doesn't touch your memory, files, or cron configuration -- it only changes which agent loop runs when a prompt comes in.</p>
+
+<p>To add a new harness after deployment: open the admin panel, add the API key for that harness to your organization keychain, and enable it. Employees can then select it in their personal settings. This is the cost management lever -- you can default to a cheaper model for low-stakes daily summaries and keep Claude Code available for engineering tasks that benefit from its coding strengths. QM routes each prompt to whichever harness the scope has selected, with no changes to anything else in the pipeline.</p>
+
+<h2>How to structure your company's agent architecture inside QM</h2>
+
+<p>The most common mistake teams make when first setting up QM is creating one room and expecting one agent to handle everything. QM's power is in the isolation model -- the right architecture maps to how work actually flows in your company, not to a single shared AI inbox.</p>
+
+<p>One room per functional team, not per project. Accounting gets one room with memory about your finance stack. Legal gets another. Engineering gets another. Per-room memory builds up context about that team's tools, preferences, and recurring work -- and stays current because agents run in that context continuously. Projects that span teams get their own shared room, but the functional team rooms stay isolated to protect domain-specific context from leaking across departments.</p>
+
+<p>Personal scopes handle sensitive or individualized work. If your CFO needs access to financial data that engineering shouldn't see, that belongs in a personal scope backed by a personal keychain entry. The keychain system isolates credentials at the person level -- no credential bleeding across rooms or employees. This is what makes QM viable for legal and finance use cases where context isolation is a real requirement, not just a nice-to-have.</p>
+
+<p>Crons are the connective tissue. The most useful pattern in early QM setups isn't the on-demand agent -- it's the end-of-day cron that writes a structured summary back to the room memory. Agents perform better with continuous context, and scheduled crons build that context automatically without anyone having to remember to trigger anything.</p>
+
+<h2>Where QM is still early</h2>
+
+<p>QM shipped publicly on July 31, 2026 and is still in active development -- YC is explicit that this is an early experiment, not a polished product with enterprise SLAs. The open issues on GitHub at launch reflect that: limited documentation on multi-region Postgres setups, Slack OAuth edge cases in enterprise workspaces, and the admin panel missing granular per-cron permission controls. If you're evaluating QM for a sensitive deployment, read the GitHub issues before committing.</p>
+
+<p>For teams under 20 people, the full Fly.io deployment may be more infrastructure than you need. A single Claude Code instance with a shared project CLAUDE.md covers a lot of what QM does at that scale. QM makes architectural sense when you need hard isolation between departments, role-based agent permissions, or centralized audit logs of what your agents are doing company-wide. If you need a battle-tested platform with support contracts, this isn't it yet. But for a technical team comfortable running and debugging open-source infrastructure, it's solid enough to deploy today.</p>
+
+<h2>FAQ</h2>
+
+<h3>What does QM stand for?</h3>
+<p>YC hasn't officially expanded the acronym publicly. Based on context in the repository and the HN launch thread, it appears to be the project's internal codename rather than a formal acronym. The repository is at github.com/yc-software/qm and the documentation homepage is at qm.ycombinator.com. The HN thread from launch day is the best source for context on the naming.</p>
+
+<h3>Can I run QM without Slack?</h3>
+<p>Yes. QM's web interface is a standalone surface -- Slack is one of two front-ends, not a requirement. The web UI carries the same scoped identity, memory, and permissions as the Slack plugin. If your team doesn't use Slack, skip the Slack bot installation entirely and run QM through the web interface only. Crons and webhook triggers work the same regardless of which surface you use.</p>
+
+<h3>Does QM send my conversation data back to YC?</h3>
+<p>No. QM stores conversation history in the Postgres instance you deploy -- your infrastructure, your data. The MIT license gives you full ownership and control of the codebase and your data. Your API calls to Claude Code or Codex go to Anthropic or OpenAI respectively; QM orchestrates those calls and stores results locally. YC has no access to your deployed instance or your agent conversations.</p>
+
+<h3>Is QM production-ready?</h3>
+<p>YC describes QM as an early experiment released publicly. It runs in production internally at YC across accounting, legal, events, and engineering -- but it shipped publicly on July 31, 2026 and is still under active development. For technical teams comfortable running open-source infrastructure, it's deployable today. Enterprise SLAs, extensive documentation, and production-grade support aren't there yet.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What does QM stand for?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "YC hasn't officially expanded the acronym publicly. Based on context in the repository and the HN launch thread, it appears to be the project's internal codename rather than a formal acronym. The repository is at github.com/yc-software/qm and the documentation homepage is at qm.ycombinator.com."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I run QM without Slack?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. QM's web interface is a standalone surface -- Slack is one of two front-ends, not a requirement. The web UI carries the same scoped identity, memory, and permissions as the Slack plugin. Crons and webhook triggers work the same regardless of which surface you use."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does QM send my conversation data back to YC?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. QM stores conversation history in the Postgres instance you deploy -- your infrastructure, your data. The MIT license gives you full ownership and control. Your API calls go to Anthropic or OpenAI respectively; QM orchestrates those calls and stores results locally. YC has no access to your deployed instance."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is QM production-ready?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "YC describes QM as an early experiment released publicly. It runs in production internally at YC across accounting, legal, events, and engineering -- but it shipped publicly on July 31, 2026 and is still under active development. For technical teams comfortable running open-source infrastructure, it's deployable today. Enterprise SLAs and production-grade support aren't there yet."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
