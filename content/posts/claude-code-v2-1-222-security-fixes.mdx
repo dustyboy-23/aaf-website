@@ -1,0 +1,134 @@
+---
+id: claude-code-v2-1-222-security-fixes
+uuid: claude-code-v2-1-222-security-fixes
+slug: claude-code-v2-1-222-security-fixes
+title: "Claude Code v2.1.222: Four Security Fixes for Agent Builders"
+excerpt: "Claude Code v2.1.222 shipped August 4, 2026 with four targeted bug fixes: worktree-isolated sessions could run destructive git commands against your main checkout, PreToolUse hooks were silently bypas"
+feature_image: null
+featured: false
+published_at: "2026-08-05T03:09:00-07:00"
+updated_at: "2026-08-05T03:09:00-07:00"
+reading_time: 10
+tags: [deployment, claude-code, security, mcp]
+tag_names: [Deployment, Claude Code, Security, MCP]
+primary_tag: deployment
+primary_tag_name: Deployment
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.222: Four Security Fixes for Agent Builders"
+meta_description: Claude Code v2.1.222 fixed worktree isolation, hook bypass, proxy hangs, and MCP over-attribution. Here is what each fix means for your agent deployment.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.222: Four Security Fixes for Agent Builders</h1>
+
+<p class="lede">Claude Code v2.1.222 shipped August 4, 2026 with four targeted bug fixes: worktree-isolated sessions could run destructive git commands against your main checkout, PreToolUse hooks were silently bypassed in background tasks, HTTPS proxy startups hung without a useful error, and MCP usage reporting was inflating by up to 3x. Every fix exposes a real gap in agentic isolation that was hiding in production.</p>
+
+<p>I track every Claude Code release for builders running agent workflows, and v2.1.222 is worth a dedicated breakdown -- not for any new feature, but because the bugs it fixed reveal exactly where agentic isolation was failing silently. If you run parallel agents with worktrees, or depend on PreToolUse hooks for access control, read this before your next deploy.</p>
+
+<h2>What shipped in Claude Code v2.1.222?</h2>
+<p>Claude Code v2.1.222 shipped August 4, 2026 (build timestamp: 2026-08-04T22:39:55Z) with four bug fixes targeting isolation and operational reliability. The fixes close a worktree isolation breach where subagents escaped to the main checkout, a PreToolUse hook bypass in background tasks, a proxy startup hang on corporate networks, and MCP usage over-attribution that could inflate reported token costs by up to 3x.</p>
+<p>There are no new features in this release -- it is purely a patch. That makes it unusual for a Claude Code release (the team typically ships features weekly), which signals these were considered blocking enough to warrant a standalone push.</p>
+<p>The four fixes:</p>
+<ul>
+<li>Worktree isolation: subagents can no longer run git commands against the main checkout from within an isolated session</li>
+<li>PreToolUse hooks: background agent tasks (summaries, compaction, renames) now route through hook chains</li>
+<li>HTTPS proxy: startup connectivity check now uses the same proxy-aware transport as API requests</li>
+<li>MCP over-attribution: /usage now attributes usage only to turns that actually consumed MCP tool results</li>
+</ul>
+
+<h2>What exactly was the worktree isolation breach?</h2>
+<p>In worktree-isolated Claude Code sessions, child subagents could escape isolation and run destructive git commands against the main repo checkout instead of their assigned worktree. The escape route was standard git flags -- git -C, --git-dir, or the GIT_DIR and GIT_WORK_TREE environment variables -- which were not restricted to the worktree boundary in subagent contexts.</p>
+<p>The worktree isolation feature is designed to give each agent its own isolated working directory. The main repo sits at /repo, but each agent is spawned with a worktree at /repo-worktrees/agent-name, and operations are supposed to stay inside that boundary. The bug was that this boundary applied to the top-level session but not to subagents spawned inside it.</p>
+<p>In practice: a coordinator agent running in isolation spawns a specialist subagent to handle a git-heavy task. That subagent uses git -C /repo reset --hard HEAD to undo changes -- and because the GIT_DIR restriction was not inherited by the subagent, that reset targeted the main checkout, not the worktree. No error, no warning. The main branch is now in a different state.</p>
+<p>This is not a theoretical attack vector. It is exactly the failure mode that makes parallel agent workflows risky without careful architecture: a subagent that does exactly what it is told, in the wrong scope, silently. Between July 20 and July 24 (v2.1.218 and adjacent releases), Anthropic shipped four consecutive isolation fixes addressing different escape routes -- symlinked working directories, git -C redirections, leftover worktrees from other projects, and unprompted network egress. v2.1.222 closes the subagent inheritance gap that those fixes missed.</p>
+
+<h2>Why did background tasks bypass PreToolUse hooks?</h2>
+<p>PreToolUse hooks -- configured in settings.json to block or log tool calls before they execute -- were not firing for background agent tasks including session summaries, context compaction, and file renames. If you had a hook that blocked writes outside a specific directory, that rule was silently inactive every time a background task ran a tool call.</p>
+<p>PreToolUse hooks are the strongest per-tool access control Claude Code exposes. They fire before any permission-mode check, so a hook returning permissionDecision: deny blocks a tool call even when the session runs with --dangerously-skip-permissions. This is what makes them useful: they are a hard gate, not a soft suggestion.</p>
+<p>But that gate had a hole. Claude Code runs internal background tasks to manage session lifecycle -- compacting long conversations, summarizing context, renaming artifacts. These tasks call tools internally. Before v2.1.222, those internal tool calls were not routed through the PreToolUse hook chain. The hooks that protected your user-initiated tool calls were simply not running for background-initiated calls.</p>
+<p>A GitHub issue filed in April 2026 (anthropics/claude-code #47810) documented this as a regression: a PreToolUse hook configured to log all invocations was showing gaps in its log that correlated exactly with background task completions. The v2.1.222 fix routes all tool calls -- including background tasks -- through the full hook chain.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>What did the HTTPS proxy and MCP attribution fixes actually change?</h2>
+<p>The HTTPS proxy fix and MCP over-attribution fix address operational reliability -- things that were breaking silently in production rather than in development. The proxy hang blocked Claude Code from starting at all on corporate networks; the MCP attribution bug was silently inflating reported usage numbers by up to 3x.</p>
+<p><strong>The proxy hang:</strong> Claude Code runs a startup connectivity check to verify it can reach the Anthropic API before loading the full UI. That check used a different HTTP transport than the rest of the application -- one that did not honor the user's configured HTTPS proxy. On corporate networks behind a proxy, the startup check would try to connect directly, fail, and hang without a useful error message. Users saw Claude Code appear to freeze at launch. The fix brings the startup check onto the same proxy-aware transport as all other API requests.</p>
+<p><strong>MCP over-attribution:</strong> The /usage command inside Claude Code reports how much of your token budget was consumed by each MCP server. Before v2.1.222, the attribution logic was counting every turn after any MCP call against that server's quota, not just the turns that actually used its results. If your session made one MCP call to a filesystem server early on, every subsequent turn in the session -- including turns that had nothing to do with MCP -- was attributed to that server. Community analysis published by TokenWatch documented cases where this inflated reported MCP server usage by roughly 3x. For context: Claude Code shipped a separate token reporting issue in March-April 2026 (broken prompt caching that caused 40% higher apparent token consumption), so this is part of a broader pattern of closing cost-transparency gaps in the toolchain.</p>
+<p>The MCP attribution fix changes what /usage reports, not what Anthropic charges. API costs are billed per token consumed per request, not per session attribution. But accurate reporting matters for teams trying to optimize which MCP servers are actually expensive to run.</p>
+
+<h2>What should your isolation architecture look like after v2.1.222?</h2>
+<p>After v2.1.222, the isolation boundary in Claude Code now extends to file edits and Bash in every session type including subagents. But isolation architecture is a design choice, not just a tool setting -- closing the subagent escape route does not automatically make your parallel agent workflow safe. Here are five questions every agent builder running production workloads should answer.</p>
+<p><strong>1. Are you explicitly assigning a worktree to each agent?</strong> Git worktrees are now the dominant isolation primitive for parallel AI agent execution -- Claude Code, OpenAI Codex, and Cursor all natively support this pattern. Each agent gets its own checked-out working directory while sharing one .git object store, eliminating file conflicts without the overhead of full repository clones. JetBrains shipped first-class worktree support in its 2026.1 release (March 2026); VS Code added it in July 2025. If you are running more than two concurrent agents on the same repo and not using worktrees, you are relying on the agents not stepping on each other, which is not a safe assumption at scale.</p>
+<p><strong>2. Have you tested your PreToolUse hooks against background tasks?</strong> Before v2.1.222, background tasks bypassed hooks. If you have existing hooks, verify they still produce the expected behavior after upgrading. The fix closes the bypass, but any hooks you wrote assuming they only covered user-initiated calls should be audited for completeness.</p>
+<p><strong>3. Is your MCP usage attribution making sense now?</strong> If you were tracking /usage and seeing numbers that looked high relative to your actual MCP usage, check the reporting after upgrading. The fix is automatic -- no configuration changes needed.</p>
+<p><strong>4. Do your subagents inherit the correct permission scope?</strong> The v2.1.222 fix closes the isolation escape route, but it is worth auditing your coordinator-to-specialist architecture. Does your coordinator's permission set flow to subagents by default, or does each subagent get its own explicit scope? Explicit scoping is safer -- a subagent should only have the permissions it needs for its specific task, not everything the coordinator has.</p>
+<p><strong>5. What is the blast radius if an agent escapes its boundary?</strong> No isolation architecture is perfect. Run a threat model: if an agent escapes its worktree, what can it reach? Limit git push permissions on the worktree's remote, restrict outbound network egress for agents that do not need it, and require explicit confirmation for any operation that modifies the main branch or deletes files.</p>
+
+<h2>FAQ</h2>
+<h3>What is worktree isolation in Claude Code and how does it work?</h3>
+<p>Worktree isolation gives each Claude Code session its own isolated git working directory using git worktrees. Each agent operates in a separate checked-out directory, preventing file-level conflicts and keeping git operations from affecting the main checkout or other agents' worktrees. v2.1.222 extended this isolation so it now applies to subagents spawned within an isolated session, not just the top-level session.</p>
+
+<h3>Will the MCP over-attribution fix affect my Claude Code subscription costs?</h3>
+<p>No. The fix changes what /usage reports inside Claude Code, not what Anthropic charges. API billing is based on actual token consumption per API call. The over-attribution bug caused the /usage dashboard to misrepresent which MCP servers were consuming how much of your session budget -- that misrepresentation is now corrected, but your actual billed costs were not inflated by the bug.</p>
+
+<h3>How do I verify my PreToolUse hooks are working correctly after upgrading to v2.1.222?</h3>
+<p>After upgrading, trigger a background task by letting a long session run to auto-compaction, or by using /compact manually. Check your hook log file for entries corresponding to the background task's tool calls. If your hook logs show entries for all tool calls including background tasks, the fix is working. If your hook is supposed to block certain tools, test that the block fires during compaction, not just during user-initiated calls.</p>
+
+<h3>Does Claude Code v2.1.222 fix the 40% token inflation issue from March 2026?</h3>
+<p>No. The v2.1.222 MCP attribution fix addresses over-reporting in /usage dashboards for MCP server usage specifically. The March-April 2026 token inflation issue (approximately 40% higher apparent consumption caused by broken prompt caching) was addressed in earlier releases. Community reports through July 2026 suggest that issue is largely closed but not universally confirmed across all session types.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is worktree isolation in Claude Code and how does it work?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Worktree isolation gives each Claude Code session its own isolated git working directory using git worktrees. Each agent operates in a separate checked-out directory, preventing file-level conflicts and keeping git operations from affecting the main checkout or other agents worktrees. v2.1.222 extended this isolation so it now applies to subagents spawned within an isolated session, not just the top-level session."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Will the MCP over-attribution fix affect my Claude Code subscription costs?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The fix changes what /usage reports inside Claude Code, not what Anthropic charges. API billing is based on actual token consumption per API call. The over-attribution bug caused the /usage dashboard to misrepresent which MCP servers were consuming how much of your session budget -- that misrepresentation is now corrected, but your actual billed costs were not inflated by the bug."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I verify my PreToolUse hooks are working correctly after upgrading to v2.1.222?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "After upgrading, trigger a background task by letting a long session run to auto-compaction, or by using /compact manually. Check your hook log file for entries corresponding to the background tasks tool calls. If your hook logs show entries for all tool calls including background tasks, the fix is working. If your hook is supposed to block certain tools, test that the block fires during compaction, not just during user-initiated calls."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Claude Code v2.1.222 fix the 40% token inflation issue from March 2026?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The v2.1.222 MCP attribution fix addresses over-reporting in /usage dashboards for MCP server usage specifically. The March-April 2026 token inflation issue (approximately 40% higher apparent consumption caused by broken prompt caching) was addressed in earlier releases. Community reports through July 2026 suggest that issue is largely closed but not universally confirmed across all session types."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
