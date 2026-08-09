@@ -1,0 +1,149 @@
+---
+id: crewai-1-15-inline-skills-stream-frames
+uuid: crewai-1-15-inline-skills-stream-frames
+slug: crewai-1-15-inline-skills-stream-frames
+title: "CrewAI 1.15 Inline Skills and Stream Frames: What Actually Changed"
+excerpt: "CrewAI 1.15 landed three structural changes for agent flow builders: inline skill definitions that skip the external SKILL.md file requirement, a stream frame protocol for typed real-time output from "
+feature_image: null
+featured: false
+published_at: "2026-08-09T03:11:34-07:00"
+updated_at: "2026-08-09T03:11:34-07:00"
+reading_time: 8
+tags: [news, crewai, ai-agents, python, frameworks]
+tag_names: [News, CrewAI, AI Agents, Python, Frameworks]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "CrewAI 1.15: Inline Skills and Stream Frames Explained"
+meta_description: CrewAI 1.15.2 adds inline skill definitions, stream frame protocol, and declarative flow CLI. What each feature does and whether to upgrade from 1.14.x.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>CrewAI 1.15 Inline Skills and Stream Frames: What Actually Changed</h1>
+
+<p class="lede">CrewAI 1.15 landed three structural changes for agent flow builders: inline skill definitions that skip the external SKILL.md file requirement, a stream frame protocol for typed real-time output from flows, and declarative flow CLI support with templated action inputs. The series reached 1.15.14 on August 8, 2026 -- the stream frame API is the most immediately actionable change for production flows.</p>
+
+<p>I have been tracking the 1.15.x series as it has rolled out since early July. Most patches are incremental fixes, but the feature cluster in 1.15.0 through 1.15.2 contains three changes that actually affect how I structure agent workflows. Here is what each one does.</p>
+
+<h2>What are inline skill definitions and how do they work?</h2>
+
+<p>Inline skills let you define agent skills directly inside your CrewDefinition object in Python, skipping external SKILL.md files. The agent reads skill context from the class definition at runtime rather than loading from disk. For skills scoped to a single crew that are never shared across projects, this removes a file I/O step and keeps logic co-located.</p>
+
+<p>Skills in CrewAI are not tools. Tools give an agent callable functions to take action. Skills inject domain-specific instructions and context into the agent's prompt, shaping how it thinks about a problem without adding callable functions. A skill might tell an agent how to write production Python, how to structure an API response, or how to reason about a business domain -- instructions and heuristics injected into the prompt, not function calls added to the tool list.</p>
+
+<p>CrewAI's 1.14.6a1 release had already introduced a <a href="https://github.com/crewAIInc/crewAI/releases">Skills Repository</a> for teams decoupling shared skill logic across multiple crews. That external file approach still makes sense for skills shared across repos, published to a registry, or versioned independently -- the same pattern that tools like addyosmani/agent-skills (77K GitHub stars) use for distributing skill bundles across coding agents. But for quick, project-scoped skills, maintaining an external SKILL.md file tree was overhead without benefit for the single-project case.</p>
+
+<p>You can mix both patterns in the same project: inline for local, single-crew skills; external SKILL.md for anything published to a shared registry or reused across multiple crews. The 1.15.x release does not deprecate external skills -- it adds an option that did not exist before.</p>
+
+<h2>How does the CrewAI stream frame protocol work?</h2>
+
+<p>The stream frame protocol gives flows a typed, ordered API for real-time output. Set stream=True on a Flow class, call kickoff(), and iterate the returned stream session to receive StreamFrame items. Each frame carries a channel (source type), a type field, printable content text, and a structured event payload. Access .result only after the stream exhausts.</p>
+
+<p>Synchronous streaming looks like this:</p>
+
+<pre><code>flow = ResearchFlow()
+streaming = flow.kickoff()
+for item in streaming:
+    print(item.content, end="", flush=True)
+result = streaming.result</code></pre>
+
+<p>Async flows use kickoff_async() with an async for loop -- same pattern, different runtime. According to the <a href="https://docs.crewai.com/v1.15.11/en/learn/streaming-flow-execution">CrewAI streaming docs</a>, the implementation adds minimal performance overhead compared to non-streaming execution, and stream frames propagate automatically across multi-stage pipelines without additional wiring in existing flow steps.</p>
+
+<p>The channel field is what I find most useful in practice. A multi-step research flow that calls LLM steps and external tools produces both frame types in the same stream. The "llm" channel carries model response text. The "tools" channel carries tool invocation results. If you are building a UI that should render model output differently from tool results -- real-time typing for model output, a structured card for tool output -- the channel field gives you the branch signal without post-processing the content field or building your own tagging layer.</p>
+
+<p>Before 1.15, getting real-time output from a CrewAI flow meant either patching step callbacks or capturing stdout with a monkey-patched writer. Both approaches broke on minor framework updates. The stream frame protocol replaces both with a stable typed interface documented and versioned as part of the SDK.</p>
+
+<h2>What did declarative flow support add?</h2>
+
+<p>Declarative flow loading landed in 1.15.0 and extended in 1.15.2. It adds a conversational TUI mode in the CLI where you build flows interactively, plus a unified flow-loading path that validates config-defined flows before execution. The 1.15.2 update adds templated flow action inputs -- dynamic parameter slots in workflow actions that you inject at runtime rather than hardcoding values per environment.</p>
+
+<p>Templated inputs matter if you run the same flow topology across multiple environments -- different models, credentials, or system prompts per deployment context. Instead of duplicating flow definitions with environment-specific hardcoded values, you define template slots and inject at kickoff. The 1.15.2 update also adds auto-Git init for new projects generated by the CLI -- running crewai create project now initializes a Git repository automatically rather than requiring a manual git init step afterward.</p>
+
+<p>One cosmetic change worth flagging: the 1.15.x series renamed "Rules" to "Policies" across the dashboard UI and documentation. Behavior is unchanged. If you are looking for a setting previously found under "Rules" in the dashboard, it is now under "Policies."</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What security patches landed in the 1.15.x series?</h2>
+
+<p>Two security-relevant patches landed in the 1.15.x series after 1.15.0. The first addresses onnx 1.22.0, which had a CVE-adjacent advisory flagged by pip-audit in security scans. The second addresses nltk PYSEC-2026-597, a known vulnerability in an older nltk version that CrewAI pulls as a transitive dependency. Both are resolved in the <a href="https://github.com/crewAIInc/crewAI/releases">latest 1.15.x patch</a>.</p>
+
+<p>If you have strict dependency pinning and pin onnx or nltk to specific versions in your lockfile, check your pins against these advisories before upgrading. A hard pin to affected onnx 1.22.0 or an older nltk version will conflict with the patched transitive requirements. The fix in both cases is updating your lockfile to pull the patched versions -- no API changes are involved.</p>
+
+<p>Other notable fixes in the 1.15.x patches: a validation bug where self-listening flow methods were not rejected at definition time, a flow version-writing failure under specific project structures, and Ollama model-catalog cache behavior. The catalog cache now keys by exact API key with a shorter TTL, fixing stale results when switching between Ollama models mid-session.</p>
+
+<h2>Should you upgrade to CrewAI 1.15 now?</h2>
+
+<p>If you are on 1.14.x, upgrading to the latest 1.15.x patch is low-risk. Three cases make it worth doing now: you want real-time streaming from flows without patching callbacks, you are building project-scoped skills and want to skip the SKILL.md file overhead, or you are using the CLI for flow deployment and want the declarative loader. The upgrade is non-breaking for existing flows -- stream=True is opt-in, inline skills are additive, and CLI changes are non-destructive.</p>
+
+<p>The security patches for onnx and nltk are reason enough to upgrade from 1.15.0 or 1.15.1, independent of new features. The 1.15.x series is the active development track as of August 2026 -- the 1.14.x line is not receiving security patches. For production deployments, staying on an unpatched minor series is a risk that outweighs upgrade inertia.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is the difference between inline skills and external SKILL.md files in CrewAI?</h3>
+<p>Inline skills are defined directly inside your CrewDefinition object in Python code, keeping skill logic co-located with the crew that uses it. External SKILL.md files live in separate directories, are loaded by path, and are shareable across projects and repos. Inline skills work best for single-project, single-crew use cases. External skills work best for shared repositories or independently versioned logic. Both patterns coexist in 1.15.x and can be mixed in the same project.</p>
+
+<h3>How do I enable real-time streaming output in a CrewAI flow?</h3>
+<p>Set stream=True on your Flow class, call kickoff(), and iterate the returned stream session to receive StreamFrame items. Each frame has channel, type, content, and event fields. Only access .result after iterating all frames -- calling it before the stream ends blocks execution. For async flows, use kickoff_async() with an async for loop instead. No additional configuration is required; streaming integrates with multi-stage pipelines automatically.</p>
+
+<h3>Is CrewAI 1.15 a breaking change from 1.14?</h3>
+<p>For most flows, 1.15 is non-breaking. The stream frame protocol is additive -- flows without stream=True work identically to 1.14. Inline skill definitions do not replace external skills. The "Rules" to "Policies" dashboard rename is cosmetic only. The most likely source of breakage is dependency pinning conflicts from the onnx 1.22.0 and nltk PYSEC-2026-597 security patches in the 1.15.x series, which require lockfile updates if you pin those packages.</p>
+
+<h3>What does the channel field on a CrewAI StreamFrame indicate?</h3>
+<p>The channel field identifies the source of streamed output -- "llm" for language model response text, "tools" for tool invocation results. When a flow executes both LLM steps and tool calls, both frame types appear in the same stream. The channel field lets you filter or route output by source type when building UIs or logging pipelines that need to distinguish model output from tool output, without parsing the content field.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between inline skills and external SKILL.md files in CrewAI?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Inline skills are defined directly inside your CrewDefinition object in Python code, keeping skill logic co-located with the crew. External SKILL.md files live in separate directories and are shareable across projects. Inline skills work best for single-project, single-crew use cases. External skills work best for shared repositories or independently versioned logic. Both patterns coexist in 1.15.x."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I enable real-time streaming output in a CrewAI flow?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Set stream=True on your Flow class, call kickoff(), and iterate the returned stream session to receive StreamFrame items. Each frame has channel, type, content, and event fields. Only access .result after iterating all frames. For async flows, use kickoff_async() with an async for loop."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is CrewAI 1.15 a breaking change from 1.14?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "For most flows, 1.15 is non-breaking. The stream frame protocol is additive -- flows without stream=True work identically to 1.14. Inline skill definitions do not replace external skills. The most likely source of breakage is dependency pinning conflicts from the onnx 1.22.0 and nltk PYSEC-2026-597 security patches."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What does the channel field on a CrewAI StreamFrame indicate?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The channel field identifies the source of streamed output. llm frames carry language model response text. tools frames carry tool invocation results. It lets you filter or route stream output by source type when building UIs or logging pipelines that need to distinguish model output from tool output."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
