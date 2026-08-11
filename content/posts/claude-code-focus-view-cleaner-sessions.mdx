@@ -1,0 +1,153 @@
+---
+id: claude-code-focus-view-cleaner-sessions
+uuid: claude-code-focus-view-cleaner-sessions
+slug: claude-code-focus-view-cleaner-sessions
+title: "Claude Code Focus View: How to Run Cleaner Agent Sessions"
+excerpt: Claude Code Focus View collapses tool calls, tool results, and thinking blocks into a single expandable row per turn. Toggle it with Ctrl+Alt+F on Windows/Linux or Ctrl+Option+F on Mac. Long agentic s
+feature_image: null
+featured: false
+published_at: "2026-08-11T03:10:14-07:00"
+updated_at: "2026-08-11T03:10:14-07:00"
+reading_time: 11
+tags: [tutorials, claude-code]
+tag_names: [Tutorials, Claude Code]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Focus View: Run Cleaner Agent Sessions"
+meta_description: Claude Code Focus View collapses tool calls and thinking into expandable rows per turn. Toggle with Ctrl+Alt+F to make long agentic sessions readable.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Focus View: How to Run Cleaner Agent Sessions</h1>
+
+<p class="lede">Claude Code Focus View collapses tool calls, tool results, and thinking blocks into a single expandable row per turn. Toggle it with Ctrl+Alt+F on Windows/Linux or Ctrl+Option+F on Mac. Long agentic sessions become readable without losing access to any execution detail -- every tool call and thinking block is one click away.</p>
+
+<p>I run multi-hour Claude Code sessions daily -- the kind where Claude executes 40 or 50 tool calls, spawns subagents, and thinks for minutes at a stretch. Before Focus View, following along was painful. The terminal was a wall of grep output, file reads, and thinking text. You'd lose track of where you were, what Claude just concluded, and what was left to do. Focus View is the feature that makes long sessions manageable.</p>
+
+<h2>What is Claude Code Focus View?</h2>
+<p>Claude Code Focus View is a display mode that hides tool calls, tool results, and thinking blocks behind a single collapsible row per turn, showing only your prompts and Claude's text responses. While Claude is working, the row shows which tool is currently running. When Claude finishes, thinking blocks show "Thought for Ns" and re-collapse automatically.</p>
+<p>The current Focus View design -- with Ctrl+Alt+F toggle and thinking-block collapsing -- shipped in v2.1.221 on August 3, 2026. Anthropic refined it across subsequent releases, with v2.1.227 (August 10, 2026) fixing a VS Code-specific bug where Focus View was incorrectly folding away the latest to-do list and pending questions. Thinking-only folds now collapse cleanly after each turn and re-expand on click.</p>
+<p>The setting persists across sessions. Toggle it on once and it stays on for every future session until you toggle it off. Toggling in one window applies immediately to every other open session.</p>
+
+<h2>How do I enable Claude Code Focus View?</h2>
+<p>Enable Focus View with Ctrl+Alt+F on Windows and Linux, or Ctrl+Option+F on Mac. Alternatively, open the Command Palette (Ctrl+Shift+P on Windows/Linux, Cmd+Shift+P on Mac) and type "Claude Code: Toggle Focus view" to find the command. The keyboard shortcut is the faster path once you have used it once.</p>
+<p>You need Claude Code v2.1.221 or later. Check your version with:</p>
+<pre><code>claude --version</code></pre>
+<p>If you are behind, update with:</p>
+<pre><code>npm update -g @anthropic-ai/claude-code</code></pre>
+<p>As of August 11, 2026, the current release is v2.1.227. Versions below v2.1.221 will not show the Focus View option in the Command Palette and the keyboard shortcut will not respond. The v2.1.221 release also included a Bash permission check bypass fix alongside Focus View -- so there are practical security reasons to update beyond just this feature.</p>
+
+<h2>What does Focus View actually hide?</h2>
+<p>Focus View hides three categories of output per turn: tool calls (the requests Claude sends to tools like Bash, Read, and Edit), tool results (the raw output those tools return), and thinking blocks (Claude's extended reasoning before a response). All three remain accessible -- click the collapsed row to expand it at any point.</p>
+<p>Here is what a single complex turn looks like in each mode:</p>
+<ul>
+  <li><strong>Standard view:</strong> Full tool call JSON (tool name, arguments), full tool result output (file contents, bash stdout, etc.), thinking block text, then Claude's response. A turn with 5 tool calls can easily run 300-500 lines before you see what Claude concluded.</li>
+  <li><strong>Focus View:</strong> One collapsible row labeled "Running: Bash" while active, collapses to "Thought for 12s" after completion, then Claude's text response. The same turn fits in 3-4 lines of visible output.</li>
+</ul>
+<p>Research tracking 6,852 Claude Code sessions counted 234,760 total tool calls and 17,871 thinking blocks -- an average of 34 tool calls and 2.6 thinking blocks per session. In a complex agentic session, the raw standard view output can run to thousands of lines before a single readable response. Focus View compresses that to a handful of collapsed rows.</p>
+<p>What Focus View does NOT hide: Claude's actual text responses, your prompts, error messages Claude surfaces in its response text, and the "currently running" tool indicator while a turn is in progress. The conversation layer stays fully visible; only the execution layer collapses.</p>
+
+<h2>Why does Focus View matter for long agentic sessions?</h2>
+<p>Focus View makes long agentic sessions readable by decoupling what Claude is doing from what Claude is saying. In a 3-hour research-and-build session, you need to track Claude's conclusions and your own prompts -- not every intermediate grep result and file read. Focus View gives you the conversation layer without hiding the execution layer.</p>
+<p>The practical win is orientation. When you have five tool calls per turn and the session runs for 50 turns, standard view pushes everything off the screen. Scrolling back to see a decision Claude made 20 turns ago means scanning thousands of lines of tool output to find a few sentences of actual response. In Focus View, each turn is a prompt and a response -- exactly like a conversation, with an expandable detail drawer attached when you need it.</p>
+<p>I have used this across long research tasks where Claude is searching, reading source material, cross-referencing documents, and drafting in parallel across subagents. The difference in re-orientation speed after stepping away from the terminal is real. Standard view forces you to skim tool output to find where you left off. Focus View shows you the last response immediately, with full detail one click away when you need to diagnose something.</p>
+<p>There is also a team legibility angle. If you screen-share a Claude Code session or hand off a transcript, Focus View makes it dramatically easier for someone else to follow the conversation thread without needing to parse every tool call being made. The conversation becomes the primary artifact, with execution detail available but not forced on the reader.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How does Focus View interact with thinking blocks?</h2>
+<p>In Focus View, thinking blocks are collapsed into a "Thought for Ns" label, where N is the number of seconds Claude spent reasoning. The thinking text is not visible by default, but clicking the label expands it inline. This is not the same as disabling thinking -- Claude still reasons through every step, you just do not see the output inline unless you choose to.</p>
+<p>The distinction matters for debugging. If Claude gives you an unexpected conclusion, expand the thinking block first -- it shows you exactly where the reasoning diverged from your intent. The v2.1.227 fix specifically addressed a case where Focus View was hiding pending questions and to-do list items inside thinking folds, which was making sessions harder to track, not easier. That is now fixed.</p>
+<p>Thinking block timing is visible even in Focus View. The "Thought for Ns" label tells you how long Claude spent reasoning before the current response. Over a long session, if you see "Thought for 0s" consistently when you expected extended reasoning, that is a signal the model is not using extended thinking on that turn type -- worth investigating before assuming the output is wrong.</p>
+<p>There is a separate consideration for developers working at the API level. Anthropic added a beta header in February 2026 that removes visible reasoning in the terminal entirely -- that is a different mechanism from Focus View. Focus View collapses thinking in the display; the beta header prevents it from rendering at all. For most interactive sessions, Focus View is the right tool -- it gives you access to thinking when you need it while keeping the view clean when you do not.</p>
+
+<h2>When should I turn Focus View off?</h2>
+<p>Turn Focus View off when you need to watch exactly what Claude is doing in real time -- debugging tool failures, reviewing tool call arguments, or learning how Claude Code explores a new codebase. Seeing the full tool call JSON and result inline is genuinely useful when diagnosing why a command returned unexpected output or why an edit modified the wrong region.</p>
+<p>Three scenarios where standard view is the better call:</p>
+<ul>
+  <li><strong>Debugging a failing tool loop:</strong> If Claude is retrying a Bash command repeatedly with slight argument variations, standard view lets you see each attempt inline and catch the pattern before you interrupt the session. In Focus View, all those retries collapse into a single row and the repeated failure pattern is invisible.</li>
+  <li><strong>Auditing a new skill or hook:</strong> When you have added a new SKILL.md or hook and want to verify it fires correctly with the right context, standard view shows you the exact tool call arguments being sent. Focus View would collapse that verification.</li>
+  <li><strong>First session in an unfamiliar codebase:</strong> The first session in a new repo benefits from seeing how Claude explores -- which files it reads, in what order, and what it ignores. That pattern helps you calibrate your prompts for subsequent sessions. Watching it collapsed teaches you nothing about Claude's exploration strategy.</li>
+</ul>
+<p>Focus View is a productivity tool, not a permanent default. The right approach is toggling based on what you need to see at any given moment. The keyboard shortcut makes it a one-keystroke switch, so there is no cost to flipping between modes mid-session.</p>
+
+<h2>What else should I do to run cleaner Claude Code sessions?</h2>
+<p>Focus View is one piece of a cleaner session workflow. The complete pattern combines display control with session discipline -- Focus View handles the visual layer, but context management, session scoping, and subagent isolation are what keep the underlying quality high. All three work better together than any one alone.</p>
+<p>Three practices that compound with Focus View:</p>
+<ul>
+  <li><strong>Start a new session when the goal changes.</strong> Dragging a noisy prior context into a new task inflates tool call counts and degrades response quality. Every session has a finite context window. Once it fills with dead ends and wrong assumptions, output quality drops regardless of what the display shows. The rule: when the goal changes, start fresh with a clean handoff summary.</li>
+  <li><strong>Use <code>/compact</code> when continuing a long task.</strong> The <code>/compact</code> command compresses the current session context into a summary, freeing space for more task work. Use this when the same task continues and history still matters, but the raw tool output from the first 30 turns is noise you do not need inline anymore.</li>
+  <li><strong>Scope subagents narrowly.</strong> The <code>claude agents</code> command (shipped May 2026) lists every running session with session ID, wait status, last assistant response, and last interaction timestamp. When subagents have overlapping discovery scopes, they duplicate each other's tool calls and generate output you cannot suppress even with Focus View. Narrow job definitions mean fewer redundant tool calls and cleaner per-session logs.</li>
+</ul>
+<p>The <code>claude agents</code> command is the natural companion to Focus View. Focus View cleans the view inside a single session; <code>claude agents</code> gives you the view across all sessions running simultaneously. Used together, you have full orientation -- what is happening inside the current session, and what is running across the full workspace without needing to switch between terminal windows.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does Focus View affect Claude's reasoning or just the display?</h3>
+<p>Focus View only changes what you see -- it does not affect Claude's reasoning or tool execution. Claude still calls every tool, still runs extended thinking, and still produces the same full responses. The collapsed rows are a display layer only; all underlying data is accessible by clicking to expand. Your session output is identical whether Focus View is on or off.</p>
+
+<h3>Will Focus View stay on when I open a new Claude Code session?</h3>
+<p>Yes. Focus View persists across sessions once toggled on. Claude Code saves the display preference and restores it when you start a new session. To return to standard view, press Ctrl+Alt+F (Windows/Linux) or Ctrl+Option+F (Mac) -- the change applies immediately to all open sessions. There is no separate config file entry to manage.</p>
+
+<h3>What version of Claude Code do I need for Focus View?</h3>
+<p>The current Focus View design with Ctrl+Alt+F toggle and thinking-block collapsing requires Claude Code v2.1.221 or later, which shipped August 3, 2026. The most recent refinements -- including the VS Code thinking-block fold fix -- landed in v2.1.227 on August 10, 2026. Check your version with <code>claude --version</code> and update with <code>npm update -g @anthropic-ai/claude-code</code>.</p>
+
+<h3>Can I expand individual tool calls in Focus View without turning it off?</h3>
+<p>Yes. Each collapsed row in Focus View is individually expandable. Click any collapsed row to expand that specific tool call or thinking block inline. You do not need to toggle off Focus View to inspect a specific step -- just click the row you want to see. This is the intended workflow: Focus View on by default, expand only what you need to debug.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does Focus View affect Claude's reasoning or just the display?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Focus View only changes what you see -- it does not affect Claude's reasoning or tool execution. Claude still calls every tool, still runs extended thinking, and still produces the same full responses. The collapsed rows are a display layer only; all underlying data is accessible by clicking to expand."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Will Focus View stay on when I open a new Claude Code session?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Focus View persists across sessions once toggled on. Claude Code saves the display preference and restores it when you start a new session. Toggle off with Ctrl+Alt+F (Windows/Linux) or Ctrl+Option+F (Mac) -- the change applies immediately to all open sessions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What version of Claude Code do I need for Focus View?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The current Focus View design requires Claude Code v2.1.221 or later, which shipped August 3, 2026. The most recent refinements landed in v2.1.227 on August 10, 2026. Check your version with claude --version and update with npm update -g @anthropic-ai/claude-code."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I expand individual tool calls in Focus View without turning it off?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Each collapsed row in Focus View is individually expandable. Click any collapsed row to expand that specific tool call or thinking block inline. You do not need to toggle off Focus View to inspect a specific step -- just click the row you want to see."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
