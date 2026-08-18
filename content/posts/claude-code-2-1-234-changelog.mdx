@@ -1,0 +1,169 @@
+---
+id: claude-code-2-1-234-changelog
+uuid: claude-code-2-1-234-changelog
+slug: claude-code-2-1-234-changelog
+title: "Claude Code v2.1.234: GitLab Badge, Auto-Continue, and Security Hardening"
+excerpt: "Claude Code v2.1.234 shipped on August 17, 2026 with three targeted improvements: a GitLab MR status badge in the footer and statusline for non-GitHub teams, session auto-continue that resumes work wh"
+feature_image: null
+featured: false
+published_at: "2026-08-18T03:09:18-07:00"
+updated_at: "2026-08-18T03:09:18-07:00"
+reading_time: 10
+tags: [tutorials, claude-code, gitlab, security]
+tag_names: [Tutorials, Claude Code, GitLab, Security]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.234: GitLab Badge, Auto-Continue & Security"
+meta_description: Claude Code v2.1.234 adds a GitLab MR badge, session auto-continue at limit resets, and NT-namespace security hardening. What changed and how to use it.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.234: GitLab Badge, Auto-Continue, and Security Hardening</h1>
+
+<p class="lede">Claude Code v2.1.234 shipped on August 17, 2026 with three targeted improvements: a GitLab MR status badge in the footer and statusline for non-GitHub teams, session auto-continue that resumes work when your claude.ai usage window resets, and Windows NT-namespace path rejection that closes an NTLM credential-leak vector across every file-access pathway.</p>
+
+<p>I've been running Claude Code on GitLab repos for months without any MR visibility in the statusline -- a gap GitHub users haven't faced since mid-2025. That gap just closed. This release also fixes two persistent bugs in auto mode and adds a pair of new environment variables that matter for anyone running Claude Code in hosted or multi-tenant environments. Here is what each change does and how to use it.</p>
+
+<h2>What shipped in Claude Code v2.1.234?</h2>
+<p>Claude Code v2.1.234 was published on August 17, 2026 at 20:20 UTC -- less than 24 hours ago at time of writing. The release contains three new features, three security hardening fixes, and two bug fixes. The three new features are the GitLab MR badge, session auto-continue at usage limit resets, and the CLAUDE_CODE_PROJECT_DIR_NAME environment variable. The three security fixes target NT-namespace paths, the cross-session socket directory, and the Linux filesystem sandbox.</p>
+<p>This release builds directly on v2.1.233 (published August 14), which added GitLab MR URL support to the <code>--worktree</code> flag and the <code>claude agents view</code> command. Version 2.1.234 completes that work by surfacing MR state in the statusline and footer -- the UI elements you already have in view during active sessions.</p>
+<p>Sources: <a href="https://github.com/anthropics/claude-code/releases/tag/v2.1.234">GitHub release v2.1.234</a>, <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>, <a href="https://releasebot.io/updates/anthropic/claude-code">Releasebot August 2026 log</a>.</p>
+
+<h2>How does the GitLab MR badge work?</h2>
+<p>The GitLab MR badge shows the current merge request number as <code>!N</code> in the Claude Code footer and statusline, with three visual states: gray for draft, yellow for pending review, and green for approved or merged. It appears automatically for any repository with a GitLab remote and an authenticated <code>glab</code> CLI -- no configuration required beyond those two prerequisites.</p>
+<p>Before this, GitLab teams had to check MR state by switching context to a browser tab or running <code>glab mr view</code> in a separate terminal. GitHub users have had PR badge parity in the statusline since well before 2026. The badge in v2.1.234 closes that gap without requiring any config changes -- it activates based on what the CLI detects from the git remote.</p>
+<p>To set it up if you haven't already:</p>
+<ol>
+<li>Install the GitLab CLI: <code>brew install glab</code> on macOS, or via your Linux package manager (apt, dnf, etc.)</li>
+<li>Authenticate against your GitLab instance: <code>glab auth login</code></li>
+<li>For self-hosted GitLab: <code>glab auth login --hostname gitlab.yourcompany.com</code></li>
+<li>Open any Claude Code session inside a repo with a GitLab remote</li>
+<li>If a MR exists for your current branch, the badge appears immediately in the footer statusline as <code>!N</code></li>
+</ol>
+<p>The badge state updates dynamically as the MR moves through review. If you're using Claude Code worktrees -- which gained GitLab MR URL support in v2.1.233 -- the badge reflects the state of the MR tied to whichever worktree you're in. So if you open separate worktree sessions for each active MR, each session shows the correct MR status independently.</p>
+<p>One practical note: the badge only appears when a MR exists for the current branch. If you're working on a branch with no open MR, the statusline element is absent -- it doesn't show a "no MR" placeholder. Source: <a href="https://www.gradually.ai/en/changelogs/claude-code/">gradually.ai Claude Code changelog</a>, <a href="https://www.skakarh.com/blog/claude-code-2-1-233-released">v2.1.233 breakdown</a>.</p>
+
+<h2>What is session auto-continue and how do you configure it?</h2>
+<p>Session auto-continue makes Claude Code automatically resume an interrupted session the moment your claude.ai usage limit window resets -- without you needing to be at the keyboard. You toggle it in <code>/config</code> under "Continue automatically at usage limit". It is opt-in and defaults to off. This feature does not increase your usage limits; it is purely a scheduling convenience that re-queues the paused session when capacity opens up.</p>
+<p>The use case is specific and common: you kick off a long agentic task, Claude Code hits your 5-hour token window mid-run, and the session stalls. If you're not watching when the reset hits, you come back hours later to a paused session that needed one more nudge. Auto-continue eliminates that manual step.</p>
+<p>How to configure it:</p>
+<ol>
+<li>Run <code>/config</code> inside any Claude Code session</li>
+<li>Find the "Continue automatically at usage limit" option</li>
+<li>Toggle it on (the desktop app shows a checkbox; CLI shows a boolean toggle)</li>
+<li>The setting persists across sessions once set</li>
+</ol>
+<p>Important calibration: auto-continue does not change when your window resets, how large your token bucket is, or anything about the underlying limit system. The <a href="https://explainx.ai/blog/claude-code-desktop-auto-continue-usage-limit-august-2026">explainx.ai breakdown</a> puts it clearly -- it picks up a stalled session the moment your window resets, with the context needed to continue where it left off. No limit increase, no extension of the reset cadence.</p>
+<p>This feature shipped to the Claude Code desktop app on August 14, with the <code>/config</code> CLI integration landing in v2.1.234. CLI users can now configure it without opening the desktop app at all.</p>
+<p>One current gap worth knowing: the GitHub issue for this feature (<a href="https://github.com/anthropics/claude-code/issues/35744">issue #35744</a>) notes the CLI auto-continue doesn't yet match the desktop app's visual countdown for when the window resets. You get the functionality; you just don't get the countdown timer in the terminal.</p>
+
+<h2>What security issues does v2.1.234 fix?</h2>
+<p>Claude Code v2.1.234 closes an NTLM credential-leak vector by rejecting Windows NT-namespace paths across remote file reads, session restore, CLAUDE.md includes, workflow scripts, and file uploads. A path using the NT device prefix (the Windows-native namespace format used by the kernel before drive letters) could slip past UNC path validation in previous versions, potentially causing Claude Code to make an NTLM-authenticated network request to an attacker-controlled host. The fix rejects these paths before any file access occurs.</p>
+<p>This matters most in three scenarios:</p>
+<ul>
+<li><strong>Mixed-OS teams</strong> where Windows developers might commit malicious CLAUDE.md files or workflow scripts into a shared codebase</li>
+<li><strong>Enterprise environments</strong> where NTLM is still used for internal authentication and credential-leaking requests to external hosts would be high-impact</li>
+<li><strong>Any setup where Claude Code processes untrusted CLAUDE.md or workflow scripts</strong> -- the attack surface was in the file include/execute pipeline, not in interactive prompts</li>
+</ul>
+<p>Two additional security fixes also landed in this release:</p>
+<p><strong>Cross-session socket directory hardening on shared /tmp:</strong> The auto-generated directory Claude Code uses for cross-session messaging sockets on Linux is now hardened against privilege escalation on multi-user systems. On shared /tmp, a malicious local user could previously create a directory with a predictable name before Claude Code did, then use it to intercept or inject into cross-session communication. The fix is symlink-attack-resistant directory creation.</p>
+<p><strong>Linux filesystem sandbox protected-path bypass:</strong> The Linux filesystem sandbox that restricts sandboxed Bash tool commands to specific paths had a bypass that allowed escaping those restrictions via specific path constructs. This is fixed in v2.1.234. The practical impact is highest in shared or containerized environments where the sandbox is the primary enforcement boundary for what a Claude Code Bash tool invocation can access.</p>
+<p>Source: <a href="https://github.com/anthropics/claude-code/releases/tag/v2.1.234">GitHub release notes v2.1.234</a>.</p>
+
+<h2>What else changed in v2.1.234?</h2>
+<p>Beyond the three headline features and security fixes, v2.1.234 adds a new environment variable for hosted environments, a new keybinding action, and fixes two bugs in auto mode that were causing friction in long sessions and multi-agent setups.</p>
+
+<p><strong>New environment variable: CLAUDE_CODE_PROJECT_DIR_NAME</strong><br>
+This variable lets a host or IDE integration specify a custom name for Claude Code's per-project config directory. The use case is multi-tenant hosting environments where each session needs its own isolated config directory with a deterministic name based on the session or user. If you're building a Claude Code integration into a platform or IDE, this is the missing piece for clean per-session config isolation.</p>
+
+<p><strong>New keybinding action: selection:clear</strong><br>
+A new <code>selection:clear</code> action clears in-app text selections. This is a small quality-of-life addition, but worth knowing if you've ever been stuck with a persistent text selection in Claude Code's interface that blocked input handling. You can now map this to any key combination via your keybindings config.</p>
+
+<p><strong>Bug fix: auto mode re-checking network access after context compaction</strong><br>
+In very long sessions, after Claude Code compacted the conversation context, auto mode was incorrectly re-evaluating and denying sandboxed commands' network access that had already been permitted earlier in the session. The permission state wasn't being preserved through compaction. This meant long agentic tasks could stall mid-run on network access that was granted at the start. Fixed in v2.1.234.</p>
+
+<p><strong>Bug fix: session-scoped permission answers dropped in subagent context</strong><br>
+Session-scoped permission answers were being lost when a background subagent surfaced a tool permission prompt. In practice: you'd answer "yes, always allow this" for a tool in the main agent context, then see the same question re-appear when a subagent needed the same tool. The permission wasn't propagating correctly across the main agent / subagent boundary. Fixed.</p>
+
+<h2>Who should update and how?</h2>
+<p>Claude Code v2.1.234 has clear value for three types of users: GitLab teams who want MR visibility in the statusline without switching context, heavy daily users who run long agentic tasks and hit usage limit windows, and security-conscious teams -- especially those on shared Linux environments or mixed-OS codebases. The NT-namespace and sandbox fixes are not critical-severity patches, but shared /tmp environments and enterprise NTLM setups should treat v2.1.234 as a priority update.</p>
+<p>Even if none of those apply directly, the two auto mode bug fixes are worth the update for anyone doing multi-agent work with long sessions.</p>
+<p>Update via npm:</p>
+<pre><code>npm install -g @anthropic-ai/claude-code@2.1.234</code></pre>
+<p>Or update to latest (which is currently v2.1.234):</p>
+<pre><code>npm install -g @anthropic-ai/claude-code@latest</code></pre>
+<p>Verify the install:</p>
+<pre><code>claude --version
+# Should show: 2.1.234</code></pre>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>FAQ</h2>
+<h3>Does session auto-continue give you more Claude Code usage?</h3>
+<p>No. Session auto-continue does not increase your token budget or change your 5-hour or weekly usage windows. It's a scheduling convenience that automatically re-queues a paused session the moment your existing usage window resets -- without changing how large those windows are, when they reset, or how fast tokens are consumed during the resumed session.</p>
+
+<h3>Do you need glab installed to see the GitLab MR badge?</h3>
+<p>Yes. The GitLab MR badge in Claude Code v2.1.234 requires two things: a GitLab remote on the repository, and an authenticated glab CLI on the same machine. Install glab via <code>brew install glab</code> on macOS or your Linux package manager, then authenticate with <code>glab auth login</code>. Once both conditions are met, the badge appears automatically -- no additional Claude Code configuration needed.</p>
+
+<h3>What is the NT-namespace path vulnerability that v2.1.234 fixes?</h3>
+<p>Windows NT-namespace paths use a kernel-level device prefix that bypassed Claude Code's UNC path validation in versions before v2.1.234. An attacker who could supply a crafted path -- through a malicious CLAUDE.md file, workflow script, or remote file read -- could cause Claude Code to make an NTLM-authenticated request to a server they control, leaking credentials. Version 2.1.234 rejects NT-namespace paths before any file access occurs, closing the vector entirely.</p>
+
+<h3>Does the Linux sandbox bypass in v2.1.234 have a CVE?</h3>
+<p>Anthropic has not published a CVE or severity score for the Linux filesystem sandbox protected-path bypass fixed in v2.1.234. The impact is limited to environments where the filesystem sandbox is the primary enforcement boundary for sandboxed Bash tool commands. On a developer's own machine with a typical setup, practical risk is low. In shared or containerized multi-user setups where Claude Code runs alongside other users, this fix is more meaningful -- update promptly if that describes your environment.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does session auto-continue give you more Claude Code usage?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Session auto-continue does not increase your token budget or change your 5-hour or weekly usage windows. It is a scheduling convenience that automatically re-queues a paused session the moment your existing usage window resets -- without changing how large those windows are, when they reset, or how fast tokens are consumed during the resumed session."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do you need glab installed to see the GitLab MR badge?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The GitLab MR badge in Claude Code v2.1.234 requires two things: a GitLab remote on the repository and an authenticated glab CLI. Install glab via brew install glab on macOS or your Linux package manager, then authenticate with glab auth login. Once both conditions are met, the badge appears automatically in the footer statusline -- no additional Claude Code configuration needed."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the NT-namespace path vulnerability that v2.1.234 fixes?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Windows NT-namespace paths use a kernel-level device prefix that bypassed Claude Code UNC path validation in versions before v2.1.234. An attacker who could supply a crafted path through a malicious CLAUDE.md file, workflow script, or remote file read could cause Claude Code to make an NTLM-authenticated request to a server they control, leaking credentials. Version 2.1.234 rejects NT-namespace paths before any file access occurs, closing the vector entirely."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the Linux sandbox bypass in v2.1.234 have a CVE?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Anthropic has not published a CVE or severity score for the Linux filesystem sandbox protected-path bypass fixed in v2.1.234. The impact is limited to environments where the filesystem sandbox is the primary enforcement boundary for sandboxed Bash tool commands. On a typical developer machine, practical risk is low. In shared or containerized multi-user setups, update promptly."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
