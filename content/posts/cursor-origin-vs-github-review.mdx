@@ -1,0 +1,157 @@
+---
+id: cursor-origin-vs-github-review
+uuid: cursor-origin-vs-github-review
+slug: cursor-origin-vs-github-review
+title: "Cursor Origin vs GitHub: An Honest Builder's Review"
+excerpt: Cursor Origin is an AI-native code hosting platform that launched August 18, 2026, for paid Cursor users. It includes repos, pull requests, stacked PR support, and automated sub-agent conflict resolut
+feature_image: null
+featured: false
+published_at: "2026-08-19T03:10:21-07:00"
+updated_at: "2026-08-19T03:10:21-07:00"
+reading_time: 11
+tags: [reviews, cursor, github, ai-coding, code-hosting]
+tag_names: [Reviews, Cursor, GitHub, AI Coding, Code Hosting]
+primary_tag: reviews
+primary_tag_name: Reviews
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Cursor Origin vs GitHub: An Honest Builder's Review (2026)"
+meta_description: "Cursor Origin launched August 18, 2026 for paid Cursor users. What's actually different, what GitHub still does better, and whether to switch in 2026."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Cursor Origin vs GitHub: An Honest Builder's Review</h1>
+
+<p class="lede">Cursor Origin is an AI-native code hosting platform that launched August 18, 2026, for paid Cursor users. It includes repos, pull requests, stacked PR support, and automated sub-agent conflict resolution. It is not a GitHub replacement yet -- GitHub remains the source of truth for mirrored repos. Here is what builders need to evaluate before switching.</p>
+
+<p>The launch timing was almost too perfect -- GitHub suffered a 6-hour global outage with 20% error rates the same day Origin reached users. That is not the reason to evaluate it. There are better reasons, and there are flags that will make some teams wait.</p>
+
+<h2>What Is Cursor Origin?</h2>
+<p>Cursor Origin is a Git-compatible code hosting platform designed around AI agent workflows rather than human-only code review. It launched August 18, 2026, in early beta to paid Cursor subscribers on Pro, Teams, and Enterprise plans. Free-tier users do not get access. At launch, Origin includes repositories, pull requests, code browsing, stacked PR support, automated sub-agent merge-conflict resolution, and CI/CD integrations with Vercel, Depot, and Buildkite.</p>
+<p>Origin was built by the team behind Graphite -- the stacked-diff code review company Cursor acquired earlier in 2026. That acquisition delivered two concrete things: the stacked PR workflow technology, and a team that has spent years rethinking code review at scale. Stacked PRs let agents and developers chain dependent branches together and move through review queues without waiting on sequential approvals. For agent pipelines that generate dozens of small commits per session, this is a meaningful workflow change, not a cosmetic one.</p>
+<p>One flag to track from the start: Origin shipped without published data processing agreements. SpaceX completed its $60B acquisition of Cursor on August 14, 2026 -- four days before Origin launched. Code hosted on Origin is held by a SpaceX subsidiary. The data governance documentation has not caught up to the launch timeline, and that matters for enterprise teams with compliance requirements.</p>
+
+<h2>What Does Agent-Native Code Hosting Actually Mean?</h2>
+<p>Agent-native means code review, merge state, and conflict resolution are structured to be machine-readable and machine-actionable from the start -- not retrofitted onto a platform designed for human reviewers. In practice: when an agent pushes a change that breaks CI, Origin triggers a sub-agent to attempt the fix in the background, only escalating to a human if the sub-agent fails.</p>
+<p>GitHub's pull request model was built for humans reviewing each other's work. Comment threads, approval flows, and status checks are human-readable artifacts. An AI agent submitting 50 commits per hour to GitHub is operating against assumptions the platform was not designed to handle -- both in workflow structure and in raw throughput. GitHub's API rate limits and sequential merge-approval models were designed for developer-hour timescales, not agent-second timescales.</p>
+<p>Origin demoed throughput of 22.6 commits per second in a single repository during its launch period -- a load pattern GitHub's infrastructure was never engineered to handle at that rate. This is not a marginal performance improvement. It signals a different assumption about who -- or what -- is the primary actor in a code workflow.</p>
+<p>The Vercel integration illustrates how this plays out in a real pipeline: each pull request on Origin automatically generates a preview deployment. An agent submits a change, the preview deploys automatically, CI runs, and if everything passes, a merge can proceed without a human touching the workflow. Depot and Buildkite handle CI for teams already running those pipelines.</p>
+<p>The stacked PR feature matters most for agent workflows. When Claude Code or a similar agent runs a long autonomous session, it often produces a chain of dependent changes -- each building on the previous commit. In a standard GitHub workflow, each PR must be approved before the next branch can be reviewed properly. Stacked PRs in Origin let agents queue an entire chain, with review and merge flowing in order without blocking on one approval gate at a time.</p>
+
+<h2>How Does Cursor Origin Compare to GitHub Right Now?</h2>
+<p>As of August 18, 2026, Origin is a capable early beta covering the core workflow -- repos, PRs, code review, stacked diffs -- but it does not come close to matching GitHub's ecosystem depth. The useful comparison is not which is better overall, but which layer of your workflow each serves better today.</p>
+<p>What Origin has at launch: repositories, pull requests, code browsing, bidirectional GitHub sync (existing repos mirror to Origin while GitHub stays as source of truth for mirrored repos), stacked PR support, automated sub-agent conflict resolution, and Vercel, Depot, and Buildkite integrations. The Cursor agent integrates directly into the PR workflow -- you can assign a task to the agent from within a pull request view.</p>
+<p>What GitHub still holds that Origin does not: 20-plus years of ecosystem integrations, the GitHub Actions marketplace with thousands of pre-built workflows, GitHub Packages, Security Advisories, Dependabot automated dependency updates, enterprise SSO with SAML and OIDC support, and published data processing agreements. For teams running complex Actions pipelines with custom marketplace integrations, nothing in Origin replaces that depth yet.</p>
+<p>The migration path Cursor designed is deliberately low-friction: sync your existing GitHub repo to Origin, run agent workflows there in parallel, and keep GitHub as the source of truth for anything you are not ready to move. Think of it as an agent-workflow layer you can evaluate on top of your existing GitHub setup -- not a binary choice between platforms. Cursor has been explicit that interoperability with GitHub was a core design requirement.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>The GitHub Outage: Convenient Timing, Real Reliability Question</h2>
+<p>On August 18, 2026 -- the same day Origin began reaching paid users -- GitHub suffered a 6-hour worldwide outage. Error rates hit approximately 20% globally and climbed close to 50% on archive and raw file downloads. GitHub Enterprise SSO (SAML, OIDC, SCIM provisioning, Team Sync) failed alongside the core service. GitHub Copilot was also degraded.</p>
+<p>Cursor's team said the timing was not planned. The internet ran with the coincidence anyway -- and the reaction was not just schadenfreude. It surfaced a real question that teams running agent pipelines should be asking: what is the cost of GitHub downtime when your AI coding workflows depend on it for webhook triggers, automated CI, and deployment hooks?</p>
+<p>Microsoft acquired GitHub in 2018 for $7.5B. The core infrastructure architecture has not been redesigned for agent-scale workload patterns since. A 6-hour outage with 20% global error rates -- hitting enterprise SSO at the same time as core repository operations -- is a real operations problem for teams with GitHub-dependent CI/CD pipelines. When agents are running autonomous sessions and pushing commits continuously, a multi-hour platform outage is not an abstract inconvenience. It stops the work entirely.</p>
+<p>The opening Origin is betting on is specific: GitHub was not designed for agent-scale throughput or automated merge workflows, and its reliability assumptions were built for a world where developers commit once or twice per hour, not where AI agents commit hundreds of times per session.</p>
+
+<h2>The SpaceX Factor: Who Actually Holds Your Code?</h2>
+<p>SpaceX completed its $60B all-stock acquisition of Cursor on August 14, 2026, four days before Origin shipped. Code you host on Origin is held by a SpaceX subsidiary. For most independent builders and small teams, this is a background fact. For enterprise teams with government contracts, defense prime relationships, or strict data residency requirements, it is a governance question that needs a real answer before migrating production repositories.</p>
+<p>The specific concern: Origin shipped without published data processing agreements or SOC 2 documentation for its hosting tier. Cursor's ARR grew from $100M in early 2025 to over $4B by June 2026, with more than 1 million paying users -- the company has the organizational scale to handle enterprise data governance. But the documentation for Origin's hosting tier has not caught up to the launch date. That is not unusual for a beta product; it does set a clear condition: wait for published terms before committing anything sensitive.</p>
+<p>There is also a subtler version of this concern for teams building software in competitive markets. Code held by a SpaceX subsidiary is a different data custody situation than code on a Microsoft-owned platform -- the question is whether SpaceX's position in defense, satellite, and aerospace creates conflicts with your own customer contracts. For most software builders the answer is no. For a small subset, a 15-minute review with your legal team before migrating is worth the time.</p>
+
+<h2>Should You Switch from GitHub to Cursor Origin?</h2>
+<p>The practical answer for most builders right now: not a full migration, but a parallel evaluation is worth running immediately if you are paying for Cursor and actively running agent coding workflows. The framework below is how I would think through the decision for my own builds.</p>
+<p><strong>Pilot Origin now if:</strong></p>
+<ul>
+  <li>You are on Cursor Pro or Teams -- Origin is included at no extra cost, so the evaluation cost is zero</li>
+  <li>Your agent pipelines are hitting GitHub API rate limits or suffering from sequential PR approval bottlenecks that slow autonomous sessions</li>
+  <li>You have non-sensitive repositories where you can run the stacked PR and agent workflow evaluation without data governance risk</li>
+  <li>You want Vercel preview deployments automatically triggered per agent-submitted PR -- the integration is live at launch</li>
+  <li>You are already interested in moving to Buildkite or Depot for CI and Origin gives you a reason to consolidate</li>
+</ul>
+<p><strong>Hold off on migrating primary repositories if:</strong></p>
+<ul>
+  <li>You need published data processing agreements before hosting production code -- they are not available yet as of August 18</li>
+  <li>Your CI/CD depends on GitHub Actions workflows or marketplace integrations not reproducible in Depot or Buildkite</li>
+  <li>Your organization has government contract IP restrictions, data residency requirements, or legal questions about SpaceX data custody</li>
+  <li>You are running primarily human-authored code workflows with no AI coding agents -- the agent-workflow differentiation is not relevant to your use case</li>
+</ul>
+<p>The approach I would take: sync one active, non-sensitive repository to Origin and run a few weeks of agent sessions there. Watch how the stacked PR workflow handles agent-generated commit chains, whether the Vercel preview integration saves real time per session, and how automated conflict resolution behaves on your actual codebase. That gives you evidence to decide whether to migrate more -- not a guess based on launch announcements.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is Cursor Origin and how is it different from GitHub?</h3>
+<p>Cursor Origin is a Git-compatible code hosting platform launched August 18, 2026, for paid Cursor users (Pro, Teams, Enterprise). Unlike GitHub -- which was designed for human-reviewed code workflows -- Origin structures pull requests, merge state, and conflict resolution to be machine-readable by AI agents. Key differentiators are stacked PR support built on Graphite technology, automated sub-agent merge-conflict resolution, and native Cursor agent integration in the pull request workflow. It supports bidirectional GitHub sync, so you do not have to fully migrate from GitHub to evaluate it.</p>
+
+<h3>Is Cursor Origin free to use?</h3>
+<p>No. As of August 18, 2026, Origin is in early beta for paid Cursor subscribers: Pro, Teams, and Enterprise plans. It is not available on the free tier. Cursor has not announced whether Origin will eventually have separate pricing or remain bundled with paid plans. If you are paying for Cursor, Origin is included at no additional cost -- there is no reason not to run an evaluation.</p>
+
+<h3>Does switching to Cursor Origin mean I have to leave GitHub?</h3>
+<p>No. Origin's default onboarding mirrors your existing GitHub repository to Origin, with GitHub remaining the source of truth for mirrored repos. You can use Origin's agent workflow features -- stacked PRs, sub-agent conflict resolution, Vercel preview integrations -- without fully migrating away from GitHub. A full switch requires making Origin the primary host for a repository, which is supported but not required to access the agent-workflow features.</p>
+
+<h3>Who owns code hosted on Cursor Origin?</h3>
+<p>SpaceX, via its Cursor subsidiary, hosts Origin's infrastructure. SpaceX completed its $60B acquisition of Cursor on August 14, 2026. As of the Origin launch date, data processing agreements and data terms for code hosted on Origin had not been published. Teams with IP protection requirements, government contracts, or data residency obligations should wait for published data terms before committing production code to Origin.</p>
+
+<h3>What happened with GitHub during Cursor Origin's launch?</h3>
+<p>On August 18, 2026 -- the same day Origin began rolling out to paid users -- GitHub experienced a 6-hour worldwide outage. Global error rates hit approximately 20%, with archive and raw file downloads reaching close to 50% error rates. GitHub Enterprise SSO (SAML, OIDC, SCIM), GitHub Copilot, and core repository operations were all affected. The timing coincided with Origin's launch but was not planned by Cursor's team.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is Cursor Origin and how is it different from GitHub?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Cursor Origin is a Git-compatible code hosting platform launched August 18, 2026, for paid Cursor users (Pro, Teams, Enterprise). Unlike GitHub -- designed for human-reviewed workflows -- Origin structures pull requests, merge state, and conflict resolution to be machine-readable by AI agents. Key differentiators are stacked PR support built on Graphite technology, automated sub-agent merge-conflict resolution, and native Cursor agent integration in the pull request workflow."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is Cursor Origin free to use?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. As of August 18, 2026, Origin is in early beta for paid Cursor subscribers: Pro, Teams, and Enterprise plans. It is not available on the free tier. If you are paying for Cursor, Origin is included at no additional cost."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does switching to Cursor Origin mean I have to leave GitHub?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. Origin defaults to mirroring your existing GitHub repository, with GitHub remaining the source of truth. You can use Origin's stacked PR and agent workflow features without fully migrating away from GitHub."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Who owns code hosted on Cursor Origin?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "SpaceX, via its Cursor subsidiary, hosts Origin's infrastructure. SpaceX completed its $60B acquisition of Cursor on August 14, 2026. As of the Origin launch date, data processing agreements had not been published. Teams with compliance requirements or data residency obligations should wait for published data terms before committing production code."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happened with GitHub during Cursor Origin's launch?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "On August 18, 2026 -- the same day Origin began rolling out to paid users -- GitHub experienced a 6-hour worldwide outage. Global error rates hit approximately 20%, with archive and raw file downloads reaching close to 50% error rates. GitHub Enterprise SSO, GitHub Copilot, and core repository operations were all affected."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
