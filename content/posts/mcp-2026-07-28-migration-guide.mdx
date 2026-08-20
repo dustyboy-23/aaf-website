@@ -1,0 +1,185 @@
+---
+id: mcp-2026-07-28-migration-guide
+uuid: mcp-2026-07-28-migration-guide
+slug: mcp-2026-07-28-migration-guide
+title: "MCP 2026-07-28 Spec Breaks Backward Compatibility: The Builder Migration Guide"
+excerpt: The July 28 MCP specification removes the initialize handshake, eliminates the Mcp-Session-Id header, and marks three core features deprecated. Any server built on the new spec will not connect to old
+feature_image: null
+featured: false
+published_at: "2026-08-20T03:09:01-07:00"
+updated_at: "2026-08-20T03:09:01-07:00"
+reading_time: 10
+tags: [deployment, mcp, model-context-protocol, ai-agents]
+tag_names: [Deployment, MCP, Model Context Protocol, AI Agents]
+primary_tag: deployment
+primary_tag_name: Deployment
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "MCP 2026-07-28 Spec: Breaking Changes Migration Guide"
+meta_description: "MCP 2026-07-28 removes sessions and the initialize handshake, deprecates Roots, Sampling, and Logging. Here's what breaks and the exact migration steps."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>MCP 2026-07-28 Spec Breaks Backward Compatibility: The Builder Migration Guide</h1>
+
+<p class="lede">The July 28 MCP specification removes the initialize handshake, eliminates the Mcp-Session-Id header, and marks three core features deprecated. Any server built on the new spec will not connect to older clients -- and vice versa. If you run MCP servers in production, this is what breaks and the exact steps to fix it.</p>
+
+<p>I've been tracking MCP since its November 2024 launch. This is the most substantial protocol change since authorization was added -- and unlike most spec updates, this one has real deployment consequences. The ecosystem has grown to 97 million monthly SDK downloads and 71,000+ indexed servers on Glama alone. Most of them will need migration work.</p>
+
+<h2>What actually changed in the 2026-07-28 MCP spec?</h2>
+
+<p>The 2026-07-28 MCP spec ships one headline architectural change: the protocol core goes stateless. The Mcp-Session-Id header is gone (removed in SEP-2567). The initialize/notifications/initialized handshake is gone. Every request now carries its own protocol version and client capabilities in _meta fields. No session. No handshake. Any request can land on any server instance.</p>
+
+<p>According to the <a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog">official MCP changelog</a>, the full scope of changes includes: the Mcp-Session-Id header removed, the initialize handshake removed, three features deprecated (Roots, Sampling, Logging), six SEPs formalizing OAuth 2.1 resource server positioning, the Tasks feature relocated from core into the io.modelcontextprotocol/tasks extension, and tasks/list removed entirely. List endpoints -- tools/list, resources/list, prompts/list -- are now static and cacheable. They no longer vary per connection.</p>
+
+<p>The stateless shift was inevitable. MCP servers that required sticky sessions were a scaling problem. Every horizontal deployment needed shared session stores or sticky load balancers. Now you can run an MCP server behind a plain round-robin load balancer with no special routing at all.</p>
+
+<h2>What breaks and what doesn't?</h2>
+
+<p>Backward compatibility breaks at the protocol layer. A server implementing the 2026-07-28 spec will not speak to clients built on the 2025-11-25 spec -- and vice versa -- unless the server explicitly implements the backward compatibility bridge. The main breakage vectors: the missing initialize handshake, the missing Mcp-Session-Id header, and session-bound state that no longer exists at the protocol level.</p>
+
+<p>Here's the concrete breakdown:</p>
+
+<p><strong>Hard breaks (break immediately when client and server spec versions don't match):</strong></p>
+<ul>
+  <li>Clients that send Mcp-Session-Id headers get no response from new servers -- the header is unknown</li>
+  <li>Clients that expect an initialize response will hang -- the response no longer exists</li>
+  <li>Servers that serve per-connection tool lists will return wrong results since list endpoints are now static</li>
+  <li>tasks/list calls will fail -- the method is removed from the core spec</li>
+</ul>
+
+<p><strong>Deprecated -- still works, 12-month grace period:</strong></p>
+<ul>
+  <li>Roots -- still works. Replace with tool parameters or resource URIs.</li>
+  <li>Sampling -- still works. Replace with direct LLM provider API calls from your server.</li>
+  <li>Logging -- still works. Replace with stderr output or OpenTelemetry.</li>
+</ul>
+
+<p>The <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">official release candidate announcement</a> states that deprecated features will have a 12-month minimum window before they are eligible for removal. The clock started July 28, 2026.</p>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
+
+<h2>The 4-step migration checklist for existing MCP servers</h2>
+
+<p>Migrating an existing MCP server to the 2026-07-28 spec is four concrete steps: strip the session infrastructure, update how client capabilities arrive, convert session-bound state to explicit application handles, and add the backward compat bridge if you need to keep older clients working during the transition.</p>
+
+<p><strong>Step 1 -- Strip the session layer.</strong> Remove all Mcp-Session-Id header handling. Remove the initialize request handler. Remove the notifications/initialized listener. If your server created a session object at initialize time and stored it for the connection lifetime, that storage is now your application's responsibility -- not the protocol's.</p>
+
+<p><strong>Step 2 -- Update client capability reading.</strong> Client capabilities and protocol version now arrive in every request's _meta field, under io.modelcontextprotocol/protocolVersion and io.modelcontextprotocol/clientCapabilities. Update your capability-checking code to read from _meta on each request instead of from a stored initialize result.</p>
+
+<p><strong>Step 3 -- Convert session state to explicit handles.</strong> If your server carries state across calls -- a shopping basket, a browser session, a file editor state -- the correct pattern is: return an explicit handle from a tool call (a basket_id, a session_token), and have the model pass it back as a parameter on later calls. Your server looks it up in a database or cache. The protocol doesn't hold state. Your application does -- same as any well-designed HTTP API.</p>
+
+<p><strong>Step 4 -- Add the backward compat bridge if needed.</strong> The spec includes a compatibility path: a v2 server can implement server/discover alongside the old initialize handler. Clients on 2025-11-25 see the initialize response and keep connecting. New clients use server/discover. Beta SDKs for Python and TypeScript are available from the <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">SDK beta announcement</a> to test against real workloads before switching production traffic.</p>
+
+<h2>What to do with Roots, Sampling, and Logging</h2>
+
+<p>Three MCP features you're probably using -- Roots, Sampling, and Logging -- are marked deprecated in the 2026-07-28 spec. They still work, and the official lifecycle policy guarantees a minimum 12-month window before any deprecated feature is eligible for removal. Migrating now is cleaner than doing it under deadline pressure in mid-2027.</p>
+
+<p><strong>Roots.</strong> Roots let a client tell the server which directories or files it had access to. The replacement is simpler: pass that information as tool parameters, use resource URIs, or put it in server configuration at startup. The model ends up with more explicit control over exactly what it passes -- no implicit context threaded through the connection.</p>
+
+<p><strong>Sampling.</strong> Sampling let a server ask the client to make an LLM call on its behalf. The replacement is to call your LLM provider API directly from the server. You control the model, the token budget, the API key, and you don't need a round-trip through the client.</p>
+
+<p><strong>Logging.</strong> The MCP Logging feature let servers send structured log messages through the protocol. Replace it with stderr for the stdio transport -- Claude Code and most clients surface this automatically. If you need structured observability, OpenTelemetry is the portable option. Both approaches work across more deployment contexts than protocol-level logging ever did.</p>
+
+<h2>What the OAuth 2.1 resource server requirement means for your deployment</h2>
+
+<p>Six Specification Enhancement Proposals in the 2026-07-28 spec formally position MCP servers as OAuth 2.1 resource servers. Two new requirements apply to any server handling auth: implement RFC 9728 (OAuth 2.0 Protected Resource Metadata) so clients can auto-discover the correct authorization server, and require clients to implement RFC 8707 (Resource Indicators) to explicitly scope tokens to a specific MCP server.</p>
+
+<p>The RFC 8707 requirement is the security-relevant one. In a multi-agent setup where a model connects to several MCP servers, a malicious server could previously attempt to obtain tokens scoped to a different server. Resource Indicators prevent this by requiring clients to declare which server a token is intended for -- the authorization server then enforces the scope.</p>
+
+<p>Per <a href="https://workos.com/blog/mcp-2026-spec-agent-authentication">WorkOS's breakdown of the authentication changes</a>, this formalizes what enterprise MCP deployments were already pushing toward. Teams running MCP servers behind corporate identity providers (Okta, Azure AD, Google Workspace) benefit most -- RFC 9728 metadata endpoints let clients discover the right authorization server without custom per-deployment configuration.</p>
+
+<p>If your MCP server is local-only with no auth layer, nothing changes for you right now. These requirements apply when you expose a server to external clients or run it in a multi-agent production environment where token scoping prevents cross-server token theft.</p>
+
+<h2>Why the stateless shift makes scaling straightforward</h2>
+
+<p>Every scaling complaint I've seen about MCP servers came down to session management. Sticky load balancer configs. Shared Redis stores for session state. Failure modes when the session-holding instance went down mid-task. The stateless spec removes all of that at the protocol layer.</p>
+
+<p>A stateless MCP server is just an HTTP service. Deploy it on Lambda, Cloud Run, Vercel Edge, Kubernetes, or a plain VPS. Round-robin between instances. No coordination layer. The model passes state as tool arguments. That's the same pattern any well-designed API uses -- and it means any standard infrastructure team can operate it without MCP-specific knowledge.</p>
+
+<p>The MCP ecosystem reached 97 million monthly SDK downloads by March 2026, up from 100,000 at launch in November 2024 -- a 970x growth in 18 months, per <a href="https://effloow.com/articles/mcp-ecosystem-growth-100-million-installs-2026">Effloow's ecosystem report</a>. With 71,000+ servers indexed on Glama alone by August 2026 (<a href="https://chatforest.com/guides/mcp-ecosystem-2026-state-of-the-standard/">ChatForest</a>), most of that infrastructure was built under the stateful model. The migration window gives the ecosystem time to adapt. The direction is clear: MCP's next generation runs on standard HTTP with no special session routing required.</p>
+
+<h2>FAQ</h2>
+
+<h3>Will my existing MCP server break immediately after July 28?</h3>
+
+<p>Not immediately, and not automatically. A server built on the old 2025-11-25 spec keeps working with old clients -- the protocol change doesn't reach back and break existing deployments. The compatibility break happens when a new-spec client tries to connect to an old-spec server, or vice versa. Use the server/discover backward compat bridge to support both client versions during the transition period.</p>
+
+<h3>How do I handle state if MCP is now stateless?</h3>
+
+<p>Return an explicit handle from a tool call and have the model pass it back as a parameter on later calls. A call to start_session returns a session_id string. Every subsequent tool call that needs session context includes session_id as a parameter. Your server looks it up in a database or cache. The protocol doesn't hold state -- your application does, the same as any HTTP API with a session token.</p>
+
+<h3>What is the timeline for deprecated MCP features to be removed?</h3>
+
+<p>The 2026-07-28 spec introduces a formal lifecycle policy: a feature must stay in Deprecated status for at least 12 months before it is eligible for removal. Roots, Sampling, and Logging were deprecated July 28, 2026, so the earliest removal date is July 28, 2027 -- and removal still requires a separate spec decision. Migrate before Q1 2027 to stay well ahead of any deadline.</p>
+
+<h3>Do I need OAuth 2.1 if I run a local MCP server with no auth?</h3>
+
+<p>No. The OAuth 2.1 resource server requirements apply to servers handling authentication. A local-only server with no external clients and no auth layer is unaffected. These requirements matter when you expose a server to external clients or run it in a multi-agent production environment where token scoping prevents cross-server token theft attacks.</p>
+
+<h3>Where are the beta SDKs for the MCP 2026-07-28 spec?</h3>
+
+<p>Beta SDKs for Python and TypeScript are available from the <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">MCP blog's SDK beta announcement</a>. These validate against the finalized 2026-07-28 spec. Use them to test your migration before switching production traffic. Stable SDK releases will follow once the adoption window closes and the spec is confirmed in widespread use.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Will my existing MCP server break immediately after July 28?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not immediately, and not automatically. A server built on the old 2025-11-25 spec keeps working with old clients. The compatibility break happens when a new-spec client tries to connect to an old-spec server, or vice versa. Use the server/discover backward compat bridge to support both client versions during the transition period."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I handle state if MCP is now stateless?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Return an explicit handle from a tool call and have the model pass it back as a parameter on later calls. A call to start_session returns a session_id string. Every subsequent tool call that needs session context includes session_id as a parameter. Your server looks it up in a database or cache. The protocol does not hold state -- your application does, same as any HTTP API with a session token."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the timeline for deprecated MCP features to be removed?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The 2026-07-28 spec introduces a formal lifecycle policy: a feature must stay in Deprecated status for at least 12 months before it is eligible for removal. Roots, Sampling, and Logging were deprecated July 28, 2026, so the earliest removal date is July 28, 2027. Removal still requires a separate spec decision."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do I need OAuth 2.1 if I run a local MCP server with no auth?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The OAuth 2.1 resource server requirements apply to servers handling authentication. A local-only server with no external clients and no auth layer is unaffected. These requirements matter when you expose a server to external clients or run it in a multi-agent production environment."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Where are the beta SDKs for the MCP 2026-07-28 spec?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Beta SDKs for Python and TypeScript are available from the MCP blog at blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/. These validate against the finalized 2026-07-28 spec. Use them to test your migration before switching production traffic."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
+  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+</div>
