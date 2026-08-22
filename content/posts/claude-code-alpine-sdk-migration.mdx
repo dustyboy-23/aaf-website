@@ -1,0 +1,154 @@
+---
+id: claude-code-alpine-sdk-migration
+uuid: claude-code-alpine-sdk-migration
+slug: claude-code-alpine-sdk-migration
+title: "Claude Code Shipped 5 Releases in 5 Days: What Changed"
+excerpt: "Claude Code shipped five releases between August 19 and August 21, 2026 -- v2.1.235 through v2.1.239. The headline additions: a /claude-api upgrade command that automates Python SDK 0.x-to-1.x migrati"
+feature_image: null
+featured: false
+published_at: "2026-08-22T03:13:00-07:00"
+updated_at: "2026-08-22T03:13:00-07:00"
+reading_time: 9
+tags: [news, claude-code, python-sdk, alpine-linux, developer-tools]
+tag_names: [News, Claude Code, Python SDK, Alpine Linux, Developer Tools]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code August 2026: Alpine Support and SDK Migration"
+meta_description: "Five Claude Code releases in five days: Alpine/musl support, Python SDK migration tool, and data-residency cost visibility now included. Here's what to act on."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Shipped 5 Releases in 5 Days: What Changed</h1>
+
+<p class="lede">Claude Code shipped five releases between August 19 and August 21, 2026 -- v2.1.235 through v2.1.239. The headline additions: a /claude-api upgrade command that automates Python SDK 0.x-to-1.x migrations, native Alpine/musl support for containerized Linux workflows, and cost estimates that now surface the 1.1x data-residency premium builders were previously paying without seeing it.</p>
+
+<p>Five releases in five days is not unusual for Claude Code's shipping pace, but this batch had a few things worth stopping for. The Alpine support is a real unlock for containerized CI/CD. The /claude-api upgrade tool handles a migration I've seen burn hours on real projects when done manually. And the data-residency cost transparency is the kind of thing that shows up as a budget surprise if you didn't know to look for it.</p>
+
+<h2>What did the five-release sprint include?</h2>
+<p>Between August 19 and August 21, Anthropic shipped five Claude Code versions. v2.1.235 through v2.1.237 added the ANTHROPIC_DEFAULT_MODEL env var, cross-session idle notifications, the Concise output style, and a fix for prompt caching on LLM gateway setups. v2.1.238 made auto mode default for all paid plans. v2.1.239 added Alpine/musl support, /claude-api upgrade, and data-residency cost visibility.</p>
+
+<p>The sprint pace reflects Claude Code's normal cadence -- it ships dozens of releases per month, often in clusters. What makes this week stand out is breadth: platform support expansion, developer tooling, financial transparency, and a default behavior change all landed in the same five-day window. Each release is small on its own; together they materially change what Claude Code can do in containerized and enterprise environments.</p>
+
+<p>v2.1.237 fixed a specific issue that matters for teams using internal LLM gateways: prompt caching was not getting cache hits on sessions with a custom base URL. That meant paying full input token prices for repeated context on every API call. The fix lands automatically with the update -- no config changes required. If your team routes Claude Code through an internal gateway, cache hit rates should start improving immediately after upgrading.</p>
+
+<p>Sources: <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>, <a href="https://releasebot.io/updates/anthropic/claude-code">Releasebot</a>, <a href="https://dev.classmethod.jp/en/articles/20260820-cc-updates-v2-1-237/">DevelopersIO release analysis</a>.</p>
+
+<h2>What is /claude-api upgrade and who needs it?</h2>
+<p>The /claude-api upgrade command, added in v2.1.239, scans your Python project and migrates code from anthropic 0.x to 1.x automatically. It rewrites API calls and import patterns. The most common breaking change it handles: timeout configuration, which moved from httpx.Timeout to anthropic.Timeout in the 1.x SDK.</p>
+
+<p>This matters if your project started on the Anthropic Python SDK before the 1.x release. The 0.x-to-1.x jump had breaking changes that were not always obvious -- the timeout object change would silently fail in ways 0.x code would not surface cleanly. Doing the migration by hand means reading through SDK release notes and manually grepping your codebase for affected patterns. The upgrade command handles the scan-and-rewrite step for you.</p>
+
+<p>To use it: open your project directory with Claude Code and run <code>/claude-api upgrade</code>. It scans, identifies affected files, and applies changes. Review the git diff before committing -- the tool is non-destructive, but you want to confirm what it touched, especially if you have custom timeout or retry logic that wraps the SDK.</p>
+
+<p>One scope note: this command handles the <code>anthropic</code> PyPI package specifically. It does not cover the TypeScript/JS SDK or other language bindings. Check with <code>pip show anthropic</code> -- if the Version field is below 1.0.0, the upgrade applies to your project.</p>
+
+<p>Sources: <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>, <a href="https://mcpmarket.com/ja/tools/skills/anthropic-sdk-upgrade-migration">MCP Market skill listing</a>.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What does Alpine/musl support actually unlock?</h2>
+<p>Before v2.1.239, Claude Code's native add-ons -- image paste, clipboard, and audio capture -- would not load on Alpine Linux. The bundled binaries were compiled for glibc, and Alpine uses musl libc. v2.1.239 ships musl-built versions of those add-ons. Claude Code now supports linux-x64-musl and linux-arm64-musl as official install targets alongside its existing linux-x64 and linux-arm64 builds.</p>
+
+<p>Alpine is the most common base image for minimal Docker containers -- its security defaults and small footprint make it the standard starting point for containerized CI/CD pipelines. Before this change, running Claude Code in an Alpine container required workarounds: installing glibc compatibility shims, switching to a Debian-based base image, or setting USE_BUILTIN_RIPGREP=0 and manually managing libgcc and libstdc++ dependencies. A GitHub issue tracking the Alpine install failures had been open since early this year (<a href="https://github.com/anthropics/claude-code/issues/76628">Issue #76628</a>).</p>
+
+<p>None of those workarounds were clean. The glibc shim adds container bloat. The Debian-base switch defeats the purpose of using Alpine. The manual dependency approach worked but required maintenance across team setups. Now a standard <code>npm install -g @anthropic-ai/claude-code</code> on Alpine works and the native add-ons load correctly.</p>
+
+<p>If you have Dockerfiles that built in workarounds for the glibc issue, they are worth revisiting post-v2.1.239. Sources: <a href="https://github.com/anthropics/claude-code/issues/76628">GitHub Issue #76628</a>, <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>, <a href="https://www.morphllm.com/claude-code-linux">Morph Linux install guide</a>.</p>
+
+<h2>What do the data-residency cost estimates now show?</h2>
+<p>As of v2.1.239, /cost, the status bar, and --max-budget-usd now include the 1.1x US data-residency multiplier. If your workspace has inference_geo set to "us" on Claude 4.6 or later, you're paying a 10% premium on all token categories -- input, output, cache reads, cache writes -- and that surcharge now shows up in cost estimates instead of being invisible.</p>
+
+<p>Before this change, /cost would show token costs at base rates even if you were in a data-residency workspace paying the premium. The gap between estimated and actual spend could be meaningful at scale. For a heavy session running 1M input tokens and 200K output tokens on Claude 4.6 standard tier ($2/$10 per million tokens), the base cost is $4.00. A data-residency workspace pays $4.40 -- a 10% difference that compounds across a full team's daily usage over a month.</p>
+
+<p>Not every workspace uses data residency. It applies when Anthropic routes inference through US-only infrastructure for compliance requirements -- typically enterprise and regulated-industry accounts. Standard workspaces using global routing pay no multiplier. The change is purely about visibility: the cost was always there, it just was not showing up in the cost tooling.</p>
+
+<p>For current pricing context: Anthropic made its per-token pricing permanent at $2/$10 (input/output per million tokens for Claude 4.6) on August 11, 2026, canceling a planned September 1 increase to $3/$15. Data-residency workspaces pay 10% on top of those rates. Sources: <a href="https://platform.claude.com/docs/en/about-claude/pricing">Anthropic pricing docs</a>, <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>, <a href="https://www.cloudzero.com/blog/claude-code-pricing/">CloudZero pricing analysis</a>.</p>
+
+<h2>What else shipped in the sprint?</h2>
+<p>v2.1.236 added ANTHROPIC_DEFAULT_MODEL as an environment variable, which lets you set a model default without modifying project config files. Useful if you run Claude Code sessions across different projects and want different default models per terminal environment. Cross-session idle notifications also landed in v2.1.236, alerting you when a long-running background session has gone quiet and may need attention.</p>
+
+<p>v2.1.239 also extended the one-time fullscreen renderer offer to Bedrock, Vertex, and Foundry setups that were previously excluded. New installs on those cloud platforms now receive the fullscreen offer at first launch. This matters for enterprise teams running Claude Code through cloud providers -- the experience now matches what direct Anthropic API users get at startup.</p>
+
+<p>Plugin sync got cleaner in v2.1.239. Plugins synced from claude.ai now appear as <code>name@synced</code> in your plugin list and work with <code>claude plugin enable/disable &lt;name&gt;@synced</code>, without overriding a same-named plugin you installed locally. This was a real edge case for teams managing both locally-installed and cloud-synced versions of the same plugin colliding silently.</p>
+
+<p>v2.1.239 also updated the usage-limit message to show not just that your limit is reached, but when your session or weekly limit resets -- a small UX change that removes a common question about when to expect access to restore. Sources: <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>, <a href="https://dev.classmethod.jp/en/articles/20260820-cc-updates-v2-1-237/">DevelopersIO</a>.</p>
+
+<h2>What should you actually do after this sprint?</h2>
+<p>Three concrete actions worth taking now: run /claude-api upgrade on any Python project using anthropic below version 1.0.0; if you're building Claude Code pipelines on Alpine-based Docker containers, test v2.1.239 without your glibc workaround; and if you're in a US data-residency workspace, run /cost on a recent session and verify the 1.1x premium is reflected in the estimate.</p>
+
+<p>For ANTHROPIC_DEFAULT_MODEL: if you regularly switch between Claude models across different projects, add this to your shell profile. It's cleaner than per-project config overrides when you want a consistent global default. Something like <code>export ANTHROPIC_DEFAULT_MODEL=claude-sonnet-4-6</code> in your .bashrc or .zshrc sets it without touching project configs.</p>
+
+<p>The v2.1.237 prompt caching fix for LLM gateways is automatic -- no action needed. But it's worth verifying: watch the cache_read_input_tokens field in your API responses over the next few sessions. If those values were zero before the update on gateway-routed sessions, they should appear after upgrading.</p>
+
+<p>On auto mode: v2.1.238 made it the default for all paid plans. Anthropic's internal safety analysis found auto mode catches 89% of dangerous commands versus 13.6% for human review alone -- roughly 6.5x more effective. If you explicitly disabled auto mode and want to re-evaluate, the data supports leaving it on. The setting is per-project in your .claude/settings.json if you want to override it for specific repos. Source: <a href="https://code.claude.com/docs/en/changelog">Claude Code changelog</a>.</p>
+
+<h2>FAQ</h2>
+<h3>How do I check if I need to run /claude-api upgrade?</h3>
+<p>Run <code>pip show anthropic</code> in your project environment. If the Version field shows anything below 1.0.0, you're on the 0.x SDK and the upgrade applies. Open Claude Code in your project directory and run /claude-api upgrade. It scans for affected patterns and applies changes. Always run git diff afterward before committing to verify what was modified, especially if you have custom timeout or retry logic.</p>
+
+<h3>Does Alpine/musl support mean Claude Code now works in minimal Docker containers without workarounds?</h3>
+<p>Yes. v2.1.239 ships musl-compiled versions of Claude Code's native add-ons for linux-x64-musl and linux-arm64-musl targets. Image paste, clipboard, and audio capture all load on Alpine without glibc compatibility shims or Debian-base workarounds. Standard <code>npm install -g @anthropic-ai/claude-code</code> works on Alpine now with full native add-on support.</p>
+
+<h3>Does the 1.1x data-residency multiplier apply to every Claude Code workspace?</h3>
+<p>No. The 1.1x multiplier only applies to workspaces where inference_geo is set to "us" -- typically enterprise accounts using Anthropic's US data-residency controls for compliance. Standard workspaces using global routing pay the base rate with no multiplier. Check your organization settings on platform.claude.com if you are unsure which applies to your account.</p>
+
+<h3>Is the v2.1.237 prompt caching fix automatic, or do I need to reconfigure my gateway?</h3>
+<p>It's automatic. The fix is in Claude Code itself -- sessions routing through a custom base URL or LLM gateway now get proper cache hits from v2.1.237 forward without any config changes. Verify it's working by checking for non-zero cache_read_input_tokens in your API response metadata after the first exchange of a session with repeated context.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "How do I check if I need to run /claude-api upgrade?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run pip show anthropic in your project environment. If the Version field shows anything below 1.0.0, you are on the 0.x SDK and the upgrade applies. Open Claude Code in your project directory and run /claude-api upgrade. It scans for affected patterns and applies changes. Always run git diff afterward before committing to verify what was modified."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does Alpine/musl support mean Claude Code now works in minimal Docker containers without workarounds?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. v2.1.239 ships musl-compiled versions of Claude Code native add-ons for linux-x64-musl and linux-arm64-musl targets. Image paste, clipboard, and audio capture all load on Alpine without glibc compatibility shims or Debian-base workarounds. Standard npm install -g @anthropic-ai/claude-code works on Alpine now."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the 1.1x data-residency multiplier apply to every Claude Code workspace?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The 1.1x multiplier only applies to workspaces where inference_geo is set to us -- typically enterprise accounts using US data-residency controls for compliance. Standard workspaces using global routing pay the base rate with no multiplier."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is the v2.1.237 prompt caching fix automatic, or do I need to reconfigure my gateway?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "It is automatic. Sessions routing through a custom base URL or LLM gateway now get proper cache hits from v2.1.237 forward without any config changes. Verify by checking for non-zero cache_read_input_tokens in your API response metadata."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
