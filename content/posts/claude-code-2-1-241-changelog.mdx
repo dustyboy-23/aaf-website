@@ -1,0 +1,137 @@
+---
+id: claude-code-2-1-241-changelog
+uuid: claude-code-2-1-241-changelog
+slug: claude-code-2-1-241-changelog
+title: "Claude Code v2.1.241: Security Patch and 7 Other Changes"
+excerpt: "Claude Code v2.1.241 landed at 00:52 UTC on August 23, 2026 with 6 bug fixes and 2 improvements. The headline: a Windows NTLM credential-leak vector closed via an NT device-prefix path bypass. Second:"
+feature_image: null
+featured: false
+published_at: "2026-08-23T03:12:23-07:00"
+updated_at: "2026-08-23T03:12:23-07:00"
+reading_time: 8
+tags: [news, claude-code, security, mcp]
+tag_names: [News, Claude Code, Security, MCP]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.241: Security Patch and 7 Other Changes"
+meta_description: Claude Code v2.1.241 fixed a Windows NTLM credential-leak, MCP serverless reconnect loop, and 6 other issues. Here is what each change means for builders.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.241: Security Patch and 7 Other Changes</h1>
+
+<p class="lede">Claude Code v2.1.241 landed at 00:52 UTC on August 23, 2026 with 6 bug fixes and 2 improvements. The headline: a Windows NTLM credential-leak vector closed via an NT device-prefix path bypass. Second: a MCP v2 reconnect loop hammering serverless deployments on Cloudflare Workers and Lambda. Here is what each of the 8 changes means and who needs to act now.</p>
+
+<p>Eight items in one point release is dense. Most are narrow quality-of-life -- a Linux CPU hog silenced, a skill alias routing fix, a Remote Control regression from 14 versions ago finally cleared. But two are not routine, and I will call them out first.</p>
+
+<h2>What shipped in v2.1.241?</h2>
+<p>Claude Code v2.1.241 released August 23, 2026 at 00:52 UTC contains 6 bug fixes and 2 improvements. Fixes cover a Windows NTLM path bypass, MCP v2 serverless reconnect loop, Linux idle sessions pinning a CPU core at 100%, notification hooks silently failing in Claude Desktop and VS Code, bundled skill alias resolution, and skill argument re-expansion. Improvements cover self-hosted runner startup speed and Remote Control session recovery.</p>
+<p>To update: <code>npm install -g @anthropic-ai/claude-code@2.1.241</code> -- no breaking changes, no config migration required.</p>
+
+<h2>How serious is the Windows NTLM security fix?</h2>
+<p>Update today if you run Claude Code on Windows. Paths spelled with the NT device prefix <code>\??\</code> bypassed Claude Code's UNC path validation layer entirely. A crafted path could trigger an outbound NTLM credential handshake to an attacker-controlled server -- Windows handles NTLM authentication automatically when it sees a UNC-style path, so credentials can exit before any destination check runs. v2.1.241 rejects these paths at intake. Normal Windows paths are not affected.</p>
+<p>The risk is higher when Claude Code processes paths from external sources: user-supplied strings, CLAUDE.md files from cloned repos, MCP tool results, or workflow scripts that accept path arguments. If you only process paths you control end-to-end, the practical risk is lower. I would still update -- this is a one-line install.</p>
+<p>Context: v2.1.234 (August 17) already hardened 5 specific pre-approval file surfaces against Windows NT-namespace paths -- remote file reads, session restore, CLAUDE.md includes, workflow scripts, and file uploads. v2.1.241 patches a second gap in the UNC validation layer that v2.1.234 did not reach. CVE-2026-22561 covers this attack surface class; security researchers are actively probing NT-namespace handling in Windows developer tools right now, so expect more fixes in this area.</p>
+<p>To check whether your Claude Code deployment processes external paths, look for: CLI invocations that accept paths from stdin or arguments, CLAUDE.md files read from cloned repos you did not create, and MCP servers whose tool responses include file paths. Any of those channels is a potential injection point for a crafted NT device-prefix path.</p>
+
+<h2>Who does the MCP serverless reconnect fix affect?</h2>
+<p>This fix matters if your MCP servers run on serverless platforms -- Cloudflare Workers, AWS Lambda, or anything with fixed stream timeouts. Claude Code's MCP v2 client endlessly reopened the subscriptions/listen stream after each server-side timeout, burning requests and producing useless logs. v2.1.241 makes Claude Code detect a normal server-initiated close and back off instead of immediately reconnecting.</p>
+<p>The symptom on the server side: repeated connection events in your logs with no successful tool calls between them. On Claude Code's side, MCP tools appear connected but return empty results or time out silently. Cloudflare Workers has a 30-second CPU time limit per invocation -- any stream held longer than that gets terminated server-side, which was exactly the trigger. Lambda has a configurable hard max of 15 minutes, but most deployments use much shorter function timeouts.</p>
+<p>If your MCP server runs on persistent infrastructure -- a VPS, a long-running Docker container, a dedicated Node.js process -- this fix does not affect you. Your streams do not hit fixed timeout windows. This is specifically a serverless platform problem where the server has no choice but to terminate long-held connections.</p>
+<p>After updating to v2.1.241, you can verify the fix by watching your MCP server logs during a session. You should see a connect -- tool call -- disconnect pattern instead of the previous connect -- timeout -- reconnect loop repeating every 20 to 60 seconds.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What are the other six changes?</h2>
+<p>The remaining six changes in v2.1.241 cover a Linux CPU spike at idle, notification hooks failing silently in extension environments, two skill routing bugs, a self-hosted runner startup improvement, and a Remote Control regression that introduced a misleading error message. None are urgent unless you have hit the specific symptom -- but each is worth knowing about.</p>
+
+<h3>Linux idle sessions pinning one CPU core at 100%</h3>
+<p>Idle Claude Code sessions on Linux were holding a full CPU core at 100% whenever sandboxing was enabled. If you run multiple Claude Code sessions on Linux -- especially in headless or CI environments -- this compounds quickly into a machine that is slow under apparent zero load. The bug was in the sandboxing layer's event loop interaction. Fixed in v2.1.241.</p>
+
+<h3>Notification hooks silently not firing in Claude Desktop and VS Code</h3>
+<p>If you configured notification hooks for permission prompts, those hooks were silently not firing when Claude Code ran inside Claude Desktop or the VS Code extension. The hooks fired correctly in standalone terminal sessions. The regression was in how the extension host and desktop app intercepted the notification pathway before the hook could run. Fixed in v2.1.241.</p>
+
+<h3>Bundled skill aliases reporting "Unknown command"</h3>
+<p>Bundled skill aliases like <code>/checkup</code> and <code>/review</code> were returning "Unknown command" in two cases: running in <code>-p</code> (non-interactive/headless) mode, or when a user or project skill with a matching name coexisted with a loaded MCP command or plugin. v2.1.241 fixes the resolution order so bundled aliases resolve correctly regardless of what else is loaded alongside them.</p>
+
+<h3>Skill argument values being re-expanded as template markers</h3>
+<p>A subtle template expansion bug: argument values passed to skills were getting a second substitution pass as if they were template markers themselves. If you passed a string containing <code>&#123;&#123;something&#125;&#125;</code> as an argument value, the engine tried to expand it again, producing wrong output or an error. Fixed in v2.1.241 -- argument values are now treated as final after the initial substitution pass.</p>
+
+<h3>Self-hosted runner session startup is faster</h3>
+<p>Two changes improve <code>claude self-hosted-runner</code> session start time in v2.1.241. First, the session branch is now created without rewriting the working tree -- the previous full checkout was the slow step for large repos. Second, two server round trips that previously blocked the agent's launch now happen asynchronously. If you use self-hosted runner for enterprise or container-based deployments, session initialization should be measurably faster.</p>
+
+<h3>Remote Control no longer fails on deleted sessions</h3>
+<p>Resuming a Remote Control conversation whose session was deleted from claude.ai or the app now starts a replacement session instead of failing with a confusing login-related error message. The error implied the problem was your credentials -- it was not, it was the missing session. This regression was introduced in v2.1.227 earlier in August. If you use Remote Control across multiple devices and have seen this error, v2.1.241 is the fix.</p>
+
+<h2>Should you update to v2.1.241 now?</h2>
+<p>Windows users: update today. The NTLM fix is a real security issue if Claude Code processes any externally-supplied paths. Serverless MCP deployments: update and watch your connection logs clear. Linux users with idle CPU spikes under sandboxing: this is your fix. Everyone else: v2.1.241 is a clean non-breaking patch with no config work required -- pull it at your next maintenance window.</p>
+
+<h2>FAQ</h2>
+<h3>What is the Windows NT device-prefix NTLM vulnerability in Claude Code v2.1.241?</h3>
+<p>Windows paths starting with the NT device prefix bypassed Claude Code's UNC path validation. The Windows NTLM authentication stack automatically attempts credential handshakes for UNC-style paths, so a crafted path could silently send Windows credentials to an attacker-controlled server. v2.1.241 rejects paths using the NT device prefix at intake, before validation runs. Normal Windows file paths are not affected.</p>
+
+<h3>Does the MCP serverless reconnect fix require any config changes?</h3>
+<p>No config changes required. The fix is entirely in Claude Code's MCP stream handling -- it now correctly identifies a server-initiated stream close and backs off rather than immediately reconnecting. No changes to your MCP server code, your Claude Code config, or your serverless platform settings are needed. After updating to v2.1.241, the reconnect loop stops automatically on the next session start.</p>
+
+<h3>Is CVE-2026-22561 fully patched by v2.1.241?</h3>
+<p>CVE-2026-22561 covers Windows privilege escalation via NT-namespace path handling in Claude Code. v2.1.234 patched 5 pre-approval file surfaces. v2.1.241 closes a second gap in UNC validation. Whether the CVE is fully resolved depends on whether additional NT-namespace attack surfaces remain. Anthropic has not published a complete resolution statement -- check the official changelog at code.claude.com/docs/en/changelog for current status.</p>
+
+<h3>Which versions are affected by the Remote Control session deletion bug?</h3>
+<p>The Remote Control session recovery regression was introduced in v2.1.227 and is present in every version from v2.1.227 through v2.1.240. If you are on any of those versions and use Remote Control, you have been exposed to the bug. Updating to v2.1.241 is the fix. Versions v2.1.226 and earlier were not affected by this regression.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the Windows NT device-prefix NTLM vulnerability in Claude Code v2.1.241?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Windows paths starting with the NT device prefix bypassed Claude Code's UNC path validation. The Windows NTLM authentication stack automatically attempts credential handshakes for UNC-style paths, so a crafted path could silently send Windows credentials to an attacker-controlled server. v2.1.241 rejects paths using the NT device prefix at intake, before validation runs. Normal Windows file paths are not affected."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the MCP serverless reconnect fix require any config changes?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No config changes required. The fix is entirely in Claude Code's MCP stream handling -- it now correctly identifies a server-initiated stream close and backs off rather than immediately reconnecting. No changes to your MCP server code, your Claude Code config, or your serverless platform settings are needed. After updating to v2.1.241, the reconnect loop stops automatically on the next session start."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is CVE-2026-22561 fully patched by v2.1.241?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "CVE-2026-22561 covers Windows privilege escalation via NT-namespace path handling in Claude Code. v2.1.234 patched 5 pre-approval file surfaces. v2.1.241 closes a second gap in UNC validation. Whether the CVE is fully resolved depends on whether additional NT-namespace attack surfaces remain. Anthropic has not published a complete resolution statement -- check the official changelog at code.claude.com/docs/en/changelog for current status."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Which versions are affected by the Remote Control session deletion bug?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The Remote Control session recovery regression was introduced in v2.1.227 and is present in every version from v2.1.227 through v2.1.240. If you are on any of those versions and use Remote Control, you have been exposed to the bug. Updating to v2.1.241 is the fix. Versions v2.1.226 and earlier were not affected by this regression."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
