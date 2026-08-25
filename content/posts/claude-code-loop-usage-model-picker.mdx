@@ -1,0 +1,197 @@
+---
+id: claude-code-loop-usage-model-picker
+uuid: claude-code-loop-usage-model-picker
+slug: claude-code-loop-usage-model-picker
+title: "Claude Code Settings Guide: Loop Usage, Model Picker, and Cache TTL"
+excerpt: "Claude Code v2.1.243 (released August 24, 2026) shipped four settings most users have not configured yet: a Loops breakdown in /usage showing per-loop token consumption, a modelPicker setting for buil"
+feature_image: null
+featured: false
+published_at: "2026-08-25T03:13:54-07:00"
+updated_at: "2026-08-25T03:13:54-07:00"
+reading_time: 11
+tags: [tutorials, claude-code, prompt-caching, model-picker]
+tag_names: [Tutorials, Claude Code, Prompt Caching, Model Picker]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: Claude Code Loop Tracking, Model Picker and Cache TTL
+meta_description: Claude Code v2.1.243 added loop usage tracking, model picker settings, and prompt cache TTL controls. Here is the practical setup guide to reduce API costs.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Settings Guide: Loop Usage, Model Picker, and Cache TTL</h1>
+
+<p class="lede">Claude Code v2.1.243 (released August 24, 2026) shipped four settings most users have not configured yet: a Loops breakdown in /usage showing per-loop token consumption, a modelPicker setting for building a custom model list that supports Vertex and Bedrock IDs, promptCacheTtl controls to restore the 1-hour cache window Anthropic cut to 5 minutes in early 2026, and a modelPricing managed setting for enterprise teams with negotiated rates.</p>
+
+<p>I keep a running list of Claude Code settings worth actually configuring. Most settings I leave at defaults. These four from v2.1.243 are not ones I would keep at defaults -- the cache TTL controls in particular address a real cost problem that has been quietly inflating API bills for production agentic workloads since Anthropic's early 2026 TTL change.</p>
+
+<h2>What shipped in Claude Code v2.1.243?</h2>
+
+<p>Claude Code v2.1.243 (released August 24, 2026) added four new configurable settings alongside six bug fixes. The features target two distinct pain points: cost visibility for teams running /loop agents, and cost optimization for API-billed users who lost the 1-hour prompt cache window when Anthropic reduced the default TTL from 60 minutes to 5 minutes in early 2026.</p>
+
+<p>The four new settings are:</p>
+
+<ul>
+<li><strong>Loops breakdown in /usage</strong> -- per-loop run count, total tokens, tokens per run, and last run timestamp. Requires no configuration, just an update to v2.1.243.</li>
+<li><strong>modelPicker setting</strong> -- define a custom ordered model list with labels, including Vertex and Bedrock IDs. Configured in settings.json.</li>
+<li><strong>promptCacheTtl and subagentPromptCacheTtl</strong> -- control cache TTL per context type for API-key and cloud-provider users. Configured in settings.json.</li>
+<li><strong>modelPricing managed setting</strong> -- org-level contracted rates for accurate /cost display. Configured in the Claude Code Console.</li>
+</ul>
+
+<p>If you run agentic Claude Code workflows with any regularity, at least two of these -- the loop breakdown and the cache TTL controls -- will directly affect how you work and what you spend. The other two are useful depending on your setup. Today's v2.1.245 patch also shipped a Linux glibc 2.44 crash fix, so update to that if you're on a recent Linux distro that crashed on startup.</p>
+
+<h2>What does the /usage Loops breakdown show?</h2>
+
+<p>The Loops section in /usage displays per-loop run count, total tokens consumed, tokens per run, and the timestamp of the last run. It appears automatically once you update to v2.1.243 and run any /loop task -- no configuration needed. The breakdown appears under a "Loops" heading inside the existing /usage output, alongside your session totals.</p>
+
+<p>Before this change, the only way to see how much a specific loop task consumed was to note the session total before and after -- which broke completely for multi-loop sessions. The problem compounds fast: in agentic Claude Code workflows, agents use approximately 4x more tokens than standard chat interactions. Multi-agent systems use about 15x more tokens than chat. Claude Code enterprise deployments average $13 per developer per active day, and a runaway loop that retries repeatedly on a failing test can burn significantly more than that without shipping a single working line.</p>
+
+<p>Here is the scenario this solves. You set up a /loop task to run a build-test cycle on a codebase. It hits a dependency conflict and retries. It retries again. And again. You come back after a break to find the loop ran 12 times. The session total shows a large number, but you cannot tell if it was the loop or your earlier research session that drove the cost.</p>
+
+<p>With the Loops breakdown, you see something like: 12 runs, 38,000 tokens per run, 456,000 total tokens, last run at 14:47. At Sonnet 4.6 input pricing ($2.00 per million tokens), that is about $0.91 in input cost for that loop session. For teams tracking cost per task or running Claude Code in automation pipelines, this is the observability baseline that has been missing from Claude Code since /loop shipped.</p>
+
+<p>The practical response to seeing loop breakdowns for the first time is usually to add iteration caps or token budgets. Calibrating those limits becomes straightforward when you know what a normal loop session looks like versus a runaway one -- and you have the per-run token figure to work from.</p>
+
+<h2>How do you configure the model picker in Claude Code?</h2>
+
+<p>The modelPicker setting in settings.json lets you define an ordered list of models that appear in /model, with optional labels for each. You can use any Claude model ID -- including Vertex AI and Amazon Bedrock IDs -- and choose whether the list replaces or appends to the built-in lineup. After saving settings.json, the next /model invocation shows your custom list.</p>
+
+<p>Here is a working configuration for a typical development workflow:</p>
+
+<pre><code>&#123;
+  "modelPicker": [
+    &#123; "id": "claude-sonnet-4-6", "label": "Sonnet 4.6 -- fast tasks" &#125;,
+    &#123; "id": "claude-opus-4-8", "label": "Opus 4.8 -- planning and architecture" &#125;,
+    &#123; "id": "claude-haiku-4-5-20251001", "label": "Haiku 4.5 -- cheap sweeps and formatting" &#125;
+  ]
+&#125;</code></pre>
+
+<p>For enterprise teams on Vertex AI or Bedrock, the modelPicker surfaces provider-specific IDs without requiring users to remember them. If your organization has a committed usage agreement with Google Cloud and wants sessions to default to Vertex-hosted Sonnet, add the Vertex model ID to the list with a clear label. Everyone on the team sees the same options in /model without looking up IDs.</p>
+
+<p>This setting builds on two earlier model controls. The ANTHROPIC_DEFAULT_MODEL environment variable (added in v2.1.236) sets which model new sessions start on. A /model pick overrides it and persists across restarts. The modelPicker is the curation layer -- it controls what is visible in the picker so you are not scrolling through every available model to find the three you actually use.</p>
+
+<p>v2.1.243 also fixed the /model picker rendering taller than the terminal window and clipping models at the bottom. It now shows only the models that fit, with the rest reachable by scrolling. If you had a long model list and noticed options disappearing, this is the fix.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How do the promptCacheTtl settings work?</h2>
+
+<p>The promptCacheTtl and subagentPromptCacheTtl settings let API-key and cloud-provider users set cache TTL per context type. Set promptCacheTtl to 3600 to restore the 1-hour cache window for your main session. Set subagentPromptCacheTtl to 300 to keep subagents on 5 minutes. These settings do not apply to Claude.ai subscribers -- Anthropic manages TTL server-side for Max, Pro, and Teams plans.</p>
+
+<p>The background: in early 2026, Anthropic reduced the default prompt cache TTL from 60 minutes to 5 minutes. For production workloads, this single change increased effective API costs by 30-60%, because cached prefixes expire before they can be reused across session lengths that regularly exceed 5 minutes. An April 2026 Claude Code update introduced ENABLE_PROMPT_CACHING_1H as a temporary workaround. The promptCacheTtl settings in v2.1.243 replace that workaround with proper per-context control.</p>
+
+<p>The cost difference is real. Prompt caching reduces repeated-call input costs by approximately 90% -- from around $2.00 per million tokens for full input down to roughly $0.20 per million for cache reads on Sonnet 4.6. If you run a 100,000-token system prompt across 200 API sessions per day, the math looks like this:</p>
+
+<ul>
+<li>Without caching (or with expired cache): 200 sessions x 0.1 MTok x $2.00 = $40/day</li>
+<li>With 1-hour cache and sessions within the window: approximately $4/day (plus initial cache-write cost at $2.50/MTok)</li>
+</ul>
+
+<p>The distinction between promptCacheTtl and subagentPromptCacheTtl matters architecturally. Your main session accumulates a long conversation history -- system prompt, tools, full message thread -- that grows over time and benefits from a 1-hour window. Individual subagents spawn for a bounded task: read some files, run a tool, return a result. A 5-minute TTL fits them because a subagent's context is rarely reused by another subagent within the same session.</p>
+
+<p>Configuration:</p>
+
+<pre><code>&#123;
+  "promptCacheTtl": 3600,
+  "subagentPromptCacheTtl": 300
+&#125;</code></pre>
+
+<p>Important caveat: prompt caches are model-scoped. If you switch models mid-session using /model, the new model has no cached copy of your accumulated context. The entire session history re-processes at full input price plus a cache-write premium for the new model. For long sessions with substantial context, avoid mid-session model switches unless necessary.</p>
+
+<h2>What is the modelPricing managed setting?</h2>
+
+<p>The modelPricing managed setting lets organizations input contracted per-model rates and a discount multiplier so /cost, the status line, and telemetry all reflect actual negotiated prices instead of Anthropic's public list prices. This is a Console-level setting configured at the org level by an admin and applies to everyone in the organization -- there is no settings.json key for it.</p>
+
+<p>Enterprise teams with negotiated discounts -- common above certain spend thresholds or through AWS Marketplace and Google Cloud commitments -- were previously getting /cost output that consistently overstated their actual spend. If your contracted rate is 20% below list, every session's reported cost in /cost and on the status line was wrong by that margin. The modelPricing setting corrects this by applying your contracted rate and discount multiplier to all cost calculations inside Claude Code, making telemetry and internal budget tracking accurate.</p>
+
+<p>If you are a solo developer or small team on standard API pricing, this setting does not apply -- you are already paying list rates and the default cost display is accurate. It becomes relevant once you have a direct contract with Anthropic or an enterprise commitment with a cloud provider.</p>
+
+<h2>The complete configuration</h2>
+
+<p>To enable all four v2.1.243 features with one settings.json edit, add the modelPicker array and set the two promptCacheTtl values as shown below. The Loops breakdown requires no configuration -- it appears automatically in /usage after running any /loop task in v2.1.243 or later.</p>
+
+<pre><code>&#123;
+  "modelPicker": [
+    &#123; "id": "claude-sonnet-4-6", "label": "Sonnet 4.6 -- fast tasks" &#125;,
+    &#123; "id": "claude-opus-4-8", "label": "Opus 4.8 -- planning" &#125;,
+    &#123; "id": "claude-haiku-4-5-20251001", "label": "Haiku 4.5 -- sweeps and formatting" &#125;
+  ],
+  "promptCacheTtl": 3600,
+  "subagentPromptCacheTtl": 300
+&#125;</code></pre>
+
+<p>After saving, run /model to verify your custom list shows up in order. Run /usage after your next /loop session to see the Loops breakdown. The cache TTL settings take effect on the next API call without visible confirmation -- you will see the difference in billing over time.</p>
+
+<p>On placement: settings.json is a project-level file by default. For these settings to apply everywhere, put them in your global Claude Code settings at ~/.claude/settings.json. Project-level settings override global ones, so you can set conservative global defaults and override per-project where you are running heavy agentic work that benefits from the 1-hour cache window.</p>
+
+<p>One more thing: v2.1.245 shipped today (August 25, 2026) with a Linux glibc 2.44 crash fix. If Claude Code crashes on startup after a recent glibc update on your Linux system, update to v2.1.245 before applying any of these settings.</p>
+
+<h2>FAQ</h2>
+
+<h3>Where do I find the Loops breakdown in Claude Code?</h3>
+<p>Run /usage in any Claude Code session after running at least one /loop task. The Loops section appears automatically in v2.1.243 and shows per-loop run count, total tokens, tokens per run, and the last run timestamp. No configuration is needed -- update to v2.1.243 or higher and run a /loop task to populate it.</p>
+
+<h3>Do the promptCacheTtl settings work for Claude.ai Max subscribers?</h3>
+<p>No. The promptCacheTtl and subagentPromptCacheTtl settings only apply to direct API-key users and cloud-provider deployments on Vertex AI or Amazon Bedrock. Claude.ai subscribers on Max, Pro, or Teams plans do not control cache TTL -- Anthropic manages it server-side. If you want explicit cache TTL control, you need direct API access with an API key.</p>
+
+<h3>What is the difference between ANTHROPIC_DEFAULT_MODEL and the modelPicker setting?</h3>
+<p>ANTHROPIC_DEFAULT_MODEL is an environment variable that sets which model new Claude Code sessions start on. The modelPicker setting controls what models appear in the /model picker's selection list. They are complementary: the env var sets the default starting model; modelPicker curates what is available to switch to. You can set both, or either independently.</p>
+
+<h3>Does switching models mid-session break prompt caching?</h3>
+<p>Yes. Prompt caches are model-scoped. When you switch models via /model mid-session, the new model has no cached copy of your conversation history. Your accumulated context re-processes at full input price plus a cache-write premium for the new model. For long sessions with substantial context, avoid mid-session model switches unless the task genuinely requires a different model.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Where do I find the Loops breakdown in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run /usage in any Claude Code session after running at least one /loop task. The Loops section appears automatically in v2.1.243 and shows per-loop run count, total tokens, tokens per run, and the last run timestamp. No configuration is needed -- update to v2.1.243 or higher and run a /loop task to populate it."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do the promptCacheTtl settings work for Claude.ai Max subscribers?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The promptCacheTtl and subagentPromptCacheTtl settings only apply to direct API-key users and cloud-provider deployments on Vertex AI or Amazon Bedrock. Claude.ai subscribers on Max, Pro, or Teams plans do not control cache TTL -- Anthropic manages it server-side. If you want explicit cache TTL control, you need direct API access with an API key."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between ANTHROPIC_DEFAULT_MODEL and the modelPicker setting?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "ANTHROPIC_DEFAULT_MODEL is an environment variable that sets which model new Claude Code sessions start on. The modelPicker setting controls what models appear in the /model picker selection list. They are complementary: the env var sets the default starting model; modelPicker curates what is available to switch to. You can set both, or either independently."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does switching models mid-session break prompt caching?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Prompt caches are model-scoped. When you switch models via /model mid-session, the new model has no cached copy of your conversation history. Your accumulated context re-processes at full input price plus a cache-write premium for the new model. For long sessions with substantial context, avoid mid-session model switches unless the task genuinely requires a different model."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
