@@ -1,0 +1,144 @@
+---
+id: claude-code-design-concise-restricted-mode
+uuid: claude-code-design-concise-restricted-mode
+slug: claude-code-design-concise-restricted-mode
+title: Claude Code /design Skill, Concise Mode, and Restricted Execution
+excerpt: "Three features shipped across Claude Code's late-August 2026 releases that compound for daily agentic workflows: the /design skill turns a brief into editable UI artboard canvases; Concise mode leads "
+feature_image: null
+featured: false
+published_at: "2026-08-29T03:12:04-07:00"
+updated_at: "2026-08-29T03:12:04-07:00"
+reading_time: 9
+tags: [tutorials, claude-code, developer-tools]
+tag_names: [Tutorials, Claude Code, Developer Tools]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code August 2026: /design, Concise, and Restricted Modes"
+meta_description: "Three Claude Code August 2026 features explained: the /design skill for UI artboards, Concise mode for result-first output, and Restricted execution for guaranteed read-only sessions."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code /design Skill, Concise Mode, and Restricted Execution</h1>
+
+<p class="lede">Three features shipped across Claude Code's late-August 2026 releases that compound for daily agentic workflows: the /design skill turns a brief into editable UI artboard canvases; Concise mode leads with results and drops narration without cutting thoroughness; Restricted mode removes all execution tools for guaranteed read-only sessions.</p>
+
+<p>I've been running Claude Code daily since early 2025. The August releases -- v2.1.248 and v2.1.251 -- added three features that quietly change how the tool fits into a real development workflow. Here's what each one actually does.</p>
+
+<h2>What Is the Claude Code /design Skill?</h2>
+
+<p>The /design skill, released August 17, 2026 as a research preview, brings Claude Design's artboard workflow into the CLI. Run it with a brief and Claude publishes a canvas of multiple editable UI artboards. It requires v2.1.233 or later and is available on Pro, Max, Team, and Enterprise plans.</p>
+
+<p>The output is a real design file, not an image. Because it's built on the artifacts system, it's shareable: on Team and Enterprise plans, anyone you add as an editor can modify the artboard and publish a new version. The whole design-to-implementation loop stays in one place -- describe the screen, get several artboard options, pick one, tweak it, then have Claude implement the code without switching tools.</p>
+
+<p>In practice this collapses a workflow that normally involves Figma, a design handoff, and a separate implementation session into a single /design invocation. The artboard quality won't replace a senior designer for brand-sensitive work, but for prototyping internal tools, admin interfaces, or moving from concept to working code quickly, it's the fastest path I've found. The research preview designation means the workflow will likely change -- save your artboards before updating Claude Code.</p>
+
+<p>One technical detail worth knowing: /design requires Claude Code Desktop or a supported terminal environment with artifact rendering. Pure CLI without Desktop won't show you the artboard canvas. On Desktop, the artboard renders inline. You select from the options, make it editable, adjust it, then trigger the implementation step. The fact that it's a real design file -- not a static image -- is what makes it editable rather than a one-shot output you'd have to regenerate from scratch to change.</p>
+
+<h2>How Does Concise Mode Change Claude Code's Output?</h2>
+
+<p>Concise is a new built-in output style in Claude Code. Toggle it in /config &rarr; Output style, start a new session, and Claude leads with the result instead of narration. Preamble, step-by-step commentary, and closing recaps disappear. Error reports, security warnings, and confirmations before destructive actions stay. The work is equally thorough -- only the surrounding commentary changes.</p>
+
+<p>For developers running Claude Code heavily on routine tasks, this matters more than it sounds. In Default mode, a task like "find all callers of this function and refactor them" generates a substantial narration sequence before you see results -- file examinations, plan announcements, progress updates. In Concise mode, you get the results. Terminal output drops significantly for routine implementation work.</p>
+
+<p>Concise mode is a session-level setting. Toggle it in /config, start a new session, and all interactions in that session use Concise output. There's no per-request toggle -- it's an all-or-nothing choice for the session. Switch back to Default whenever you want Claude to walk through its reasoning step by step. For tasks you understand well and just want done, Concise is the right default. For learning a new codebase or debugging something subtle, Default's narration is more useful.</p>
+
+<p>I've settled into running Concise mode for implementation sessions and switching to Default when I'm debugging or reading unfamiliar code. It takes about five seconds to switch and re-open the session. The difference in focus is real -- when you're not filtering narration, you read results faster and context-switch less.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What Does Claude Code Restricted Mode Do?</h2>
+
+<p>Restricted mode, shipped in v2.1.248 on August 28, 2026, starts Claude Code with execution tools removed entirely. Invoke it with <code>claude --restricted</code> or set <code>CLAUDE_CODE_RESTRICTED=1</code> in your environment. The session removes all built-in tools that run shell commands or execute code, removes WebFetch, confines file tools to the working directory, refuses <code>bypassPermissions</code>, and ignores user, project, and local settings files.</p>
+
+<p>The difference from using <code>--disallowedTools</code> is structural: in Restricted mode the tools don't exist in the session, so they can't be restored via a settings file or a persuasive prompt argument. <code>--disallowedTools</code> is more granular but doesn't lock out settings files, so project-level rules could still expand permissions. Restricted mode ignores all of that. If you need guaranteed read-only behavior -- for compliance, security review, or automated pipelines that must never trigger execution -- <code>--restricted</code> is the right flag.</p>
+
+<p>Practical use cases: running Claude on client code where you've committed to no execution; security audits where execution is a policy violation; building scaffolding tools where an inner agent reads files but must not run them; CI pipelines that call Claude for code analysis but cannot allow side effects. The <code>CLAUDE_CODE_RESTRICTED=1</code> environment variable form makes it easy to configure in CI without modifying invocation scripts.</p>
+
+<h2>What Else Shipped in v2.1.248 and v2.1.251?</h2>
+
+<p>v2.1.248 added <code>experimental.cacheTtl</code> to agent frontmatter -- a per-agent prompt cache TTL of "5m" or "1h" that applies when no subagent TTL is configured. For multi-agent workflows with frequent session resumes, controlling TTL per agent directly affects re-cache costs. v2.1.251, released at 18:19 UTC on August 28, added PreModelSwitch and PostModelSwitch hooks, SessionStart resume hook improvements, live subagent streaming, and /cost cache visibility.</p>
+
+<p>The hook events in v2.1.251 deserve more attention than they've gotten. PreModelSwitch and PostModelSwitch let your hook scripts intercept any model switch in a session -- you can block it, add a confirmation step, log it, or annotate it with metadata. For teams running Claude Code in standardized environments where specific models are required -- cost policies, capability gates, or compliance requirements -- this is the tool to enforce that constraint programmatically rather than via documentation.</p>
+
+<p>SessionStart resume hooks now receive session staleness and estimated re-cache cost. Before this, you couldn't programmatically decide whether resuming a session was cost-effective or whether starting fresh was cheaper. Now a hook can check the staleness and the cost estimate and make that call automatically, or surface the numbers to the developer before proceeding.</p>
+
+<p>The /cost cache visibility is the feature I'll use most from v2.1.251. It adds a per-session prompt-cache line to /cost showing hit ratio, misses, and tokens re-cached. Prompt caching is one of the biggest levers for controlling Claude Code costs in high-frequency workflows, and knowing the hit ratio per session makes it possible to actually optimize caching strategy rather than guess at it.</p>
+
+<h2>How Do These Features Work Together?</h2>
+
+<p>The three features solve different friction points but stack well for a complete development workflow. Use /design to pick a UI direction, Concise mode for the implementation session, and Restricted mode for the review pipeline. The cacheTtl and /cost cache visibility from the same release window let you measure and tune the cost of the full pipeline.</p>
+
+<p>None of these features are dramatic in isolation. Together they describe a Claude Code that's maturing from a capable solo coding tool into something you can embed in team workflows and automated pipelines with predictable, auditable behavior. Restricted mode changes the trust model specifically: you can now hand Claude Code access to code without worrying it will accidentally execute something, because in a restricted session the option doesn't exist. That's a different kind of confidence than permissions rules, which can be misconfigured or overridden.</p>
+
+<p>All three features are available now if you've updated to v2.1.251 or later. The /design skill requires v2.1.233 minimum and launched on August 17, 2026. Concise mode, Restricted mode, and the cacheTtl setting shipped in v2.1.248. The hook events, resume hook improvements, subagent streaming, and /cost cache line shipped in v2.1.251 -- released August 28, 2026 at 18:19 UTC according to the GitHub releases page.</p>
+
+<h2>FAQ</h2>
+
+<h3>What does the Claude Code /design skill do?</h3>
+<p>The /design skill generates multiple editable UI artboard canvases from a plain-language brief. Describe the screen or component you want, and Claude publishes a design file with several options built on the artifacts system. Pick one, edit it, then have Claude implement the code -- all in one session. Requires v2.1.233 or later, available on Pro, Max, Team, and Enterprise plans. Launched August 17, 2026 as a research preview.</p>
+
+<h3>How do I turn on Concise mode in Claude Code?</h3>
+<p>Open /config in Claude Code, find Output style, and select Concise. Start a new session -- the mode applies session-wide. All responses lead with results instead of narration. Error reports, failing test output, security warnings, and confirmations before destructive actions are preserved. Switch back to Default in /config whenever you need narrated reasoning or are working through something unfamiliar.</p>
+
+<h3>What does Claude Code Restricted mode block?</h3>
+<p>Restricted mode (invoked with <code>claude --restricted</code> or <code>CLAUDE_CODE_RESTRICTED=1</code>) removes all built-in tools that execute shell commands or run code. It also removes WebFetch, confines file tools to the working directory, refuses bypassPermissions, and ignores user, project, and local settings files. Shipped in v2.1.248 on August 28, 2026. Designed for compliance workflows, security audits, and automated pipelines where execution must be guaranteed off.</p>
+
+<h3>What changed in Claude Code v2.1.251?</h3>
+<p>v2.1.251, released August 28, 2026 at 18:19 UTC, added PreModelSwitch and PostModelSwitch hook events for intercepting model switches, updated SessionStart resume hooks to receive session staleness and estimated re-cache cost, added live streaming of foreground subagent tool calls to Remote Control clients, and added a per-session prompt-cache line to /cost showing hit ratio, misses, and tokens re-cached.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What does the Claude Code /design skill do?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The /design skill generates multiple editable UI artboard canvases from a plain-language brief. Describe the screen or component you want, and Claude publishes a design file with several options built on the artifacts system. Pick one, edit it, then have Claude implement the code -- all in one session. Requires v2.1.233 or later, available on Pro, Max, Team, and Enterprise plans. Launched August 17, 2026 as a research preview."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I turn on Concise mode in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Open /config in Claude Code, find Output style, and select Concise. Start a new session -- the mode applies session-wide. All responses lead with results instead of narration. Error reports, failing test output, security warnings, and confirmations before destructive actions are preserved. Switch back to Default in /config whenever you need narrated reasoning."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What does Claude Code Restricted mode block?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Restricted mode (invoked with claude --restricted or CLAUDE_CODE_RESTRICTED=1) removes all built-in tools that execute shell commands or run code. It also removes WebFetch, confines file tools to the working directory, refuses bypassPermissions, and ignores user, project, and local settings files. Shipped in v2.1.248 on August 28, 2026."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What changed in Claude Code v2.1.251?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "v2.1.251 (released August 28, 2026 at 18:19 UTC) added PreModelSwitch and PostModelSwitch hook events for intercepting model switches, updated SessionStart resume hooks to receive session staleness and estimated re-cache cost, added live streaming of foreground subagent tool calls to Remote Control clients, and added a per-session prompt-cache line to /cost showing hit ratio, misses, and tokens re-cached."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
