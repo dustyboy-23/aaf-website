@@ -1,0 +1,141 @@
+---
+id: claude-code-v2-1-260-diff-panel
+uuid: claude-code-v2-1-260-diff-panel
+slug: claude-code-v2-1-260-diff-panel
+title: "Claude Code v2.1.260: Diff Panel, Cache Debugging, and What's Actually New"
+excerpt: "Claude Code v2.1.260 shipped September 3, 2026 at 23:48 UTC. The headline changes: a fullscreen /diff panel showing uncommitted changes as Claude edits, prompt cache miss causes now visible in /cost a"
+feature_image: null
+featured: false
+published_at: "2026-09-04T03:11:01-07:00"
+updated_at: "2026-09-04T03:11:01-07:00"
+reading_time: 10
+tags: [news, claude-code, prompt-caching, changelog]
+tag_names: [News, Claude Code, Prompt Caching, Changelog]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.260: Diff Panel and Cache Debugging"
+meta_description: Claude Code v2.1.260 adds a /diff panel, cache miss cause reporting in /cost, and headless /advisor support. What each new feature means for your workflow.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.260: Diff Panel, Cache Debugging, and What's Actually New</h1>
+
+<p class="lede">Claude Code v2.1.260 shipped September 3, 2026 at 23:48 UTC. The headline changes: a fullscreen /diff panel showing uncommitted changes as Claude edits, prompt cache miss causes now visible in /cost and the status line, text-form /advisor commands for headless sessions, and /reload-plugins in headless. Here's what each one means in practice.</p>
+
+<p>I've been tracking every Claude Code release for months. Most are incremental. This one has three features that change how you debug expensive sessions -- and one fix that quietly makes the advisor workflow reliable in automated pipelines.</p>
+
+<h2>What changed in v2.1.260?</h2>
+<p>Claude Code v2.1.260 released on September 3, 2026 at 23:48 UTC. The release bundles four new features and six bug fixes. Features worth understanding: the /diff panel, cache miss cause reporting in /cost, /advisor text form for headless, and /reload-plugins for headless. The bug fixes close edge cases around cache invalidation and fullscreen rendering that were causing silent cost spikes and visual glitches in long sessions.</p>
+<p>This isn't a major version bump, but it's a meaningful quality-of-life update. Three of the four new features share the same theme: visibility. You're getting more context on what's happening inside a running Claude Code session -- and that context has real cost implications when sessions go wrong. The version cadence tells you something too: v2.1.258, v2.1.259, and v2.1.260 all shipped within three days. The team is moving fast, and this release closes a batch of bugs the prior releases opened.</p>
+
+<h2>What does the new /diff panel do?</h2>
+<p>The /diff panel opens beside the conversation in fullscreen mode and shows all uncommitted changes as Claude edits your files. Toggle it on or off with /diff. It updates live as Claude writes code, so you don't need to exit the conversation to review what changed -- the diff is always visible in the same terminal window, beside the conversation, not interrupting it.</p>
+<p>Before this, reviewing Claude's uncommitted changes during a long session required running git diff in a separate terminal or reconstructing edits from the Edit permission prompts. Neither is great when Claude is mid-run on a multi-file change and you want to sanity-check what's happening without killing the session.</p>
+<p>The side-by-side layout is the key design choice. The conversation stays on one side; the running diff on the other. For anyone doing production code work in fullscreen mode, this turns Claude Code's terminal interface into something closer to an IDE change-review panel. You can watch the diff accumulate in real time and hit Escape if something looks wrong.</p>
+<p>Three related rendering fixes shipped alongside the panel. Fullscreen mode no longer goes blank after you resize the terminal window. Long sessions with hundreds of tool calls no longer show a blank conversation view. And transcripts with very long single diff lines no longer cause severe slowdowns. Those three fixes together confirm this was a targeted QA sweep of the fullscreen renderer -- likely triggered by the /diff panel rollout surfacing edge cases in the rendering path.</p>
+
+<h2>Why can you now see prompt cache miss causes in /cost?</h2>
+<p>Claude Code v2.1.260 adds a "likely cause" field to cache miss reporting in /cost and in the status line's prompt_cache field. When a cache miss occurs, you now see why: "tool definitions changed," "system prompt changed," or "idle past TTL." Previously, you could see that a miss happened but not what triggered it -- leaving you to guess which part of your setup had changed between turns.</p>
+<p>Here's the cost implication. Prompt cache reads cost roughly 10% of the full input token price -- a 10x reduction compared to an uncached input. In a long session with a large CLAUDE.md, heavy tool definitions, or screenshot-heavy workflows, a miss on every turn can multiply your per-turn cost by 10x. Without knowing the cause, debugging a consistently expensive session was guesswork.</p>
+<p>Now /cost tells you directly. The v2.1.251 release on August 28 already added per-session cache metrics to /cost -- hit ratio, miss count, tokens re-cached, and warm/cold status. This release adds the "why" to go with the "what."</p>
+<p>Two specific bugs causing silent cache misses were also fixed. First: sessions with an advisor model set were missing the cache on all background requests -- compaction, /recap, prompt suggestions. Every background operation was re-sending the full conversation uncached. If you use the advisor feature and saw unexpectedly high session costs, this was almost certainly the cause. Second: blocking Stop hooks were causing the turn after a block to miss the cache. The blocked turn wasn't the expensive one -- the next turn was, and most people never connected the two events.</p>
+<p>There's also a fix for screenshot-heavy sessions. Images exceeding the per-request size cap were causing cache misses on every subsequent turn in a long session. Now Claude Code handles the size overflow without invalidating the rest of the cache prefix. If you're doing UI debugging work with lots of screenshots, this fix may noticeably reduce your session costs.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>What does the /advisor text form add for headless sessions?</h2>
+<p>Claude Code v2.1.260 adds text-form /advisor commands: /advisor (check current), /advisor &lt;model&gt; (set), and /advisor off (disable). These work in the desktop app, Remote Control sessions, and headless sessions via the -p flag or Agent SDK. Before v2.1.260, the advisor feature was only configurable from the interactive terminal UI -- headless contexts couldn't set or change it.</p>
+<p>The advisor feature sets a second model that reviews Claude's responses before they reach you. Think of it as a lightweight quality gate at the session level -- Claude generates, the advisor evaluates, and discrepancies surface for review. For interactive use, it's a second opinion. For automated use, it's a quality filter you can program.</p>
+<p>The headless addition is what makes this significant. If you're running Claude Code through the Agent SDK in automated pipelines -- CI workflows, multi-agent systems, production cron jobs -- you can now set and change the advisor model programmatically via slash commands, without any manual UI interaction. For teams running Claude Code at scale, this opens up the advisor as an automated quality layer, not just an interactive convenience.</p>
+<p>/reload-plugins was also added to headless sessions. Plugin state can now be refreshed in a running headless session without restarting the process -- useful for long-running agent loops that hot-reload skill definitions between tasks.</p>
+
+<h2>What are the remaining bug fixes worth noting?</h2>
+<p>Beyond the cache fixes covered above, v2.1.260 fixes a rendering issue in the Edit permission prompt's diff view. Emoji and multi-code-point Unicode characters were displaying with incorrect widths, causing visual misalignment in the diff display. Small fix, but noticeable in any project with emoji in code comments, variable names, or content files -- which covers a lot of projects in 2026.</p>
+<p>The fullscreen rendering fixes deserve a second mention. Three separate fullscreen regressions were closed together: blank transcript after terminal resize, blank conversation view after long sessions with many tool calls, and severe slowdown when a diff contained a very long single line. These all shipped as a batch, confirming a deliberate QA pass of the fullscreen renderer rather than three coincidentally timed bug reports.</p>
+<p>The Stop hook cache bug is worth flagging specifically for anyone building on Claude Code's hook system. Hooks that block certain actions were silently causing a prompt cache miss on the NEXT turn -- not the blocked turn, the one after. The cost hit was invisible because it looked like a normal turn cost. If you're running hook-heavy automation and have seen inconsistent session costs, update to v2.1.260 and run /cost to see what changes.</p>
+
+<h2>How does v2.1.260 fit the September 2026 Claude Code trajectory?</h2>
+<p>The agents-radar Q3 2026 report identified Claude Code as the leader in agent runtime stability across seven competing CLI tools -- more than Codex CLI, Gemini CLI, GitHub Copilot CLI, OpenCode, Pi, and Qwen Code. v2.1.260 is what that stability margin looks like in practice: rapid incremental shipping, fast bug closure, and deliberate investment in the headless and SDK surface that production users rely on.</p>
+<p>The consistent thread across September's releases is investment in the fullscreen, headless, and SDK experience. The /diff panel, /advisor in headless, /reload-plugins in headless -- these aren't features for interactive terminal hobbyists. They're features for teams running Claude Code in production pipelines who want IDE-grade tooling in the terminal. Each release makes the automated use case more reliable.</p>
+<p>If you're running Claude Code in any automated context -- SDK, CI pipelines, multi-agent systems -- v2.1.260 is worth updating to specifically for the advisor headless support and the Stop hook cache fix. If you're an interactive user, update for the /diff panel and the fullscreen rendering improvements. Both use cases get meaningful changes in this release.</p>
+
+<h2>FAQ</h2>
+<h3>How do I enable the /diff panel in Claude Code v2.1.260?</h3>
+<p>Type /diff in any fullscreen Claude Code session to toggle the diff panel on or off. The panel opens beside the conversation and shows uncommitted changes in real time as Claude edits your files. It requires fullscreen mode -- the command has no visible effect in standard windowed mode.</p>
+
+<h3>How do I see why Claude Code had a prompt cache miss?</h3>
+<p>Run /cost inside your session after a turn with higher-than-expected costs. As of v2.1.260, the output includes a "likely cause" field when a cache miss occurred -- for example, "system prompt changed," "tool definitions changed," or "idle past TTL." The status line's prompt_cache field also shows the cause in real time if you have status line display enabled.</p>
+
+<h3>Does the /advisor command work in headless Claude Code sessions now?</h3>
+<p>Yes, as of v2.1.260. Use /advisor to check the current advisor model, /advisor [model] to set one, and /advisor off to disable it. These commands now work in the desktop app, Remote Control, and headless sessions via the -p flag or Agent SDK. Before this release, the advisor was only configurable from the interactive terminal UI.</p>
+
+<h3>What causes prompt cache misses in Claude Code?</h3>
+<p>The most common causes are: CLAUDE.md or system prompt changes, tool definition changes between turns, images exceeding the per-request size cap in screenshot-heavy sessions, advisor background requests (fixed in v2.1.260), Stop hook blocks (fixed in v2.1.260), and idle sessions that exceed the cache TTL. Run /cost after a turn to see the likely cause for that specific miss.</p>
+
+<h3>How do I update to Claude Code v2.1.260?</h3>
+<p>Run npm install -g @anthropic-ai/claude-code@latest in your terminal, or use claude update if you have the built-in updater. The release published to npm on September 3, 2026 at 23:48 UTC. Run claude --version after updating to confirm the version number.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "How do I enable the /diff panel in Claude Code v2.1.260?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Type /diff in any fullscreen Claude Code session to toggle the diff panel on or off. The panel opens beside the conversation and shows uncommitted changes in real time as Claude edits your files. It requires fullscreen mode -- the command has no visible effect in standard windowed mode."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I see why Claude Code had a prompt cache miss?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run /cost inside your session after a turn with high costs. As of v2.1.260, the output includes a likely cause field when a cache miss occurred -- for example, system prompt changed, tool definitions changed, or idle past TTL. The status line prompt_cache field also shows the cause in real time."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the /advisor command work in headless Claude Code sessions now?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes, as of v2.1.260. Use /advisor to check the current advisor model, /advisor [model] to set one, and /advisor off to disable it. These commands now work in the desktop app, Remote Control, and headless sessions via the -p flag or Agent SDK. Before this release, the advisor was only configurable from the interactive terminal UI."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What causes prompt cache misses in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The most common causes are: CLAUDE.md or system prompt changes, tool definition changes between turns, images exceeding the per-request size cap in screenshot-heavy sessions, advisor background requests (fixed in v2.1.260), Stop hook blocks (fixed in v2.1.260), and idle sessions that exceed the cache TTL. Run /cost after a turn to see the likely cause."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "How do I update to Claude Code v2.1.260?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Run npm install -g @anthropic-ai/claude-code@latest in your terminal, or use claude update if you have the built-in updater. The release published to npm on September 3, 2026 at 23:48 UTC. Run claude --version after updating to confirm the version."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
