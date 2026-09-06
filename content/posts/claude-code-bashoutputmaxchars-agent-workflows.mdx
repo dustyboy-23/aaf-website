@@ -1,0 +1,155 @@
+---
+id: claude-code-bashoutputmaxchars-agent-workflows
+uuid: claude-code-bashoutputmaxchars-agent-workflows
+slug: claude-code-bashoutputmaxchars-agent-workflows
+title: "Claude Code v2.1.263: What bashOutputMaxChars Actually Changes for Agent Workflows"
+excerpt: Claude Code v2.1.261 added two new settings -- bashOutputMaxChars and taskOutputMaxChars -- that raise how much command and background-task output agents see inline, up to 128K characters. v2.1.263 (r
+feature_image: null
+featured: false
+published_at: "2026-09-06T03:08:55-07:00"
+updated_at: "2026-09-06T03:08:55-07:00"
+reading_time: 10
+tags: [news, claude-code, agent-workflows]
+tag_names: [News, Claude Code, Agent Workflows]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code bashOutputMaxChars: New Output Limits Explained"
+meta_description: Claude Code v2.1.261 adds bashOutputMaxChars, raising inline output to 128K chars. When the setting helps agent workflows and when context cost is not worth it.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.263: What bashOutputMaxChars Actually Changes for Agent Workflows</h1>
+
+<p class="lede">Claude Code v2.1.261 added two new settings -- bashOutputMaxChars and taskOutputMaxChars -- that raise how much command and background-task output agents see inline, up to 128K characters. v2.1.263 (released today, September 6, at 02:54 UTC) fixes a bug where these settings weren't being applied. Here's what changes and when you'd want to raise the limit.</p>
+
+<p>Issue #10738 in the claude-code repo surfaced a couple days after v2.1.261 shipped: the new output cap settings weren't taking effect -- agents were still getting truncated at the old limit regardless of what was in settings.json. v2.1.263 landed this morning with bug fixes and reliability improvements. If you set these values and saw no change, upgrade and try again. Here's what they do and why they matter for real agent pipelines.</p>
+
+<h2>What do bashOutputMaxChars and taskOutputMaxChars actually control?</h2>
+
+<p>These two settings control how many characters of command output Claude Code delivers inline -- directly in the model's active context -- before saving the remainder to a file. bashOutputMaxChars applies to Bash tool output. taskOutputMaxChars applies to background task and subagent output. Both can be configured up to 128,000 characters. Below the limit, the model receives full output inline. Above it, the output is written to a temporary file and the model gets a file reference instead.</p>
+
+<p>The inline-vs-file distinction matters more than it sounds for agent workflows. When output is inline, the model has the full error message, the complete JSON response, the entire stack trace right there in context -- no additional tool call required. When output is file-backed, the model has to make a deliberate Read tool call to retrieve it. In simple sessions, agents do this correctly. In complex multi-step pipelines, agents sometimes skip the Read, treat the truncated inline preview as the complete output, and reason from incomplete data.</p>
+
+<p>The result is a category of agent failure that's hard to diagnose: the agent appeared to process the command output, didn't throw an error, but made a wrong decision because it only saw the first portion. A deployment script that truncated halfway through a kubectl diff. A pytest run where the actual failing test was in the second half of the output. A curl response that included an error in the last 500 lines. These are the failure modes this setting addresses.</p>
+
+<h2>What did output handling look like before v2.1.261?</h2>
+
+<p>Before these settings shipped, Claude Code applied a fixed inline output limit that practical guides and community context-management tooling referenced in the 10,000-32,000 character range. Builders routinely hit this ceiling when running verbose test suites, large CI tasks, terraform plans, or multi-step deployment scripts. Output above the threshold was saved to a file and the model received a truncated view -- often just enough to look complete at a glance but missing the actual error buried deeper in the stream.</p>
+
+<p>The old default was a reasonable choice when it was set. In 2024 and early 2025, keeping tool outputs compact was essential to avoid filling the context in long sessions. Token costs were higher and context windows were smaller. The problem is that agent workflows matured and got more complex while the default stayed static. Builders built workarounds: piping output through grep before the agent saw it, splitting large commands into smaller queries, or using explicit summarization checkpoints to compress verbose output into something manageable. All of these work, but they add friction and require anticipating which commands will be verbose before you run them.</p>
+
+<p>The new settings give you a dial to adjust this trade-off explicitly, per project if needed, rather than accepting a one-size-fits-all default.</p>
+
+<h2>How do you configure bashOutputMaxChars and taskOutputMaxChars?</h2>
+
+<p>Both settings live in your Claude Code settings.json. You can set them at user level (~/.claude/settings.json) to apply across all projects, or scope them per project in .claude/settings.json inside a repo. The maximum value for both is 128,000 characters. Here's the config to raise both to the maximum:</p>
+
+<pre><code>&#123;
+  "bashOutputMaxChars": 128000,
+  "taskOutputMaxChars": 128000
+&#125;
+</code></pre>
+
+<p>You don't have to set both to 128K. If your agent primarily uses shell commands but doesn't run many background tasks, raising bashOutputMaxChars while leaving taskOutputMaxChars at a lower value is a reasonable choice. Conversely, if your workflow delegates to subagents that return large structured outputs, prioritize taskOutputMaxChars.</p>
+
+<p>After setting these values, restart your Claude Code session or start a new one -- the settings load at session initialization. If you're on v2.1.261 or v2.1.262 and the settings don't seem to take effect, that's the bug. Update first: npm update -g @anthropic-ai/claude-code will get you to v2.1.263. Run claude --version to confirm.</p>
+
+<h2>When should you raise the output limit?</h2>
+
+<p>Raising the inline output limit pays off when your agent workflow depends on seeing the full command output to make a correct decision. These are the high-value cases: verbose test suites where the actual failure is buried hundreds of lines into pytest or jest output; deployment scripts where terraform plan or kubectl diff prints a large structured change set the agent needs to evaluate holistically; build pipelines that emit dependency resolution traces; and curl or HTTP client calls that return large JSON responses the agent needs to parse fully rather than seeing a truncated preview.</p>
+
+<p>I've hit this specifically in agent-driven CI workflows. The agent runs a test suite, gets a truncated view because the output exceeded the old limit, misses the actual failing assertion six test files down, and either reports false success or starts debugging the wrong module. Raising the limit to cover the full suite output fixed this reliably. The agent's diagnosis accuracy on test failures improved noticeably -- not because the model got smarter, but because it was finally seeing the complete picture.</p>
+
+<p>Another strong case is multi-turn debugging workflows where an agent is tracing a bug across several tool calls. The inline context from each command builds up into a coherent mental model. File-backing any portion of that breaks the chain -- the agent has to decide whether to Read the file, which file, how much of it -- and sometimes chooses not to, especially in long sessions where context pressure is building. Keeping more output inline keeps the diagnostic loop tight.</p>
+
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>When should you leave the limit lower?</h2>
+
+<p>Higher inline output has a direct cost: every character in the model's context window contributes to input token count. Raising bashOutputMaxChars to 128K when your commands regularly print large outputs means each session gets heavier faster. In agentic loops running dozens or hundreds of tool calls, bloated per-turn context accumulates quickly. Long sessions may hit context limits sooner, trigger compaction at the conversation level, or start losing older context -- which can be worse than file-backing individual outputs if the lost context includes important earlier decisions.</p>
+
+<p>Two situations where I'd leave the limit at a lower value: noisy test harnesses that print individual assertion results for every passing test (you want the failures, not every success), and commands that generate large structured data like database dumps, bulk export files, or generated code. In those cases the agent doesn't need the full raw output inline -- it needs a targeted query against it, and you're better off piping through jq or grep first rather than inflating the context window with data the agent won't meaningfully process.</p>
+
+<p>A practical calibration: start at 50K-60K as a middle ground. Most real error messages, test failure logs, and deployment diffs fit inside 50K characters. Reserve the full 128K for workflows where you've specifically identified that truncation is causing diagnostic failures. Measure context usage in a typical session before and after -- Claude Code's /status command shows context consumption, and the difference will be visible if you're working with verbose commands.</p>
+
+<h2>What else shipped in the v2.1.261 to v2.1.263 cluster?</h2>
+
+<p>The v2.1.261 release (September 4, 2026) was the larger drop in this cluster -- 67 CLI changes total. The output settings are the most impactful for agent workflow builders, but three other additions are worth knowing about. First: /skill-doctor, a new diagnostic command that lists which skills loaded in a session were never actually invoked and what each costs in context tokens. If you've accumulated a large set of custom skills, this is the fastest way to find which ones you're paying for without using. Second: an Organization policy line added to /status and claude doctor that now explains why an org policy failed to load -- useful when a proxy is blocking the policy endpoint and you're debugging why team settings aren't applying. Third: --append-subagent-system-prompt-file, a new CLI flag that reads the subagent system prompt from a file rather than the command line, for prompts too large to pass inline.</p>
+
+<p>v2.1.263 (today) is the stability release in this cluster -- bug fixes and reliability improvements including the output settings fix. The three-day cadence between v2.1.261 and v2.1.263 is typical for Claude Code right now: feature release followed by a fast patch cycle as builders report issues. If you're running a production agent on Claude Code, it's worth staying on the latest patch release within a minor version rather than pinning to the initial feature release.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is the default value for bashOutputMaxChars in Claude Code?</h3>
+
+<p>Claude Code doesn't publish a single official default character limit in its documentation, but practical context management guides and community tooling have referenced inline output limits in the 10,000-32,000 character range for unmodified installations. The new settings don't change the default automatically -- you opt in by adding bashOutputMaxChars and taskOutputMaxChars to your settings.json with explicit values. Without these settings configured, behavior follows the existing defaults, which remain lower than the 128K maximum.</p>
+
+<h3>Does raising bashOutputMaxChars increase token costs?</h3>
+
+<p>Yes, directly. Every character of inline output enters the model's context window and counts toward input tokens. Raising the limit from a conservative default to 128K for a command that prints 80K characters of output means roughly 20,000-25,000 additional input tokens for that turn. In a single session with one verbose command this is minor. In long agentic loops running many verbose shell commands repeatedly, the cumulative cost and context window consumption is meaningful -- worth profiling against your actual workloads before enabling globally.</p>
+
+<h3>What happens when bash output exceeds the configured limit?</h3>
+
+<p>When a Bash command's output exceeds bashOutputMaxChars, Claude Code saves the full output to a temporary file and gives the model a file path reference. The model can make a Read tool call to access the full output, but it must do this explicitly -- it doesn't happen automatically. This is the failure mode the settings are designed to address: agents receiving file references in complex pipelines sometimes skip the Read call, treat the truncated inline preview as complete, and reason from partial data. Raising the limit for workflows where this matters keeps the full output in context automatically.</p>
+
+<h3>Can I set different output limits for different projects?</h3>
+
+<p>Yes. Place settings.json in your project's .claude/ directory to apply project-scoped limits. This lets you keep a conservative limit in your user-level settings at ~/.claude/settings.json as the global default, and raise it only for specific repos where you know commands emit large outputs. Project-level settings override user-level settings for the keys they specify, so the rest of your user settings apply unchanged.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the default value for bashOutputMaxChars in Claude Code?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Code does not publish a single official default character limit, but practical guides and community tooling reference inline output limits in the 10,000-32,000 character range for unmodified installations. The new settings do not change the default automatically -- you opt in by adding bashOutputMaxChars and taskOutputMaxChars to settings.json with explicit values up to 128,000."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does raising bashOutputMaxChars increase token costs?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes, directly. Every character of inline output enters the model context window and counts toward input tokens. Raising the limit to 128K for a command that prints 80K characters means roughly 20,000-25,000 additional input tokens for that turn. In long agentic loops running many verbose shell commands, the cumulative cost and context window consumption is meaningful and worth profiling before enabling globally."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens when bash output exceeds the configured limit?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "When a Bash command output exceeds bashOutputMaxChars, Claude Code saves the full output to a temporary file and gives the model a file reference. The model must make a Read tool call explicitly to access the full output. This is the failure mode the setting addresses: agents in complex pipelines sometimes skip the Read call, treat the truncated inline preview as complete, and make incorrect decisions from partial data."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can I set different output limits for different projects?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. Place settings.json in your project's .claude/ directory to apply project-scoped output limits. This lets you keep a conservative limit in your user-level ~/.claude/settings.json as the default and raise it only for repos where commands emit large outputs. Project-level settings override user-level settings for the keys they specify."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
