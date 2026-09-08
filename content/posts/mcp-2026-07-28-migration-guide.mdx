@@ -2,21 +2,21 @@
 id: mcp-2026-07-28-migration-guide
 uuid: mcp-2026-07-28-migration-guide
 slug: mcp-2026-07-28-migration-guide
-title: "MCP 2026-07-28 Spec Breaks Backward Compatibility: The Builder Migration Guide"
-excerpt: The July 28 MCP specification removes the initialize handshake, eliminates the Mcp-Session-Id header, and marks three core features deprecated. Any server built on the new spec will not connect to old
+title: "MCP 2026-07-28: What Breaks and How to Migrate Your Server"
+excerpt: The MCP 2026-07-28 spec is the biggest protocol change since MCP launched. It removes the initialize handshake, drops session IDs, deprecates Roots, Sampling, and Logging, and adds MRTR, MCP Apps, and
 feature_image: null
 featured: false
-published_at: "2026-08-20T03:09:01-07:00"
-updated_at: "2026-08-20T03:09:01-07:00"
-reading_time: 10
-tags: [deployment, mcp, model-context-protocol, ai-agents]
-tag_names: [Deployment, MCP, Model Context Protocol, AI Agents]
-primary_tag: deployment
-primary_tag_name: Deployment
+published_at: "2026-09-08T03:11:35-07:00"
+updated_at: "2026-09-08T03:11:35-07:00"
+reading_time: 12
+tags: [tutorials, mcp, agent-development, developer-tools]
+tag_names: [Tutorials, MCP, Agent Development, Developer Tools]
+primary_tag: tutorials
+primary_tag_name: Tutorials
 author: Dustin Gilmour
 author_slug: dustin
-meta_title: "MCP 2026-07-28 Spec: Breaking Changes Migration Guide"
-meta_description: "MCP 2026-07-28 removes sessions and the initialize handshake, deprecates Roots, Sampling, and Logging. Here's what breaks and the exact migration steps."
+meta_title: "MCP 2026-07-28: Migration Guide for Stateless Servers"
+meta_description: The MCP 2026-07-28 spec removes sessions, deprecates Roots/Sampling/Logging, and adds MRTR. Here is what breaks and how to migrate your MCP server in 4 steps.
 og_image: null
 og_title: null
 og_description: null
@@ -24,110 +24,129 @@ canonical_url: null
 visibility: public
 ---
 
-<h1>MCP 2026-07-28 Spec Breaks Backward Compatibility: The Builder Migration Guide</h1>
+<h1>MCP 2026-07-28: What Breaks and How to Migrate Your Server</h1>
 
-<p class="lede">The July 28 MCP specification removes the initialize handshake, eliminates the Mcp-Session-Id header, and marks three core features deprecated. Any server built on the new spec will not connect to older clients -- and vice versa. If you run MCP servers in production, this is what breaks and the exact steps to fix it.</p>
+<p class="lede">The MCP 2026-07-28 spec is the biggest protocol change since MCP launched. It removes the initialize handshake, drops session IDs, deprecates Roots, Sampling, and Logging, and adds MRTR, MCP Apps, and a formal Tasks extension. Old servers that rely on session state will break. Here is the exact migration path.</p>
 
-<p>I've been tracking MCP since its November 2024 launch. This is the most substantial protocol change since authorization was added -- and unlike most spec updates, this one has real deployment consequences. The ecosystem has grown to 97 million monthly SDK downloads and 71,000+ indexed servers on Glama alone. Most of them will need migration work.</p>
+<p>I have been tracking the MCP spec since the release candidate dropped in early July. If you have MCP servers in production, the July 28 final spec requires real changes -- not just version bumps. Here is what I found running through the breaking changes and the official migration docs.</p>
 
-<h2>What actually changed in the 2026-07-28 MCP spec?</h2>
+<h2>What exactly changed in the MCP 2026-07-28 spec?</h2>
 
-<p>The 2026-07-28 MCP spec ships one headline architectural change: the protocol core goes stateless. The Mcp-Session-Id header is gone (removed in SEP-2567). The initialize/notifications/initialized handshake is gone. Every request now carries its own protocol version and client capabilities in _meta fields. No session. No handshake. Any request can land on any server instance.</p>
+<p>The 2026-07-28 MCP spec removes the session layer entirely. The initialize/initialized handshake is gone. The Mcp-Session-Id header is gone. Every request is now self-describing -- it carries the protocol version and client identity in <code>_meta</code>. This turns MCP servers into stateless HTTP services that can sit behind a plain round-robin load balancer without shared storage or sticky sessions.</p>
 
-<p>According to the <a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog">official MCP changelog</a>, the full scope of changes includes: the Mcp-Session-Id header removed, the initialize handshake removed, three features deprecated (Roots, Sampling, Logging), six SEPs formalizing OAuth 2.1 resource server positioning, the Tasks feature relocated from core into the io.modelcontextprotocol/tasks extension, and tasks/list removed entirely. List endpoints -- tools/list, resources/list, prompts/list -- are now static and cacheable. They no longer vary per connection.</p>
+<p>This is the most substantive MCP change since authorization support was added. Before July 28, MCP assumed a single stateful connection between client and server. The session handshake was mandatory. Any server handling multiple clients needed careful session tracking. That entire model is replaced with a stateless core where any instance can serve any request.</p>
 
-<p>The stateless shift was inevitable. MCP servers that required sticky sessions were a scaling problem. Every horizontal deployment needed shared session stores or sticky load balancers. Now you can run an MCP server behind a plain round-robin load balancer with no special routing at all.</p>
+<p>Three new required headers do the routing work that sessions previously handled: <code>Mcp-Method</code> (the operation name), <code>Mcp-Name</code> (the server name), and the W3C <code>traceparent</code>. Gateways and firewalls can now inspect MCP traffic without parsing JSON bodies -- a major operational improvement. Cloudflare already uses a variant of this approach: their Code Mode MCP Server scaled to thousands of requests per second and served billions of tool calls since February 2026 (<a href="https://blog.cloudflare.com/mcp-v2/">Cloudflare blog</a>).</p>
 
-<h2>What breaks and what doesn't?</h2>
+<p>The official Tier 1 SDKs -- TypeScript, Python, Go, and C# -- have all shipped updates for the 2026-07-28 spec. Rust is in beta. For context on why this spec change matters at scale: the TypeScript and Python SDKs each surpassed 1 billion total downloads, and all Tier 1 SDKs collectively reach around 500 million monthly downloads (<a href="https://blog.modelcontextprotocol.io/posts/2026-07-28/">MCP blog</a>). That is a large footprint for a breaking change.</p>
 
-<p>Backward compatibility breaks at the protocol layer. A server implementing the 2026-07-28 spec will not speak to clients built on the 2025-11-25 spec -- and vice versa -- unless the server explicitly implements the backward compatibility bridge. The main breakage vectors: the missing initialize handshake, the missing Mcp-Session-Id header, and session-bound state that no longer exists at the protocol level.</p>
+<h2>What breaks? The three categories of breakage</h2>
 
-<p>Here's the concrete breakdown:</p>
+<p>Breaking changes in the 2026-07-28 spec fall into three buckets: session state that the protocol no longer carries, deprecated features that stop receiving new capabilities, and transport deprecations that will strand some existing clients as the ecosystem moves on. A 12-month deprecation window means nothing is immediately removed -- but the clock is running on everything in this list.</p>
 
-<p><strong>Hard breaks (break immediately when client and server spec versions don't match):</strong></p>
-<ul>
-  <li>Clients that send Mcp-Session-Id headers get no response from new servers -- the header is unknown</li>
-  <li>Clients that expect an initialize response will hang -- the response no longer exists</li>
-  <li>Servers that serve per-connection tool lists will return wrong results since list endpoints are now static</li>
-  <li>tasks/list calls will fail -- the method is removed from the core spec</li>
-</ul>
+<p><strong>Session-dependent state</strong></p>
 
-<p><strong>Deprecated -- still works, 12-month grace period:</strong></p>
-<ul>
-  <li>Roots -- still works. Replace with tool parameters or resource URIs.</li>
-  <li>Sampling -- still works. Replace with direct LLM provider API calls from your server.</li>
-  <li>Logging -- still works. Replace with stderr output or OpenTelemetry.</li>
-</ul>
+<p>The most impactful break. If your server stores any data scoped to an <code>Mcp-Session-Id</code> -- user preferences, in-flight context, accumulated tool results -- that state now needs to live somewhere else. The spec moves session context to a client-held opaque handle. Your server instance is expected to be stateless; external stores (Redis, a database, the client payload itself) now own any per-session data.</p>
 
-<p>The <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/">official release candidate announcement</a> states that deprecated features will have a 12-month minimum window before they are eligible for removal. The clock started July 28, 2026.</p>
+<p>Servers that used <code>initialize</code> to negotiate capabilities also break. The capability negotiation model is removed from the protocol layer entirely. Feature detection happens through other mechanisms in the new spec.</p>
 
-<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
-  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
-  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
-  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+<p><strong>Deprecated: Roots, Sampling, and Logging</strong></p>
+
+<p>Three features moved from core to deprecated status. They still work -- the deprecation policy guarantees a minimum 12-month window from the deprecating revision before anything becomes eligible for removal, per the <a href="https://modelcontextprotocol.io/specification/2026-07-28/changelog">official changelog</a>. But new implementations should not adopt them, and existing implementations should migrate while the window is open.</p>
+
+<p>The migration paths are direct: replace Roots with directory or file parameters in tool calls or server configuration; replace Sampling by calling LLM provider APIs directly; replace Logging with stderr output (stdio servers) or OpenTelemetry.</p>
+
+<p><strong>Transport deprecation</strong></p>
+
+<p>Legacy HTTP+SSE transport is deprecated with the same 12-month minimum window. Old clients that only speak legacy HTTP+SSE will not be able to connect to new servers that have dropped it. The transition window exists so you can run both transport paths simultaneously while the ecosystem moves forward.</p>
+
+<p>Dynamic Client Registration (DCR) is also deprecated, replaced by Client ID Metadata Documents (CIMD). The auth model received a broader hardening pass: RFC 9207 issuer validation is now required before code redemption, and client credentials are bound to the issuing authorization server.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
 </div>
 
-<h2>The 4-step migration checklist for existing MCP servers</h2>
+<h2>How do you migrate your MCP server to the 2026-07-28 spec?</h2>
 
-<p>Migrating an existing MCP server to the 2026-07-28 spec is four concrete steps: strip the session infrastructure, update how client capabilities arrive, convert session-bound state to explicit application handles, and add the backward compat bridge if you need to keep older clients working during the transition.</p>
+<p>Migrating to the 2026-07-28 spec has four concrete steps: remove the initialize handshake, externalize any session state, add the three required headers, and update or remove deprecated features. If you are on a Tier 1 SDK, version updates handle most of the low-level protocol changes. Custom servers need to handle each piece manually.</p>
 
-<p><strong>Step 1 -- Strip the session layer.</strong> Remove all Mcp-Session-Id header handling. Remove the initialize request handler. Remove the notifications/initialized listener. If your server created a session object at initialize time and stored it for the connection lifetime, that storage is now your application's responsibility -- not the protocol's.</p>
+<p><strong>Step 1: Remove the initialize handshake</strong></p>
 
-<p><strong>Step 2 -- Update client capability reading.</strong> Client capabilities and protocol version now arrive in every request's _meta field, under io.modelcontextprotocol/protocolVersion and io.modelcontextprotocol/clientCapabilities. Update your capability-checking code to read from _meta on each request instead of from a stored initialize result.</p>
+<p>Stop handling <code>initialize</code> requests as the mandatory first message. The new spec sends protocol version and client identity in <code>_meta</code> on every request. Update your request parsing to read from there instead of from accumulated session state.</p>
 
-<p><strong>Step 3 -- Convert session state to explicit handles.</strong> If your server carries state across calls -- a shopping basket, a browser session, a file editor state -- the correct pattern is: return an explicit handle from a tool call (a basket_id, a session_token), and have the model pass it back as a parameter on later calls. Your server looks it up in a database or cache. The protocol doesn't hold state. Your application does -- same as any well-designed HTTP API.</p>
+<pre><code class="language-javascript">// Before: session-scoped initialization
+server.on('initialize', (req) => &#123;
+  sessions[req.sessionId] = &#123; clientInfo: req.params, tools: [] &#125;
+&#125;)
 
-<p><strong>Step 4 -- Add the backward compat bridge if needed.</strong> The spec includes a compatibility path: a v2 server can implement server/discover alongside the old initialize handler. Clients on 2025-11-25 see the initialize response and keep connecting. New clients use server/discover. Beta SDKs for Python and TypeScript are available from the <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">SDK beta announcement</a> to test against real workloads before switching production traffic.</p>
+// After: read from _meta on each request
+const clientVersion = req._meta?.protocolVersion
+const clientInfo = req._meta?.clientInfo
+</code></pre>
 
-<h2>What to do with Roots, Sampling, and Logging</h2>
+<p><strong>Step 2: Externalize session state</strong></p>
 
-<p>Three MCP features you're probably using -- Roots, Sampling, and Logging -- are marked deprecated in the 2026-07-28 spec. They still work, and the official lifecycle policy guarantees a minimum 12-month window before any deprecated feature is eligible for removal. Migrating now is cleaner than doing it under deadline pressure in mid-2027.</p>
+<p>Anything your server stores by session ID needs a new home. For simple use cases, the client can carry state as an opaque token in each request. For complex cases -- long-running agent sessions, accumulated tool results -- use an external store. Redis works. A database works. The hard constraint: your server instance must handle any request without local state from prior requests on the same connection.</p>
 
-<p><strong>Roots.</strong> Roots let a client tell the server which directories or files it had access to. The replacement is simpler: pass that information as tool parameters, use resource URIs, or put it in server configuration at startup. The model ends up with more explicit control over exactly what it passes -- no implicit context threaded through the connection.</p>
+<p><strong>Step 3: Add the three required headers</strong></p>
 
-<p><strong>Sampling.</strong> Sampling let a server ask the client to make an LLM call on its behalf. The replacement is to call your LLM provider API directly from the server. You control the model, the token budget, the API key, and you don't need a round-trip through the client.</p>
+<p>Your server needs to emit -- and clients need to send -- <code>Mcp-Method</code>, <code>Mcp-Name</code>, and <code>traceparent</code> on every request. If you are behind a gateway or running in a serverless environment, these headers enable routing and observability without JSON body inspection. This is what makes MCP traffic behave like any standard HTTP API for your infrastructure layer.</p>
 
-<p><strong>Logging.</strong> The MCP Logging feature let servers send structured log messages through the protocol. Replace it with stderr for the stdio transport -- Claude Code and most clients surface this automatically. If you need structured observability, OpenTelemetry is the portable option. Both approaches work across more deployment contexts than protocol-level logging ever did.</p>
+<p><strong>Step 4: Update or remove deprecated features</strong></p>
 
-<h2>What the OAuth 2.1 resource server requirement means for your deployment</h2>
+<p>Roots: replace with explicit parameters or server configuration. Sampling: call your LLM API directly. Logging: switch to stderr or OpenTelemetry. Legacy HTTP+SSE: keep running for existing clients while you add the new transport path for new clients. Do not remove legacy support before your client population has migrated.</p>
 
-<p>Six Specification Enhancement Proposals in the 2026-07-28 spec formally position MCP servers as OAuth 2.1 resource servers. Two new requirements apply to any server handling auth: implement RFC 9728 (OAuth 2.0 Protected Resource Metadata) so clients can auto-discover the correct authorization server, and require clients to implement RFC 8707 (Resource Indicators) to explicitly scope tokens to a specific MCP server.</p>
+<p>If you are on the TypeScript or Python SDK, start with the version update -- the Tier 1 SDKs ship migration helpers that handle header negotiation and <code>_meta</code> parsing. The <code>createMcpHandler</code> API simplifies the transition considerably. Run your test suite after the update; failing tests surface your session-state dependencies more precisely than manual auditing.</p>
 
-<p>The RFC 8707 requirement is the security-relevant one. In a multi-agent setup where a model connects to several MCP servers, a malicious server could previously attempt to obtain tokens scoped to a different server. Resource Indicators prevent this by requiring clients to declare which server a token is intended for -- the authorization server then enforces the scope.</p>
+<h2>What is new in the spec that is actually worth using?</h2>
 
-<p>Per <a href="https://workos.com/blog/mcp-2026-spec-agent-authentication">WorkOS's breakdown of the authentication changes</a>, this formalizes what enterprise MCP deployments were already pushing toward. Teams running MCP servers behind corporate identity providers (Okta, Azure AD, Google Workspace) benefit most -- RFC 9728 metadata endpoints let clients discover the right authorization server without custom per-deployment configuration.</p>
+<p>The 2026-07-28 spec is not only removals. Multi Round-Trip Requests (MRTR), MCP Apps, the official Tasks extension, and cacheable list results add real capabilities -- all designed for the stateless model. If you are rebuilding your server for the new spec, these are the features worth understanding now rather than discovering later.</p>
 
-<p>If your MCP server is local-only with no auth layer, nothing changes for you right now. These requirements apply when you expose a server to external clients or run it in a multi-agent production environment where token scoping prevents cross-server token theft.</p>
+<p><strong>MRTR: server-initiated input without a held-open stream</strong></p>
 
-<h2>Why the stateless shift makes scaling straightforward</h2>
+<p>Multi Round-Trip Requests replace the old elicitation pattern. Previously, getting user input mid-call required a held-open stream -- impossible in a stateless model. MRTR fixes this: the server returns an <code>input_required</code> result, the client collects the needed information, and the client retries with it. No persistent connection needed. This enables clarification questions, confirmation dialogs, and multi-step forms inside tool calls without abandoning the stateless architecture.</p>
 
-<p>Every scaling complaint I've seen about MCP servers came down to session management. Sticky load balancer configs. Shared Redis stores for session state. Failure modes when the session-holding instance went down mid-task. The stateless spec removes all of that at the protocol layer.</p>
+<p><strong>MCP Apps: HTML in a sandboxed iframe</strong></p>
 
-<p>A stateless MCP server is just an HTTP service. Deploy it on Lambda, Cloud Run, Vercel Edge, Kubernetes, or a plain VPS. Round-robin between instances. No coordination layer. The model passes state as tool arguments. That's the same pattern any well-designed API uses -- and it means any standard infrastructure team can operate it without MCP-specific knowledge.</p>
+<p>MCP Apps are server-rendered HTML interfaces that run in a sandboxed iframe inside the client. Tools declare their UI templates upfront, so clients can prefetch and security-review them before rendering. UI actions -- button clicks, form submissions -- flow back through the same JSON-RPC channel as regular tool calls. No separate WebSocket or iframe message protocol required.</p>
 
-<p>The MCP ecosystem reached 97 million monthly SDK downloads by March 2026, up from 100,000 at launch in November 2024 -- a 970x growth in 18 months, per <a href="https://effloow.com/articles/mcp-ecosystem-growth-100-million-installs-2026">Effloow's ecosystem report</a>. With 71,000+ servers indexed on Glama alone by August 2026 (<a href="https://chatforest.com/guides/mcp-ecosystem-2026-state-of-the-standard/">ChatForest</a>), most of that infrastructure was built under the stateful model. The migration window gives the ecosystem time to adapt. The direction is clear: MCP's next generation runs on standard HTTP with no special session routing required.</p>
+<p>The official ext-apps repository has working examples across multiple categories: 3D visualizations (threejs-server), data exploration (cohort-heatmap-server, wiki-explorer-server), business tools (scenario-modeler-server, budget-allocator-server), and utilities (qr-server, transcript-server). If your tools currently return long JSON blobs or markdown tables that clients render awkwardly, MCP Apps is the intended path forward (<a href="https://modelcontextprotocol.io/extensions/apps/overview">MCP Apps docs</a>).</p>
+
+<p><strong>Tasks extension: stateless long-running operations</strong></p>
+
+<p>Tasks moved from experimental core to an official extension after production use drove a redesign. The new lifecycle fits the stateless model: <code>tools/call</code> returns a task handle, and the client drives progress by polling with <code>tasks/get</code>, updating with <code>tasks/update</code>, or canceling with <code>tasks/cancel</code>. No subscription model, no held-open stream. If you are building agents that run operations over minutes -- code execution, file processing, multi-step pipelines -- the Tasks extension is the right primitive now.</p>
+
+<p><strong>Cacheable list results</strong></p>
+
+<p>Tools/list, prompts/list, resources/list, and resources/read now include <code>ttlMs</code> and <code>cacheScope</code> parameters. Return a reasonable TTL on your capability lists and clients skip the re-fetch overhead on every request. For high-traffic servers, this is one of the fastest performance wins available in the new spec -- add a few fields to your existing list responses and you are done.</p>
+
+<h2>When should you migrate, and in what order?</h2>
+
+<p>The 12-month deprecation window means deprecated features are eligible for removal starting in July 2027 -- but eligible is not the same as immediately removed. The practical timeline for legacy HTTP+SSE disappearing is probably 18-24 months from now. That said, building new functionality on top of deprecated primitives means paying double migration cost later. Here is the priority order I would use.</p>
+
+<p><strong>Immediate:</strong> Update your Tier 1 SDK to the 2026-07-28 version and add the three required headers. This is the minimum needed to maintain compatibility with new clients without breaking old ones. On a Tier 1 SDK, this is an afternoon of work.</p>
+
+<p><strong>Next sprint:</strong> Remove the initialize handshake and externalize session state. This is the architecturally significant change. Once done, your server can deploy to serverless infrastructure -- Cloudflare Workers, AWS Lambda, any platform -- without complexity around sticky sessions or shared state stores at the protocol layer. Stateless deployment is the main operational win of this spec change and it compounds over time as your deployment footprint grows.</p>
+
+<p><strong>Before year-end:</strong> Migrate away from Roots, Sampling, and Logging. These still work, but shipping new features against deprecated primitives is a mistake. Start new functionality on the replacement patterns now so you are not doing two migrations later.</p>
+
+<p>David Cramer, co-founder of Sentry, put it plainly after deploying to production before the spec was finalized: "This new spec cleans up a bunch of the nonsense around auth and tools." Sentry was willing to take the pre-release risk, which signals how stable the spec was well before July 28. If your production risk tolerance is lower than Sentry's, the final spec is that much more justification to move now.</p>
 
 <h2>FAQ</h2>
 
-<h3>Will my existing MCP server break immediately after July 28?</h3>
+<h3>Do my existing MCP servers break immediately after July 28, 2026?</h3>
+<p>No -- existing MCP servers do not break immediately. The 12-month deprecation window means Roots, Sampling, Logging, legacy HTTP+SSE, and DCR all remain functional until at least July 2027. However, servers using the initialize handshake and Mcp-Session-Id become incompatible with new clients that only speak the 2026-07-28 spec unless you add a backward-compatibility layer. The real risk is not breakage today -- it is client ecosystem drift over the next 6-12 months as new clients stop supporting the old protocol path.</p>
 
-<p>Not immediately, and not automatically. A server built on the old 2025-11-25 spec keeps working with old clients -- the protocol change doesn't reach back and break existing deployments. The compatibility break happens when a new-spec client tries to connect to an old-spec server, or vice versa. Use the server/discover backward compat bridge to support both client versions during the transition period.</p>
+<h3>What is the simplest way to check if my server needs migration work?</h3>
+<p>Run four checks: Does your server require an initialize handshake before accepting other requests? Does it track per-session state keyed to Mcp-Session-Id? Does it use Roots, Sampling, or Logging? Does it use legacy HTTP+SSE transport? If you answered yes to any of these, you have migration work ahead. If you are on a Tier 1 SDK (TypeScript, Python, Go, C#), update the package and run your tests first -- the SDK handles lower-level protocol changes, and failing tests surface your session-state dependencies precisely.</p>
 
-<h3>How do I handle state if MCP is now stateless?</h3>
+<h3>How does MRTR replace the old elicitation model?</h3>
+<p>In the old model, getting user input mid-call required a held-open connection: the server sent a request back over the active stream, and the client responded on that same stream. In the stateless model, that is impossible. MRTR uses a polling pattern instead: the server returns an input_required result with a handle, the client collects the information from the user, and the client retries the original call with the collected data attached. The server holds nothing open. Any stateless instance can process the retry without knowledge of what came before.</p>
 
-<p>Return an explicit handle from a tool call and have the model pass it back as a parameter on later calls. A call to start_session returns a session_id string. Every subsequent tool call that needs session context includes session_id as a parameter. Your server looks it up in a database or cache. The protocol doesn't hold state -- your application does, the same as any HTTP API with a session token.</p>
-
-<h3>What is the timeline for deprecated MCP features to be removed?</h3>
-
-<p>The 2026-07-28 spec introduces a formal lifecycle policy: a feature must stay in Deprecated status for at least 12 months before it is eligible for removal. Roots, Sampling, and Logging were deprecated July 28, 2026, so the earliest removal date is July 28, 2027 -- and removal still requires a separate spec decision. Migrate before Q1 2027 to stay well ahead of any deadline.</p>
-
-<h3>Do I need OAuth 2.1 if I run a local MCP server with no auth?</h3>
-
-<p>No. The OAuth 2.1 resource server requirements apply to servers handling authentication. A local-only server with no external clients and no auth layer is unaffected. These requirements matter when you expose a server to external clients or run it in a multi-agent production environment where token scoping prevents cross-server token theft attacks.</p>
-
-<h3>Where are the beta SDKs for the MCP 2026-07-28 spec?</h3>
-
-<p>Beta SDKs for Python and TypeScript are available from the <a href="https://blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/">MCP blog's SDK beta announcement</a>. These validate against the finalized 2026-07-28 spec. Use them to test your migration before switching production traffic. Stable SDK releases will follow once the adoption window closes and the spec is confirmed in widespread use.</p>
+<h3>Should I implement MCP Apps now?</h3>
+<p>Worth evaluating now if your tools produce output that benefits from visual representation -- dashboards, data tables, maps, forms, confirmation dialogs. The sandboxed iframe model is well-specified and the official ext-apps repository has working examples you can run today. If your tools return long JSON strings or markdown tables that clients render awkwardly, MCP Apps gives you server-controlled rendering without requiring client-side code changes. All UI actions flow through the existing JSON-RPC channel, so there is no new security surface to audit on the client side.</p>
 
 <script type="application/ld+json">
 &#123;
@@ -136,50 +155,42 @@ visibility: public
   "mainEntity": [
     &#123;
       "@type": "Question",
-      "name": "Will my existing MCP server break immediately after July 28?",
+      "name": "Do my existing MCP servers break immediately after July 28, 2026?",
       "acceptedAnswer": &#123;
         "@type": "Answer",
-        "text": "Not immediately, and not automatically. A server built on the old 2025-11-25 spec keeps working with old clients. The compatibility break happens when a new-spec client tries to connect to an old-spec server, or vice versa. Use the server/discover backward compat bridge to support both client versions during the transition period."
+        "text": "No -- existing MCP servers do not break immediately. The 12-month deprecation window means Roots, Sampling, Logging, legacy HTTP+SSE, and DCR all remain functional until at least July 2027. However, servers using the initialize handshake and Mcp-Session-Id become incompatible with new clients that only speak the 2026-07-28 spec unless you add a backward-compatibility layer. The real risk is client ecosystem drift over the next 6-12 months as new clients stop supporting the old protocol path."
       &#125;
     &#125;,
     &#123;
       "@type": "Question",
-      "name": "How do I handle state if MCP is now stateless?",
+      "name": "What is the simplest way to check if my server needs migration work?",
       "acceptedAnswer": &#123;
         "@type": "Answer",
-        "text": "Return an explicit handle from a tool call and have the model pass it back as a parameter on later calls. A call to start_session returns a session_id string. Every subsequent tool call that needs session context includes session_id as a parameter. Your server looks it up in a database or cache. The protocol does not hold state -- your application does, same as any HTTP API with a session token."
+        "text": "Run four checks: Does your server require an initialize handshake before accepting other requests? Does it track per-session state keyed to Mcp-Session-Id? Does it use Roots, Sampling, or Logging? Does it use legacy HTTP+SSE transport? If you answered yes to any of these, you have migration work. If you are on a Tier 1 SDK (TypeScript, Python, Go, C#), update the package and run your tests -- the SDK handles lower-level protocol changes, and failing tests surface your session-state dependencies precisely."
       &#125;
     &#125;,
     &#123;
       "@type": "Question",
-      "name": "What is the timeline for deprecated MCP features to be removed?",
+      "name": "How does MRTR replace the old elicitation model?",
       "acceptedAnswer": &#123;
         "@type": "Answer",
-        "text": "The 2026-07-28 spec introduces a formal lifecycle policy: a feature must stay in Deprecated status for at least 12 months before it is eligible for removal. Roots, Sampling, and Logging were deprecated July 28, 2026, so the earliest removal date is July 28, 2027. Removal still requires a separate spec decision."
+        "text": "In the old model, getting user input mid-call required a held-open connection: the server sent a request back over the active stream, and the client responded on that stream. In the stateless model, that is impossible. MRTR uses a polling pattern: the server returns an input_required result with a handle, the client collects the information from the user, and the client retries the original call with the collected data. The server holds nothing open. Any stateless instance can process the retry."
       &#125;
     &#125;,
     &#123;
       "@type": "Question",
-      "name": "Do I need OAuth 2.1 if I run a local MCP server with no auth?",
+      "name": "Should I implement MCP Apps now?",
       "acceptedAnswer": &#123;
         "@type": "Answer",
-        "text": "No. The OAuth 2.1 resource server requirements apply to servers handling authentication. A local-only server with no external clients and no auth layer is unaffected. These requirements matter when you expose a server to external clients or run it in a multi-agent production environment."
-      &#125;
-    &#125;,
-    &#123;
-      "@type": "Question",
-      "name": "Where are the beta SDKs for the MCP 2026-07-28 spec?",
-      "acceptedAnswer": &#123;
-        "@type": "Answer",
-        "text": "Beta SDKs for Python and TypeScript are available from the MCP blog at blog.modelcontextprotocol.io/posts/sdk-betas-2026-07-28/. These validate against the finalized 2026-07-28 spec. Use them to test your migration before switching production traffic."
+        "text": "Worth evaluating now if your tools produce output that benefits from visual representation -- dashboards, data tables, maps, forms, confirmation dialogs. The sandboxed iframe model is well-specified and the official ext-apps repository has working examples. If your tools return long JSON strings or markdown tables that clients render awkwardly, MCP Apps gives you server-controlled rendering without requiring client-side code changes. All UI actions flow through the existing JSON-RPC channel."
       &#125;
     &#125;
   ]
 &#125;
 </script>
 
-<div style="background: #0f1f15; border: 1px solid rgba(31, 61, 43, 0.4); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
-  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want this built for your business?</h3>
-  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">Venti Scale builds AI automation systems for businesses that want results without the learning curve. One operator, AI-powered, full marketing stack.</p>
-  <a href="https://ventiscale.com" target="_blank" style="display: inline-block; background: #1F3D2B; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">See What We Build</a>
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
 </div>
