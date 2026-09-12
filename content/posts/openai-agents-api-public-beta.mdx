@@ -1,0 +1,149 @@
+---
+id: openai-agents-api-public-beta
+uuid: openai-agents-api-public-beta
+slug: openai-agents-api-public-beta
+title: "OpenAI Agents API Beta: What Changed for Agent Builders"
+excerpt: "OpenAI's Agents API entered public beta on September 10, 2026, giving every developer with an API account access to the same orchestration harness powering Codex. Long-lived sessions, automatic contex"
+feature_image: null
+featured: false
+published_at: "2026-09-12T03:12:43-07:00"
+updated_at: "2026-09-12T03:12:43-07:00"
+reading_time: 8
+tags: [news, openai, ai-agents, agents-api]
+tag_names: [News, OpenAI, AI Agents, Agents API]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "OpenAI Agents API Public Beta: What Builders Need to Know"
+meta_description: "OpenAI's Agents API entered public beta on Sept 10, 2026. Here's what the managed Codex harness gives you, what it costs, and where the beta falls short."
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>OpenAI Agents API Beta: What Changed for Agent Builders</h1>
+
+<p class="lede">OpenAI's Agents API entered public beta on September 10, 2026, giving every developer with an API account access to the same orchestration harness powering Codex. Long-lived sessions, automatic context compaction, MCP server support, subagent coordination, and nine compute sandbox partners -- all billed through the models you use with no separate API fee.</p>
+
+<p>I've spent two years hand-rolling the retry logic, session state, and handoff protocols that make agents actually work under production load. OpenAI's Agents API is an acknowledgment that this is table stakes, not a moat. Here's what the beta gives you, where it falls short, and whether it's worth switching from what you have.</p>
+
+<h2>What Exactly Is the OpenAI Agents API?</h2>
+
+<p>The OpenAI Agents API is the Codex orchestration harness exposed as a managed service. You define an agent -- model, instructions, tools, MCP servers -- then call the API and stream results. OpenAI runs the session loop, handles context compaction, and manages recovery. Before this, every team built that infrastructure themselves.</p>
+
+<p>The beta opened September 10, 2026, to all developers with an OpenAI API account -- no separate waitlist. Access requires the <code>OpenAI-Beta: agents=v1</code> header on API requests. The managed service replaces what teams were previously building with the open-source Agents SDK: they assembled the loop, you call the API.</p>
+
+<p>The core value proposition is operational: OpenAI takes on the maintenance surface for the orchestration layer. When underlying models update or tool APIs change, the harness adapts without you shipping a patch. For teams running agents at scale, that's real leverage. For teams running one agent occasionally, the open-source SDK is fine.</p>
+
+<h2>What Are the Four Core Primitives?</h2>
+
+<p>The Agents API exposes four objects: Agent, Environment, Session, and Events. Agent is the definition -- model, system prompt, tools, and subagent connections. Environment is the compute sandbox where code and shell commands execute. Session is the stateful thread that persists across turns. Events is the streaming interface that delivers real-time progress as the agent works.</p>
+
+<p>This division is cleaner than what most hand-rolled loops end up with. In my experience building agent harnesses from scratch, these four concerns get tangled: the session layer leaks into tool dispatch, the environment config bleeds into retry logic, and events become an afterthought. The API enforces the separation by design.</p>
+
+<p>Subagent coordination is first-class: a parent Agent can spawn child Agents and collect their results, making multi-step pipelines that previously required a separate framework like LangGraph or CrewAI expressible as a single API call.</p>
+
+<h2>Which Compute Sandbox Should You Use?</h2>
+
+<p>Agents can run code in two environments: OpenAI-hosted sandboxes (managed, zero config) or third-party compute from one of nine partners -- Blaxel, Cloudflare, Daytona, DigitalOcean, E2B, Modal, Oracle, Runloop, and Vercel. You specify the sandbox in the Environment object at session creation. For most builders starting with the API, the OpenAI-hosted sandbox is the right default.</p>
+
+<p>The partner sandbox list matters if you have requirements the hosted option can't meet. If your team is already running workloads on Modal or E2B microVMs, you can point the Agents API at that infrastructure. Cloudflare and Vercel are the clear picks if you're already running edge compute. Oracle is there for enterprise deployments with existing Oracle Cloud commitments.</p>
+
+<p>One hard wall during the beta: data residency is US-only. If your deployment has EU or APAC data residency requirements, the hosted Agents API is blocked for now. OpenAI hasn't announced a timeline for regional expansion.</p>
+
+<h2>What Does MCP Support Actually Mean Here?</h2>
+
+<p>MCP (Model Context Protocol) servers are first-class in the Agents API -- you attach them to an Agent definition the same way you attach custom functions. The agent discovers and coordinates MCP servers alongside any custom tools you've built. This means agents built on the Agents API can plug into the growing MCP tool ecosystem without extra glue code.</p>
+
+<p>For teams already running MCP servers for database access, GitHub integration, internal APIs, or CRM connectivity, this matters. You're not rewriting your tool layer to use the Agents API -- you're pointing it at servers that already exist. Integration cost drops significantly compared to wrapping each capability in a custom function.</p>
+
+<p>Built-in tools -- web search and code execution -- are also included and billed at standard OpenAI tool rates. The agent uses them without you writing the wrapper. This is how agents in the API can browse the web or run Python without any tool implementation on your end.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>Agents API vs. Agents SDK -- What's the Difference?</h2>
+
+<p>The Agents SDK (open-source, MIT licensed) is a library you embed in your application -- you run the agent loop on your infrastructure. The Agents API is a managed service where OpenAI runs the loop in their cloud. The SDK gives you control and model flexibility. The API gives you operational convenience at the cost of GPT-lock.</p>
+
+<p>The SDK added support for 100+ model providers via OpenAI-compatible endpoints in April 2026, making it possible to swap in Claude, Gemini, or any compatible model without changing the framework. The managed Agents API doesn't offer this -- it routes exclusively through OpenAI models. If multi-model support matters for your architecture, the SDK is the path.</p>
+
+<p>For teams that want to ship fast and don't need non-OpenAI models, the managed API is the clearer win: no infrastructure to run, no harness code to maintain, and context compaction handled automatically. For teams with complex deployment requirements or provider diversification in their roadmap, the SDK keeps more options open.</p>
+
+<h2>What Does It Cost?</h2>
+
+<p>There is no separate Agents API fee. You pay for the models and tools the agent consumes during each session. For gpt-6-astra, the pricing is $10 per million input tokens and $50 per million output tokens, per AiCybr's reporting on the beta. OpenAI-hosted sandboxes add standard container compute rates. Third-party sandbox costs flow through the selected partner's billing.</p>
+
+<p>Context compaction is automatic and built into the session. For long-running agents that accumulate substantial context, this matters: the API manages token budgets without you implementing a compaction strategy, which in practice reduces the cost of multi-turn agent sessions. The trade-off is reduced visibility into exactly what the agent is retaining versus summarizing -- which surfaces when you're debugging unexpected behavior.</p>
+
+<p>The no-extra-fee structure mirrors how Anthropic prices Claude Managed Agents. Both labs are betting that the orchestration plumbing is a cost of running the service, not a separate product line. Token consumption is the unit economics that matters for production agents at scale.</p>
+
+<h2>What Limitations Will Actually Block You?</h2>
+
+<p>Three constraints will block specific deployments in the current beta. First: data residency is US-only, ruling out EU or APAC requirements. Second: Zero Data Retention (ZDR) is unsupported across every sandbox configuration, which blocks regulated industries like healthcare and legal. Third: the managed API is GPT-locked -- no non-OpenAI models.</p>
+
+<p>If none of these three apply, the beta is usable for production workloads right now. If any of them apply, you're on the SDK or waiting for beta expansion. OpenAI hasn't announced timelines for ZDR support or regional data residency. Given that Anthropic's Managed Agents offering also launched without ZDR, this looks like a category-wide constraint both labs are still solving.</p>
+
+<h2>How Does This Compare to Rolling Your Own?</h2>
+
+<p>Rolling your own agent harness means owning session state, retry logic, context compaction, tool dispatch, and error recovery -- and maintaining that code as underlying APIs change. It's operationally costly at scale. Every model update or tool API deprecation hits your harness layer first. The managed Agents API moves that maintenance burden to OpenAI.</p>
+
+<p>The trade-off is control and model flexibility. A hand-rolled loop lets you inspect every layer, swap models freely, and implement custom compaction strategies. The Agents API abstracts those layers away. For a team running hundreds of agent sessions per day, the operational leverage is worth the abstraction cost. For a team running one or two specialized agents that need precise control, rolling your own still makes sense.</p>
+
+<p>For context on raw capability: the Artificial Analysis Coding Agent Index (2026) scored Claude Code at 66 and Codex at 65. The gap is narrow. The real differentiation is now in surrounding infrastructure -- context handling, tool integration, deployment model -- which is exactly what both labs are competing on at the API layer, not just the model layer.</p>
+
+<h2>FAQ</h2>
+
+<h3>Is the OpenAI Agents API available to all developers?</h3>
+<p>Yes. The Agents API entered public beta on September 10, 2026, with no separate waitlist. Any developer with an active OpenAI API account can access it by including the <code>OpenAI-Beta: agents=v1</code> header in API requests. Standard OpenAI API usage terms, data policies, and rate limits apply to all sessions.</p>
+
+<h3>Does the Agents API support non-OpenAI models?</h3>
+<p>No. The managed Agents API routes exclusively through OpenAI models. The open-source Agents SDK added support for 100+ model providers via OpenAI-compatible API endpoints in April 2026. If you need multi-model support in a managed harness, the SDK deployed on your own infrastructure is currently the only option.</p>
+
+<h3>What is Zero Data Retention and why does the Agents API not support it?</h3>
+<p>Zero Data Retention (ZDR) is an OpenAI API configuration where no request or response data is stored after the response is delivered -- required by some regulated industries. The Agents API's managed session model requires temporary state persistence to function, making ZDR incompatible with the current architecture. There is no announced timeline for ZDR support in the beta.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Is the OpenAI Agents API available to all developers?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. The Agents API entered public beta on September 10, 2026, with no separate waitlist. Any developer with an active OpenAI API account can access it by including the OpenAI-Beta: agents=v1 header in API requests. Standard OpenAI API usage terms, data policies, and rate limits apply to all sessions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does the Agents API support non-OpenAI models?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No. The managed Agents API routes exclusively through OpenAI models. The open-source Agents SDK added support for 100+ model providers via OpenAI-compatible API endpoints in April 2026. If you need multi-model support in a managed harness, the SDK deployed on your own infrastructure is currently the only option."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is Zero Data Retention and why does the Agents API not support it?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Zero Data Retention (ZDR) is an OpenAI API configuration where no request or response data is stored after the response is delivered -- required by some regulated industries. The Agents API managed session model requires temporary state persistence to function, making ZDR incompatible with the current architecture. There is no announced timeline for ZDR support in the beta."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
