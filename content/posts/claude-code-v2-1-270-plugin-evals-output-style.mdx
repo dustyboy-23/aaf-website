@@ -1,0 +1,126 @@
+---
+id: claude-code-v2-1-270-plugin-evals-output-style
+uuid: claude-code-v2-1-270-plugin-evals-output-style
+slug: claude-code-v2-1-270-plugin-evals-output-style
+title: "Claude Code v2.1.270: What Plugin Evals and Output-Style Switching Actually Change"
+excerpt: "Claude Code v2.1.269, released September 11, 2026, shipped two significant developer-facing features: claude plugin eval runs your plugin's test suite against Claude Code and scores results in JSON an"
+feature_image: null
+featured: false
+published_at: "2026-09-13T03:10:17-07:00"
+updated_at: "2026-09-13T03:10:17-07:00"
+reading_time: 8
+tags: [news, claude-code, claude-code-changelog]
+tag_names: [News, Claude Code, Claude Code Changelog]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.270: Plugin Evals and Output-Style"
+meta_description: Claude Code v2.1.269 brings plugin evals with delta scoring and /output-style for cloud sessions, plus 60+ fixes. What actually changed for builders.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.270: What Plugin Evals and Output-Style Switching Actually Change</h1>
+
+<p class="lede">Claude Code v2.1.269, released September 11, 2026, shipped two significant developer-facing features: <code>claude plugin eval</code> runs your plugin's test suite against Claude Code and scores results in JSON and HTML -- including a delta comparing performance with and without the plugin loaded; and <code>/output-style [name]</code> switches Claude's verbosity and tone per session, now including cloud and headless sessions where it previously had no effect.</p>
+
+<p>I've been tracking every Claude Code release this month. v2.1.270 itself is a one-line patch -- a regression fix for git commands prompting unexpectedly in long sessions. All the new functionality shipped in v2.1.269 the day before. Here's what actually changed, who it matters for, and which of the 60+ bug fixes are worth your attention.</p>
+
+<h2>What Shipped in v2.1.269 and v2.1.270?</h2>
+<p>v2.1.269 (September 11, 2026) shipped two headline features -- plugin evals and output-style switching -- plus four new configuration options, VS Code interface updates, Slack integration improvements, and 60+ documented bug fixes covering prompt caching, terminal compatibility, permission rules, and cloud session management.</p>
+<p>v2.1.270 (September 12) is a single-fix patch correcting a regression introduced in 2.1.269: read-only git commands were unexpectedly prompting for permission in sessions that had been running for a while. The tightened permission-check logic from the security fixes in 2.1.269 broke a subset of git reads as a side effect.</p>
+<p>For context on the release pace: Anthropic shipped Claude Code v2.1.260 through v2.1.270 in roughly three weeks -- approximately one new version every 2-3 days. Almost every release in this range included new features alongside fixes, not just maintenance patches. Sources: <a href="https://code.claude.com/docs/en/changelog" target="_blank">Claude Code changelog</a>, <a href="https://releasebot.io/updates/anthropic/claude-code" target="_blank">Releasebot</a>.</p>
+
+<h2>How Does claude plugin eval Work?</h2>
+<p><code>claude plugin eval</code> runs your plugin's test suite against Claude Code and scores each case in JSON and HTML. The key metric is delta (Δ): every test runs twice -- once with your plugin loaded, once without -- so you can see what the plugin actually contributes over the base model alone. A delta near zero means the base model handles the task without your plugin.</p>
+<p>To initialize a suite, run <code>claude plugin eval init</code>. It opens an interactive session, reads your plugin, proposes prompts that should and shouldn't trigger it, designs graders, pilots them once, and writes case directories under an <code>evals/</code> folder inside your plugin. You don't write the structure by hand -- init handles the scaffolding and writes one case directory per proposed prompt.</p>
+<p>Graders come in three types: a regex check over Claude's reply, a tool-call check (did Claude invoke the expected tool?), and a rubric-based check where a second model judges the reply against your criteria. Each case can combine multiple graders. The eval suite format is separate from the <code>evals/evals.json</code> file the skill-creator plugin uses -- they're different systems for different use cases.</p>
+<p>The practical value is regression detection. If you change a plugin or Anthropic ships a new Claude model, your plugin's delta may shift. A plugin that scored +0.7 delta previously scoring +0.1 now means either the plugin behavior changed or the base model got better at the task without it -- which is useful signal: if the base model handles the case without the plugin, the plugin may be redundant for that prompt. Full documentation: <a href="https://code.claude.com/docs/en/plugin-evals" target="_blank">Test plugins with evals</a>.</p>
+
+<h2>What Does /output-style Actually Change?</h2>
+<p><code>/output-style [name]</code> switches Claude Code's verbosity and tone mid-session. Without an argument it lists available styles; with a name it applies that style immediately. The meaningful new addition in v2.1.269 is cloud and headless session support -- teams running Claude Code in automated deployments can now set output styles in session configuration and have them apply consistently across agent runs.</p>
+<p>This command has an unusual history. It was introduced early in Claude Code's life, deprecated in v2.1.73, removed entirely in v2.1.91, and now restored in v2.1.269 with broader scope than the original. Built-in styles include Default (action-first, minimal narration between tool calls), Concise, Explanatory, and Learning. Custom styles can be defined in <code>~/.claude/output-modes/</code>.</p>
+<p>The cloud session support is the practically useful part. For teams running scheduled routines or CI-driven agent tasks, you can now set a consistent output style that controls how Claude narrates its work in transcripts -- useful for log verbosity control in production workflows or when parsing Claude's output programmatically and you need consistent formatting across automated runs.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>The Other Additions Worth Knowing</h2>
+<p>v2.1.269 added four configuration options for teams running Claude Code at scale: a concurrent agent ceiling setting, an LLM gateway timeout extension, OpenTelemetry repository tagging, and VS Code interface additions including an agent map, Hooks dialog, and Permission rules manager.</p>
+<p><code>CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS</code> accepts 1-256 and raises the concurrent agent ceiling for inference-bound fan-outs -- useful if you're running large parallel agent workflows and hitting throughput limits. <code>CLAUDE_CODE_GATEWAY_MODEL_DISCOVERY_TIMEOUT_MS</code> extends the LLM gateway model discovery timeout beyond its 3-second default, which matters in enterprise deployments with slower internal model gateways where the 3-second cutoff causes spurious discovery failures.</p>
+<p><code>OTEL_METRICS_INCLUDE_REPOSITORY</code> tags OpenTelemetry metrics with <code>vcs.*</code> repository attributes and commit events with <code>vcs.ref.head.*</code>. For teams correlating Claude Code telemetry with specific branches or commits in their observability stack, this fills a previous gap where metrics arrived without repository context. The VS Code additions -- agent map footer pill, Hooks dialog, Permission rules dialog, live subagent progress rows in Focus view -- are navigation improvements rather than behavior changes.</p>
+<p>The Bash tool gained one useful addition: when <code>bashEditDiffEnabled</code> is set, the tool result now includes a diff of the files a Bash command changed. For agent workflows where Bash commands make file edits, this gives Claude direct visibility into what changed without a separate read step -- which reduces unnecessary follow-up tool calls in edit-heavy workflows.</p>
+
+<h2>The Five Bug Fixes That Matter Most</h2>
+<p>The 60+ bug fixes in v2.1.269 include several that affect core production behavior: two prompt cache issues that directly reduce API costs, two permission rule fixes that are security-relevant for teams with custom allowlists, and one plugin security fix that closes a local privilege escalation vector.</p>
+<p>The two prompt cache fixes: a bug where the cache was partially invalidated after a response was cut off at the output-token limit and automatically resumed (forcing unnecessary re-computation on the next turn), and a bug where resuming a session after interrupting Claude mid-thought changed how earlier context was re-sent (causing cache misses). Both are now corrected. Prompt cache hits are significantly cheaper than full-context sends -- these fixes reduce unnecessary API spend for high-volume Claude Code users in long or frequently-resumed sessions.</p>
+<p>The two permission rule fixes: a bug where <code>!</code> negation rules were applying beyond their intended settings source, and a bug where <code>Edit()</code> deny rules weren't applying to <code>tee</code> command destinations. If you have custom deny rules using negation or targeting Edit operations, your rules may now enforce differently than in v2.1.268 -- worth checking your allowlist configuration against the updated behavior.</p>
+<p>The plugin security fix: plugin archives were previously readable by other local users and retained world-writable bits after extraction. On shared systems, this closed a local privilege escalation vector where another local user could read or modify plugin content. Now corrected in v2.1.269.</p>
+<p>Sessions also now auto-archive after 14 days of inactivity, keeping the session list manageable without manual cleanup.</p>
+
+<h2>FAQ</h2>
+<h3>What is the difference between claude plugin eval and claude plugin validate?</h3>
+<p><code>claude plugin validate</code> checks a plugin's files for syntax and schema errors -- it verifies file structure, not runtime behavior. <code>claude plugin eval</code> runs the plugin against real test cases in Claude Code and measures whether it produces the expected outcomes, including a delta comparison against no-plugin baseline performance. Use validate for fast structural checks; use eval to verify whether the plugin actually works as intended in practice.</p>
+
+<h3>Does /output-style persist across sessions?</h3>
+<p>Yes. When you apply a style via <code>/output-style [name]</code>, Claude Code saves it to <code>.claude/settings.local.json</code> in your project. The style applies to subsequent sessions in that project directory. You can also set a global default via <code>/config</code>. In cloud and headless sessions, the style set in the session configuration applies to automated runs.</p>
+
+<h3>Which v2.1.269 bug fixes affect API costs?</h3>
+<p>Two fixes directly reduce unnecessary API spend. First, partial prompt cache invalidation after output-token cutoffs is now corrected -- the cache was being partially invalidated on the following turn, forcing re-computation. Second, session resume after interruption no longer changes how earlier context is re-sent, which was causing cache misses. Both fixes reduce unnecessary full-context sends for high-volume Claude Code users on standard API pricing.</p>
+
+<h3>What does CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS control?</h3>
+<p><code>CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS</code> sets the ceiling for concurrent agents in a workflow, accepting values between 1 and 256. It's designed for inference-bound fan-out tasks where the default concurrency limit creates throughput bottlenecks. If you're running large parallel agent workflows and seeing unexpected serialization, this is the environment variable to adjust.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is the difference between claude plugin eval and claude plugin validate?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "claude plugin validate checks a plugin's files for syntax and schema errors -- it verifies file structure, not runtime behavior. claude plugin eval runs the plugin against real test cases in Claude Code and measures whether it produces the expected outcomes, including a delta comparison against no-plugin baseline performance. Use validate for fast structural checks; use eval to verify whether the plugin actually works as intended."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does /output-style persist across sessions?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Yes. When you apply a style via /output-style [name], Claude Code saves it to .claude/settings.local.json in your project. The style applies to subsequent sessions in that project directory. You can set a global default via /config. In cloud and headless sessions, the style set in the session configuration applies to automated runs."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Which v2.1.269 bug fixes affect API costs?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Two fixes directly reduce unnecessary API spend. First, partial prompt cache invalidation after output-token cutoffs is now corrected -- the cache was being partially invalidated on the following turn. Second, session resume after interruption no longer changes how earlier context is re-sent, which was causing cache misses. Both fixes reduce unnecessary full-context sends for high-volume users."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What does CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS control?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS sets the ceiling for concurrent agents in a workflow, accepting values between 1 and 256. It is designed for inference-bound fan-out tasks where the default concurrency limit creates throughput bottlenecks. If you are running large parallel agent workflows and seeing unexpected serialization, this is the environment variable to adjust."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
