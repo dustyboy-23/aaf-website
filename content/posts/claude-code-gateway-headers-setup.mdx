@@ -1,0 +1,191 @@
+---
+id: claude-code-gateway-headers-setup
+uuid: claude-code-gateway-headers-setup
+slug: claude-code-gateway-headers-setup
+title: "Claude Code v2.1.273 Gateway Headers: The Enterprise Setup"
+excerpt: "Claude Code v2.1.273, released September 15 2026, adds five opt-in LLM gateway hint headers that let your proxy inspect every request Claude Code sends. Enable them with one env var: CLAUDE_CODE_GATEW"
+feature_image: null
+featured: false
+published_at: "2026-09-16T03:07:58-07:00"
+updated_at: "2026-09-16T03:07:58-07:00"
+reading_time: 11
+tags: [tutorials, claude-code, enterprise, llm-gateway, mcp]
+tag_names: [Tutorials, Claude Code, Enterprise, LLM Gateway, MCP]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.273 Gateway Headers: Enterprise Setup Guide"
+meta_description: Claude Code v2.1.273 adds 5 LLM gateway hint headers for enterprise proxy routing. Enable with CLAUDE_CODE_GATEWAY_HINT_HEADERS=1 for request-class routing.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.273 Gateway Headers: The Enterprise Setup</h1>
+
+<p class="lede">Claude Code v2.1.273, released September 15 2026, adds five opt-in LLM gateway hint headers that let your proxy inspect every request Claude Code sends. Enable them with one env var: CLAUDE_CODE_GATEWAY_HINT_HEADERS=1. For teams running Claude Code behind a corporate gateway, this is the missing observability layer for routing, cost attribution, and policy enforcement.</p>
+
+<p>I have been waiting for this feature since I first tried routing Claude Code through an enterprise proxy. You could set ANTHROPIC_BASE_URL and redirect all traffic to your gateway -- but the gateway was flying blind. Every request looked identical whether Claude was responding to a quick question or running a 40-tool background agent. Version 2.1.273 fixes that.</p>
+
+<h2>What problem were enterprise teams running into before this?</h2>
+
+<p>Before v2.1.273, corporate LLM gateways received Claude Code API requests with no metadata about request intent. An interactive session and a long-running background agent sent indistinguishable traffic. That made request-class-based routing, per-team cost attribution, and agent-specific rate limits technically impossible at the proxy layer.</p>
+
+<p>The result: enterprise teams either ran Claude Code without a proper observability layer, or they implemented expensive workarounds at the application level. Teams using gateways like TrueFoundry or Bifrost could see that requests came from Claude Code (via the user-agent header) but could not distinguish a human typing from an automated agent loop.</p>
+
+<p>With the five new headers enabled, a gateway can now make intelligent decisions based on request class, agent type, previous tool timing, and context compaction state -- all without any changes to the Claude Code binary or your application code.</p>
+
+<h2>What are the five gateway hint headers and what does each one contain?</h2>
+
+<p>Claude Code v2.1.273 adds five headers that provide a proxy with structured metadata about each request. The headers are opt-in, sent only when you set CLAUDE_CODE_GATEWAY_HINT_HEADERS=1. Here is what each one tells your gateway, based on the changelog and inferred from the header naming conventions that Anthropic has established across the tool stack.</p>
+
+<ul>
+<li><strong>x-claude-code-request-class</strong> -- Classifies the type of API request being made. The classification distinguishes interactive work (a human actively typing) from automated or background work. This is the most important header for routing decisions: you can route interactive sessions to low-latency capacity while background agents go to a higher-throughput, potentially cheaper path.</li>
+
+<li><strong>x-claude-code-agent-type</strong> -- Identifies the agent role making the request. In multi-agent setups with orchestrators and subagents, this header tells your gateway which position in the agent tree is calling. Subagents doing bounded tasks can be routed to separate rate-limit pools from the top-level orchestrator.</li>
+
+<li><strong>x-claude-code-prev-tool-durations</strong> -- Passes timing data from the session's previous tool calls. If the last several tools each took 20+ seconds, the session is deep in an autonomous agent loop -- your gateway can use this to adjust timeout settings, queue priority, or billing tags without any code changes.</li>
+
+<li><strong>x-claude-code-compaction</strong> -- Signals whether this request is triggering a context compaction operation. Compaction turns are heavier: they process a larger context window to produce a compressed summary. Routing these to a dedicated capacity pool prevents compaction from competing with interactive requests.</li>
+
+<li><strong>x-claude-code-context-compacted</strong> -- Indicates whether context was already compacted earlier in this session. This marks a long-running session. Your gateway can use it to apply different timeout settings, flag for cost reporting, or route to infrastructure tuned for extended sessions.</li>
+</ul>
+
+<p>Anthropic has not yet published a formal enumeration of the possible values for each header -- that documentation is likely pending as the feature moves from opt-in to stable. The header names follow the same pattern as existing Claude Code headers, so expect string values that map directly to the classification categories shown in /status and the agent view.</p>
+
+<h2>How do you enable gateway hint headers in Claude Code?</h2>
+
+<p>Enabling the headers requires one environment variable. Set CLAUDE_CODE_GATEWAY_HINT_HEADERS=1 before launching Claude Code, and the five headers will appear on every request that flows through your ANTHROPIC_BASE_URL endpoint. There is no per-request configuration -- it is on or off for the entire session.</p>
+
+<p>Here is the minimal setup for routing Claude Code through a local gateway with hint headers enabled:</p>
+
+<pre><code>export ANTHROPIC_BASE_URL=https://your-gateway.example.com
+export ANTHROPIC_AUTH_TOKEN=your-api-key
+export CLAUDE_CODE_GATEWAY_HINT_HEADERS=1
+claude</code></pre>
+
+<p>For teams using background agents, the env var needs to reach the supervisor process -- not just your shell. The background agent supervisor inherits the environment of the shell that first starts it, so a shell export works during development. For production and CI, the more reliable approach is the env block in ~/.claude/settings.json:</p>
+
+<pre><code>&#123;
+  "env": &#123;
+    "ANTHROPIC_BASE_URL": "https://your-gateway.example.com",
+    "CLAUDE_CODE_GATEWAY_HINT_HEADERS": "1"
+  &#125;
+&#125;</code></pre>
+
+<p>This ensures that every background session on every machine picks up the setting, not just the shell that happened to cold-start the supervisor. The Claude Code network configuration docs call this out explicitly: background agents don't run inside the terminal that dispatched them, so shell exports are unreliable for anything that needs to reach --bg sessions.</p>
+
+<p>To confirm the headers are being sent, run claude --debug and inspect the session debug log at ~/.claude/debug/[session-id].txt. Look for outgoing request headers to your ANTHROPIC_BASE_URL endpoint.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>What can you actually do with these headers once they are in your gateway?</h2>
+
+<p>The immediate use cases are routing by request class, cost attribution by agent type, and dynamic timeout adjustment based on session state. Here are three concrete patterns that enterprise gateway teams can implement once v2.1.273 headers are available.</p>
+
+<h3>Route by request class</h3>
+
+<p>Set up separate upstream pools in your gateway for interactive vs. agent traffic. Interactive requests need low latency -- route them to your fastest Anthropic API region or a gateway node with dedicated connections. Background agent requests tolerate higher latency and can be queued more aggressively, which reduces your peak API spend during batch operations.</p>
+
+<h3>Attribute costs by agent type</h3>
+
+<p>With x-claude-code-agent-type in the request, your gateway can tag every token with the agent role that consumed it. Orchestrators handling complex multi-step tasks typically use more tokens than bounded subagents. Separating these in your cost reports shows exactly where your Claude Code budget is going -- which agent architecture patterns are expensive and which are efficient.</p>
+
+<h3>Adjust timeouts for long-running sessions</h3>
+
+<p>When x-claude-code-context-compacted is present, the session has already run long enough to trigger at least one compaction. The Claude Code docs document four streaming watchdog timers (first-byte deadline: 180s, event-level: 300s, byte-level: 180s, body idle: 5 minutes). For compacted sessions, you may want to relax the body idle timeout at the gateway layer, since long tool chains between model turns can push past the default five-minute window.</p>
+
+<h2>What else changed in v2.1.273?</h2>
+
+<p>Two other v2.1.273 changes are worth knowing about if you are running Claude Code in a team environment. The MCP disconnect notification is a quality-of-life fix for sessions where an MCP server drops out mid-work. Previously, if auto-reconnect gave up, the session would silently degrade -- tools would fail with no clear indication of the cause. Now, Claude Code surfaces a notification that points you directly to /mcp where you can reconnect or diagnose the issue.</p>
+
+<p>Session forking from remote control is the more technically interesting addition. If you start a session with claude --remote-control or use /remote-control from the Claude app, you can now fork that session. The fork runs as a background session on your local machine. Before this, remote control sessions were linear -- you could not branch a session into parallel tracks. The forking capability maps to how Claude Code already handles --bg and the agent view, extending that model to remote-initiated sessions.</p>
+
+<p>The other notable fixes in this release: the permission checker no longer silently skips prompts for Bash commands it cannot fully analyze (a security hygiene fix), /login and /upgrade no longer force full prompt-cache rewrites in long sessions (a latency fix), and skills from claude.ai now properly land in recoverable trash when an organization disables the Skills feature rather than being hard-deleted.</p>
+
+<h2>Which enterprise gateway should you use with Claude Code?</h2>
+
+<p>Three gateways have seen the most production adoption for Claude Code specifically. TrueFoundry is the managed option: it adds 3 -- 4ms of latency per request and handles 350+ requests per second on a single vCPU, with built-in SSO via Okta and Microsoft Entra ID, MCP governance, and multi-model routing across 1,000+ LLMs through an OpenAI-compatible API. Bifrost is the open-source option: it reports 11 microseconds of overhead at the proxy layer and integrates with Prometheus and OpenTelemetry for distributed tracing. Braintrust Gateway connects Claude Code traffic directly to Braintrust's observability and evaluation platform, which is useful if you are running evals against production traffic.</p>
+
+<p>For enterprise environments where the headers matter most -- auditing which agent types are consuming budget, separating interactive and background traffic -- TrueFoundry and Bifrost both support custom header extraction for routing rules. The exact configuration depends on your gateway, but the pattern is the same: extract x-claude-code-agent-type or x-claude-code-request-class and use it as a routing key or label in your usage analytics.</p>
+
+<p>If you are not yet running a dedicated LLM gateway and want to start, the minimal setup is Bifrost running locally or on a small VM, with ANTHROPIC_BASE_URL pointing at it. You get request logging, Prometheus metrics, and now header-level observability with CLAUDE_CODE_GATEWAY_HINT_HEADERS=1. That is enough to start understanding where your Claude Code token budget actually goes.</p>
+
+<h2>FAQ</h2>
+
+<h3>What is CLAUDE_CODE_GATEWAY_HINT_HEADERS and how do I turn it on?</h3>
+<p>CLAUDE_CODE_GATEWAY_HINT_HEADERS is an environment variable introduced in Claude Code v2.1.273 (September 15 2026). Setting it to 1 enables five new request headers sent to whatever endpoint you have configured via ANTHROPIC_BASE_URL. These headers expose request class, agent type, previous tool timing, and compaction state to your LLM proxy. Set it in ~/.claude/settings.json under the env block for it to reach background agent sessions.</p>
+
+<h3>Do the gateway hint headers expose any sensitive data?</h3>
+<p>The five headers carry metadata about request classification and session state -- not conversation content, user identifiers, or secrets. x-claude-code-prev-tool-durations passes timing data from previous tool executions. None of the headers contain prompt text, file contents, or API keys. They are safe to log and route on in your gateway, though you should still treat them as internal telemetry rather than data to expose externally.</p>
+
+<h3>Will the gateway hint headers work with Amazon Bedrock or Google Vertex AI?</h3>
+<p>The headers are sent to whatever URL is set in ANTHROPIC_BASE_URL. If you are routing through a gateway that fronts Bedrock or Vertex AI, the headers will reach that gateway. However, they are Claude Code -- specific headers, not Anthropic API headers, so the upstream providers (Bedrock, Vertex) will not process or act on them. Their value is at the proxy layer that sits between Claude Code and the upstream model provider.</p>
+
+<h3>What changed with MCP disconnect handling in v2.1.273?</h3>
+<p>When an MCP server disconnects mid-session and Claude Code's automatic reconnection attempts fail, v2.1.273 now surfaces a notification that points directly to /mcp. Before this change, failed reconnection was silent: tools would fail or become unavailable with no clear indication of why. The /mcp panel lets you manually reconnect, check server status, or diagnose authentication issues without restarting the session.</p>
+
+<h3>What is session forking in Claude Code and how does it work with remote control?</h3>
+<p>Session forking lets you branch a session into a parallel background track. Before v2.1.273, forking only worked from sessions you started locally. With v2.1.273, sessions started via claude --remote-control or /remote-control from the Claude app can now also be forked. The fork runs as a background session on your local machine, following the same model as sessions launched with --bg or through the agent view.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "What is CLAUDE_CODE_GATEWAY_HINT_HEADERS and how do I turn it on?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "CLAUDE_CODE_GATEWAY_HINT_HEADERS is an environment variable introduced in Claude Code v2.1.273 (September 15 2026). Setting it to 1 enables five new request headers sent to whatever endpoint you have configured via ANTHROPIC_BASE_URL. These headers expose request class, agent type, previous tool timing, and compaction state to your LLM proxy. Set it in ~/.claude/settings.json under the env block for it to reach background agent sessions."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Do the gateway hint headers expose any sensitive data?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The five headers carry metadata about request classification and session state -- not conversation content, user identifiers, or secrets. x-claude-code-prev-tool-durations passes timing data from previous tool executions. None of the headers contain prompt text, file contents, or API keys. They are safe to log and route on in your gateway, though you should treat them as internal telemetry rather than data to expose externally."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Will the gateway hint headers work with Amazon Bedrock or Google Vertex AI?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The headers are sent to whatever URL is set in ANTHROPIC_BASE_URL. If you are routing through a gateway that fronts Bedrock or Vertex AI, the headers will reach that gateway. However, they are Claude Code-specific headers, not Anthropic API headers, so the upstream providers will not process or act on them. Their value is at the proxy layer that sits between Claude Code and the upstream model provider."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What changed with MCP disconnect handling in v2.1.273?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "When an MCP server disconnects mid-session and Claude Code's automatic reconnection attempts fail, v2.1.273 now surfaces a notification that points directly to /mcp. Before this change, failed reconnection was silent: tools would fail with no clear indication of why. The /mcp panel lets you manually reconnect, check server status, or diagnose authentication issues without restarting the session."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is session forking in Claude Code and how does it work with remote control?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Session forking lets you branch a session into a parallel background track. Before v2.1.273, forking only worked from locally started sessions. With v2.1.273, sessions started via claude --remote-control or /remote-control from the Claude app can now also be forked. The fork runs as a background session on your local machine, following the same model as sessions launched with --bg or through the agent view."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
