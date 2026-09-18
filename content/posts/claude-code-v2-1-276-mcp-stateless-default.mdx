@@ -1,0 +1,144 @@
+---
+id: claude-code-v2-1-276-mcp-stateless-default
+uuid: claude-code-v2-1-276-mcp-stateless-default
+slug: claude-code-v2-1-276-mcp-stateless-default
+title: "Claude Code v2.1.276: MCP 2026-07-28 Is Now the Default -- What Changed and What to Update"
+excerpt: Claude Code v2.1.276, released September 18 2026, makes the MCP 2026-07-28 stateless spec the default for all Bedrock, Vertex AI, Azure Foundry, and telemetry-disabled deployments. The initialize hand
+feature_image: null
+featured: false
+published_at: "2026-09-18T03:07:07-07:00"
+updated_at: "2026-09-18T03:07:07-07:00"
+reading_time: 8
+tags: [news, claude-code, mcp, enterprise]
+tag_names: [News, Claude Code, MCP, Enterprise]
+primary_tag: news
+primary_tag_name: News
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code v2.1.276: MCP 2026-07-28 Is Now Default"
+meta_description: Claude Code v2.1.276 makes the MCP 2026-07-28 stateless spec default for Bedrock, Vertex, and Foundry. What breaks, opt-out flags, and the migration path.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code v2.1.276: MCP 2026-07-28 Is Now the Default -- What Changed and What to Update</h1>
+
+<p class="lede">Claude Code v2.1.276, released September 18 2026, makes the MCP 2026-07-28 stateless spec the default for all Bedrock, Vertex AI, Azure Foundry, and telemetry-disabled deployments. The initialize handshake is gone. Mcp-Session-Id headers are gone. If your MCP server tracks state via session IDs, it will break without the opt-out flag or a migration.</p>
+
+<p>I have been running MCP servers on Bedrock for months. This update is the one that finally forces the migration I have been putting off. Here is what actually changed, what breaks, and how to handle it.</p>
+
+<h2>What changed in Claude Code v2.1.276?</h2>
+
+<p>Claude Code v2.1.276 flips the MCP client to v2 by default for all cloud-provider deployments: Amazon Bedrock, Google Vertex AI, Microsoft Azure Foundry, and any install with telemetry disabled. Direct HTTP servers now negotiate using the 2026-07-28 protocol version. Two environment variables let you opt out: <code>MCP_SDK_GENERATION=v1</code> or <code>MCP_PROTOCOL_NEGOTIATION=legacy</code>. Released 2026-09-18T02:12:26Z, per the <a href="https://github.com/anthropics/claude-code/releases/tag/v2.1.276">official GitHub release</a>.</p>
+
+<p>Three other changes ship in the same release. First: <code>/code-review</code> no longer spawns multiple review subagents for models without custom-tuned review settings. It now runs a single leaner inline review prompt, which is faster and uses fewer tokens for the typical use case. Second: MCP entries marked <code>&quot;type&quot;: &quot;sdk&quot;</code> in <code>.mcp.json</code>, settings, plugins, and agent files are now skipped with a warning instead of producing a hard error -- a cleanup for stale configs left over from late-2025 SDK migrations. Third: SubagentStop hooks now fire correctly when the matching agent type field is empty, fixing a silent hook-skip bug.</p>
+
+<h2>What is the MCP 2026-07-28 stateless spec?</h2>
+
+<p>The 2026-07-28 spec is the largest revision to MCP since the protocol launched. The headline change is a stateless protocol core. The <code>Mcp-Session-Id</code> header is gone. The <code>initialize</code>/<code>initialized</code> handshake is gone. Every request now carries its own protocol version and client capabilities in a <code>_meta</code> field instead of relying on a persistent connection to establish them. Per the <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28/">official spec announcement</a>, this removes the three biggest blockers to cloud-scale MCP deployment.</p>
+
+<p>Why this specifically matters for cloud deployments: stateless requests can land on any server instance behind a plain round-robin load balancer with no shared session store. Before this spec, teams running MCP in production on Bedrock or Vertex had to either pay for sticky sessions or build their own distributed session store. The new spec eliminates that cost entirely. This was the single most-requested change from teams running MCP servers at production scale, according to the <a href="https://betterstack.com/community/guides/ai/mcp-stateless/">Better Stack migration guide</a>.</p>
+
+<p>All four Tier 1 SDKs -- Python, TypeScript, Kotlin, and Go -- have shipped updated implementations with migration paths documented. The SDK betas for this spec published in advance, so by the time v2.1.276 made it default, the migration tooling was already stable.</p>
+
+<h2>What breaks and what to replace it with</h2>
+
+<p>Three subsystems are deprecated in 2026-07-28 -- they still function today, but the earliest removal window is July 2027. If your server uses any of these, start planning now. The <a href="https://blog.modelcontextprotocol.io/posts/2026-07-28/">spec deprecation policy</a> guarantees a minimum twelve-month window, but the default flip in v2.1.276 means cloud MCP clients are already running v2 negotiation against your servers today.</p>
+
+<p><strong>Sampling</strong> is the most disruptive deprecation. If your MCP server relies on sampling, the replacement moves the model call from client-side to your own server-side LLM provider integration. That is real rework -- you are changing where and how model calls happen. The <a href="https://workos.com/blog/mcp-stateless-spec-2026-07-28">WorkOS migration guide</a> calls this the one deprecation most likely to require significant architectural changes rather than mechanical substitutions.</p>
+
+<p><strong>Roots</strong> are deprecated in favor of passing directories or file paths as ordinary tool parameters or resource URIs. Mechanical change, but it touches every tool definition that relies on the roots mechanism. Audit <code>roots/list</code> calls in your server first, then replace with explicit parameter definitions.</p>
+
+<p><strong>Logging</strong> (the <code>setLevel</code>/<code>logging</code> subsystem) is deprecated. The replacement is simpler: log to stderr on stdio transport, or route to whatever logging infrastructure you already use outside MCP. Per <a href="https://portkeel.com/blog/mcp-deprecated-features-2026">Portkeel&apos;s deprecation breakdown</a>, this is the easiest of the three to migrate -- usually a one-file change.</p>
+
+<p>HTTP+SSE transport and OAuth 2.0 Dynamic Client Registration are also deprecated, though these affect fewer teams in the typical Bedrock/Vertex setup.</p>
+
+<p><strong>State management without sessions:</strong> dropping the protocol session does not force your application to be stateless. The pattern the spec maintainers recommend is that a tool mints an opaque handle, returns it to the model, and the model passes that handle back as a regular argument on subsequent calls. Your server stores whatever it needs in its own backend -- a database, a cache, a file. The protocol no longer manages it. Per the <a href="https://betterstack.com/community/guides/ai/mcp-stateless/">Better Stack guide</a>, this pattern is more explicit and easier to debug than session-based state was.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
+
+<h2>How to use the opt-out flags</h2>
+
+<p>Two environment variables preserve v1 MCP behavior for deployments that need more time: <code>MCP_SDK_GENERATION=v1</code> keeps the v1 MCP client SDK, and <code>MCP_PROTOCOL_NEGOTIATION=legacy</code> keeps the old handshake-based negotiation path. Either one works; you do not need both. Set them in your deployment environment before the session starts -- they are read at startup, not at connection time.</p>
+
+<p>When to use the opt-out: if you have server-side session state that cannot be migrated in an afternoon, if your team is mid-sprint and this is not the week for a protocol migration, or if you are waiting on a dependency that has not yet shipped v2 SDK support. The deprecation window guarantees these flags will keep working until at least July 2027.</p>
+
+<p>When to stop using the opt-out: as soon as your servers handle stateless requests. Every month you run on legacy negotiation is a month your cloud deployment is running an increasingly untested code path as the ecosystem converges on v2. I would treat the opt-out as a two-sprint bridge, not a permanent configuration. Set a reminder for Q1 2027 at the latest.</p>
+
+<p>One practical note: if you run multiple MCP servers behind one Claude Code deployment, you can migrate them individually. The v2 client negotiates the spec version during connection -- servers that still advertise the old protocol version will fall back to legacy behavior even with a v2 client. The flag is a hard override; negotiation is the gradual path.</p>
+
+<h2>The /code-review change: what it means day-to-day</h2>
+
+<p>The <code>/code-review</code> change in v2.1.276 is worth understanding even if MCP migration is not on your plate this week. Previously, running <code>/code-review</code> on a model without custom review settings would spawn multiple parallel subagents -- one per review dimension (bugs, style, security, etc.). As of v2.1.276, models without tuned settings get a single leaner inline review prompt instead.</p>
+
+<p>In practice, for most codebases and most models this is faster and cheaper with comparable quality on routine reviews. The multi-subagent approach was designed for large-codebase thoroughness with custom prompt tuning -- running it by default on every model was adding token overhead without proportional accuracy gains. If you rely on the parallel subagent behavior for a specific workflow, check whether your model has custom review settings configured; if not, you are now on the inline path as of this version.</p>
+
+<p>The SubagentStop hook fix is a smaller but clean quality-of-life change. If you have hooks configured that fire on subagent completion, the previous behavior would silently skip the hook when <code>agentType</code> was an empty string. v2.1.276 fixes the matcher so those hooks fire correctly. If you have been wondering why certain subagent hooks seemed to run inconsistently, check whether you were hitting the empty-type case.</p>
+
+<h2>FAQ</h2>
+
+<h3>Does v2.1.276 automatically break existing MCP servers?</h3>
+<p>Not immediately, because opt-out flags exist. However, cloud deployments on Bedrock, Vertex AI, or Azure Foundry that run stateful MCP servers relying on Mcp-Session-Id will see connection failures when those servers receive v2 MCP requests without the legacy opt-out flag set. Set <code>MCP_SDK_GENERATION=v1</code> or <code>MCP_PROTOCOL_NEGOTIATION=legacy</code> to preserve v1 behavior while you migrate.</p>
+
+<h3>What is the actual deadline for migrating off sampling, roots, and logging?</h3>
+<p>The 2026-07-28 spec enforces a minimum twelve-month deprecation window for Sampling, Roots, Logging, HTTP+SSE transport, and OAuth Dynamic Client Registration. Earliest removal is July 2027. That said, the default flip in v2.1.276 means v2 clients are already in production -- do not treat July 2027 as the start date for planning. Start now, especially if you use Sampling.</p>
+
+<h3>What replaces Mcp-Session-Id for stateful workflows?</h3>
+<p>The spec-recommended pattern is tool-based handles: your tool mints an opaque handle (a UUID tied to server-side state in your own database or cache), returns it to the model as a regular tool output, and the model passes it back as a standard argument on follow-up calls. The protocol is stateless -- your application state is managed by your own backend, not by the protocol layer.</p>
+
+<h3>Is the MCP stateless default also rolling out to Claude.ai and standard Claude Code installs?</h3>
+<p>Not yet. v2.1.276 targets Bedrock, Vertex AI, Azure Foundry, and telemetry-disabled installs specifically. The broader rollout timeline for Claude.ai and standard Claude Code is tracked in the <a href="https://claude.com/blog/bringing-mcp-2026-07-28-to-claude">Anthropic announcement post</a>. Enterprise cloud deployments are the first wave; consumer and standard installs follow separately.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Does v2.1.276 automatically break existing MCP servers?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not immediately, because opt-out flags exist. However, cloud deployments on Bedrock, Vertex AI, or Azure Foundry that run stateful MCP servers relying on Mcp-Session-Id will see connection failures when those servers receive v2 MCP requests without the legacy opt-out flag set. Set MCP_SDK_GENERATION=v1 or MCP_PROTOCOL_NEGOTIATION=legacy to preserve v1 behavior while you migrate."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What is the actual deadline for migrating off sampling, roots, and logging?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The 2026-07-28 spec enforces a minimum twelve-month deprecation window for Sampling, Roots, Logging, HTTP+SSE transport, and OAuth Dynamic Client Registration. Earliest removal is July 2027. However, the default flip in v2.1.276 means v2 clients are already in production -- do not treat July 2027 as the start date for planning."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What replaces Mcp-Session-Id for stateful workflows?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "The spec-recommended pattern is tool-based handles: your tool mints an opaque handle tied to server-side state in your own database or cache, returns it to the model as a regular tool output, and the model passes it back as a standard argument on follow-up calls. The protocol is stateless -- your application state is managed by your own backend."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Is the MCP stateless default also rolling out to Claude.ai and standard Claude Code installs?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not yet. v2.1.276 targets Bedrock, Vertex AI, Azure Foundry, and telemetry-disabled installs specifically. The broader rollout for Claude.ai and standard Claude Code is tracked in Anthropic's announcement post. Enterprise cloud deployments are the first wave; consumer and standard installs follow separately."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Get the AI Agent Briefing</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">One email per week. The best AI agent news, tutorials, and tools -- written by someone who actually builds with them.</p>
+  <a href="https://aiagentsfirst.com/#newsletter" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Subscribe Free</a>
+</div>
