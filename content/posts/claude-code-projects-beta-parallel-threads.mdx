@@ -1,0 +1,180 @@
+---
+id: claude-code-projects-beta-parallel-threads
+uuid: claude-code-projects-beta-parallel-threads
+slug: claude-code-projects-beta-parallel-threads
+title: "Claude Code Projects Beta: How Parallel Threads and Shared Memory Work"
+excerpt: Claude Code Projects (beta, September 2026) lets one project conversation coordinate multiple parallel cloud sessions -- called threads -- that share repositories, memory, and a file library. You desc
+feature_image: null
+featured: false
+published_at: "2026-09-22T03:08:37-07:00"
+updated_at: "2026-09-22T03:08:37-07:00"
+reading_time: 11
+tags: [tutorials, claude-code, agent-workflows]
+tag_names: [Tutorials, Claude Code, Agent Workflows]
+primary_tag: tutorials
+primary_tag_name: Tutorials
+author: Dustin Gilmour
+author_slug: dustin
+meta_title: "Claude Code Projects Beta: Parallel Threads Explained"
+meta_description: Claude Code Projects beta runs parallel agent threads sharing repositories and memory. How it works, what it costs, and how to set up your first project.
+og_image: null
+og_title: null
+og_description: null
+canonical_url: null
+visibility: public
+---
+
+<h1>Claude Code Projects Beta: How Parallel Threads and Shared Memory Work</h1>
+
+<p class="lede">Claude Code Projects (beta, September 2026) lets one project conversation coordinate multiple parallel cloud sessions -- called threads -- that share repositories, memory, and a file library. You describe what needs doing; Claude splits the work, runs threads in parallel, and keeps going after you close your laptop. Available now to select Pro and Max users.</p>
+
+<p>I've been watching this roll out since September 17 and the concept is genuinely different from how Claude Code has worked until now. It's not just "run multiple sessions." It's a coordinator model where the project conversation handles routing and memory so you don't have to.</p>
+
+<h2>What exactly is a Claude Code Project?</h2>
+
+<p>A Claude Code Project is one ongoing conversation that acts as a coordinator, spawning parallel cloud sessions -- threads -- that each handle a piece of work. Every thread starts with shared repositories, instructions, and memory. The coordinator routes tasks, tracks state, and surfaces what needs your attention in the Overview pane.</p>
+
+<p>The official docs spell out the distinction from claude.ai Projects: "Claude Projects help Claude remember the context you gave it. Claude Code Projects are designed to help Claude remember and coordinate the work it is doing." Context vs. coordination -- that's the architectural split that makes the two features different tools for different problems.</p>
+
+<p>Three things are shared automatically across every thread a project spawns:</p>
+
+<ul>
+<li>Repository access (all GitHub repos you connected to the project)</li>
+<li>Project instructions and memory (rules, decisions, standing context)</li>
+<li>CLAUDE.md files and skills from each connected repository</li>
+</ul>
+
+<p>One rule stated once -- "always target the <code>develop</code> branch, never push directly to <code>main</code>" -- propagates to every new thread without you repeating it. That's the core value the coordinator model delivers for any work spanning more than one session or repository.</p>
+
+<h2>How do parallel threads actually work?</h2>
+
+<p>Each thread in a Claude Code Project is an independent cloud session: Claude Code running on Anthropic's infrastructure, not on your machine. Threads run simultaneously, each on its own git branch, and open pull requests when the work calls for one. The coordinator sees what threads report back, not every step they take -- it tracks state, not execution.</p>
+
+<p>The Overview pane is your control surface. It shows threads sorted by state: "Ready for review" (PRs open and waiting), "Waiting on you" (thread hit a decision point it can't resolve on its own), and "Working" (still running). You can steer individual threads from the Claude mobile app on iOS and Android -- no laptop required to unblock a thread that's waiting on a judgment call.</p>
+
+<p>In practice: paste a batch of tasks into the project conversation, optionally tell Claude to start without asking for confirmation, and walk away. When you're back, the Overview shows which PRs are ready, which threads need an answer, and which are still running. The Library tab collects every artifact threads produced -- generated files, write-ups, specs -- for retrieval and for future threads to build on.</p>
+
+<p>A concrete use case from the official docs: "One goal across many repositories. Bring every service up to the new lint config." Claude runs one thread per repository, each opening its own pull request. Without a project you'd be managing those sessions individually, re-explaining the lint config to each one. With a project, one standing instruction in project memory handles it across all threads.</p>
+
+<h2>How shared project memory works</h2>
+
+<p>Shared project memory is a standing context every new thread starts with automatically. You define it in project instructions -- rules, constraints, architectural decisions, anything that should apply to all threads. When a thread discovers something worth remembering (a bug pattern, a breaking change, a naming constraint), you tell Claude to log it to project memory so the next thread inherits it.</p>
+
+<p>This is the part that changes how long-running work actually feels. Say you're migrating a monorepo across 8 services to a new ORM. Thread 1 hits a quirk with the legacy transaction wrapper. You tell Claude: "Add to project memory: transactions in this codebase use the legacy wrapper in <code>utils/db.py</code>, not standard ORM syntax." Threads 2 through 8 all start with that knowledge -- no retelling, no relearning the same edge case.</p>
+
+<p>The project conversation itself is the coordinator's persistent view. Every thread reports back to the same conversation when it finishes, so the coordinator sees the full picture of what's done, blocked, or waiting. Decisions you add early in a migration are still there for threads you spin up days later. Context doesn't reset between sessions the way a standalone cloud session would.</p>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
+
+<h2>How to set up your first Claude Code Project</h2>
+
+<p>Setting up a project requires a Pro or Max plan, code on github.com, and the Claude GitHub App installed on your repositories. Go to claude.ai/code, click Projects in the sidebar, then New project. Only the project name is required to start -- you add repositories, instructions, and a goal as the work takes shape.</p>
+
+<p>The full setup flow:</p>
+
+<ol>
+<li><strong>Name the project</strong> -- scope it to one stream of work ("API latency fixes", "ORM migration", "lint rollout across services")</li>
+<li><strong>Add a goal</strong> (optional but worth doing) -- one line Claude works toward, such as "Hold p95 API latency under 200 ms"</li>
+<li><strong>Add context</strong> -- the GitHub repos you want threads to work on, plus any files or Google Drive folders threads should read</li>
+<li><strong>Create the project</strong> -- Claude may auto-start an exploration thread that reads the repo and posts setup recommendations</li>
+<li><strong>Set project instructions</strong> -- write the standing rules all threads start with (branch targets, naming conventions, what to avoid)</li>
+</ol>
+
+<p>On first project creation, Claude takes one automatic turn: it reads any connected repo and posts "Setup recommendations" -- repositories to add, routines to create, threads it could start. Toggle what you want and click Update setup, or skip the recommendations and send your first batch of work directly.</p>
+
+<p>One migration shortcut worth knowing: if you already have a cloud session doing work that belongs in a project, open the session's menu in the sidebar and choose "Continue as a project." Claude reads the session context and converts it -- existing context carries over, you don't start from scratch.</p>
+
+<p>GitHub setup note: project threads require the Claude GitHub App to be installed on each repository, not just the token-based connection that <code>/web-setup</code> creates. If threads report repository access errors on startup, that's usually the cause. The install is a one-time step at github.com/settings/installations.</p>
+
+<h2>The real limitations: what doesn't work yet</h2>
+
+<p>Three constraints define what Claude Code Projects can't do in beta: threads are cloud-only with no access to local files or VPN-gated services, only github.com repositories work (not GitLab, GitHub Enterprise Server, or Bitbucket), and merge conflicts from overlapping thread changes are still resolved manually.</p>
+
+<p>The cloud-only constraint is the most significant for teams with non-trivial local setups. Threads cannot reach local databases, device emulators, internal APIs behind a firewall, or any tool that exists only on your machine. You can upload local files directly to the project's Library for threads to read, but threads can't call tools on your machine. Anthropic says local support is coming "very soon" -- it's not in beta as of September 2026.</p>
+
+<p>The GitHub-only constraint is worth checking before you plan a migration. GitLab, GitHub Enterprise Server, and Bitbucket are all unsupported as of September 2026. If your team runs a self-hosted git solution, project threads can't point at your repos yet.</p>
+
+<p>Merge conflicts are handled the way they'd be in any parallel git workflow. Each thread works on its own branch, so there's no collision mid-execution. But when branches get merged, overlapping changes produce standard conflicts. The Overview pane surfaces threads with issues, but resolving the conflict is your job. The cleanest mitigation: scope threads to distinct files, directories, or repositories where possible.</p>
+
+<p>One behavioral note on auto-start: when you create a new project, Claude takes an automatic turn before you send your first message, and that turn draws from your plan limits. If you don't want Claude doing anything until you're fully configured, send a message like "Don't start any threads yet" immediately after creating the project.</p>
+
+<h2>Usage costs: parallel threads burn your plan faster than you expect</h2>
+
+<p>Claude Code Projects drain your Pro or Max plan faster than single-session work because each parallel thread is a full cloud session running at Opus-level effort by default. Five simultaneous threads consume roughly 5x the tokens of a single session. Max 5x ($100/month) is the practical minimum for sustained parallel workloads; Max 20x ($200/month) is the realistic tier for large multi-repo migrations with 10+ threads running.</p>
+
+<p>The plan tiers: Pro is $20/month, Max 5x is $100/month (5x the usage capacity of Pro), and Max 20x is $200/month (20x the usage capacity of Pro). Anthropic hasn't published a fixed thread cap -- projects draw from the same shared limits as your other Claude Code sessions until they're exhausted. You can add usage credits or switch to pay-as-you-go API billing if you hit the ceiling mid-project.</p>
+
+<p>Practical steps to avoid unexpectedly draining your plan: scope the project goal tightly so Claude doesn't spin up threads outside your intended work area, add a thread preference to your project instructions ("don't start more than three threads at once"), and review the auto-start recommendations on first project creation before accepting all of them. The thread preference is advisory, not a hard cap, but it helps Claude make better routing decisions.</p>
+
+<h2>When to use a project (and when not to)</h2>
+
+<p>Claude Code Projects pay off when work outlasts one session and generates a continuous stream of related tasks: multi-repo migrations, ongoing bug triage for a single service, or batch processing a large document set. The coordinator overhead is worth it when the alternative is manually managing 5+ parallel sessions, re-explaining context to each one and tracking their state yourself.</p>
+
+<p>Projects are not the right tool for a single task that fits in one session (just start a cloud session directly), work that requires local machine access (use a local session or agent view), or a recurring scheduled task with no interactive conversation around it (use a Routine). The GitHub App setup and project configuration have real overhead -- don't create a project for work that finishes in 20 minutes.</p>
+
+<p>One non-obvious use case from the official docs: document analysis with no code at all. Upload a folder of contracts or a support-ticket export to the project Library, and threads each process a chunk and deliver write-ups as Library files. No GitHub repos needed. If you have large unstructured document batches to analyze in parallel, the batch processing model works even without any code repositories connected.</p>
+
+<h2>FAQ</h2>
+
+<h3>Who can use Claude Code Projects beta?</h3>
+<p>Claude Code Projects beta is available to select Claude Pro ($20/month) and Max ($100-200/month) subscribers who have used cloud sessions and don't already have Projects on claude.ai chat or Cowork. Rollout started September 17, 2026, expanding to more Pro and Max users over the following week. Team and Enterprise plans are not yet supported. Join the waitlist at claude.com/form/projects if it hasn't reached your account.</p>
+
+<h3>Does each thread burn tokens from a separate pool?</h3>
+<p>No -- all threads draw from the same shared plan limit as your other Claude Code sessions. There's no separate allocation per thread. Each thread runs at Opus-level effort by default, so five parallel threads consume roughly five times the tokens a single session would in the same period. Max 5x or Max 20x plans provide substantially more headroom for parallel workloads than the base Pro plan.</p>
+
+<h3>Can project threads access my local development environment?</h3>
+<p>Not currently. As of September 2026, threads are cloud-only and cannot reach local files, VPN-gated services, local databases, or device emulators. You can upload local files to the project Library for threads to read, but threads cannot call tools that exist only on your machine. Anthropic describes local access support as coming "very soon" in the official documentation.</p>
+
+<h3>What happens when two threads modify the same file?</h3>
+<p>Each thread works on its own git branch, so changes don't collide in real-time. When branches are merged, overlapping changes produce standard git merge conflicts -- the same as any parallel git workflow. The Overview pane surfaces threads that ran into problems, but conflict resolution is a manual step. Scoping threads to distinct parts of the codebase or separate repositories is the cleanest way to avoid this.</p>
+
+<script type="application/ld+json">
+&#123;
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    &#123;
+      "@type": "Question",
+      "name": "Who can use Claude Code Projects beta?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Claude Code Projects beta is available to select Claude Pro ($20/month) and Max ($100-200/month) subscribers who have used cloud sessions and don't already have Projects on claude.ai chat or Cowork. Rollout started September 17, 2026. Team and Enterprise plans are not yet supported. Join the waitlist at claude.com/form/projects."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Does each thread burn tokens from a separate pool?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "No -- all threads draw from the same shared plan limit as your other Claude Code sessions. Each thread runs at Opus-level effort by default, so five parallel threads consume roughly five times the tokens of a single session. Max 5x or Max 20x plans provide substantially more headroom for parallel workloads."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "Can project threads access my local development environment?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Not currently. As of September 2026, threads are cloud-only and cannot reach local files, VPN-gated services, local databases, or device emulators. You can upload local files to the project Library for threads to read. Anthropic describes local access support as coming very soon in the official documentation."
+      &#125;
+    &#125;,
+    &#123;
+      "@type": "Question",
+      "name": "What happens when two threads modify the same file?",
+      "acceptedAnswer": &#123;
+        "@type": "Answer",
+        "text": "Each thread works on its own git branch. When branches are merged, overlapping changes produce standard git merge conflicts. The Overview pane surfaces threads that ran into problems, but conflict resolution is a manual step. Scoping threads to distinct parts of the codebase or separate repositories avoids this."
+      &#125;
+    &#125;
+  ]
+&#125;
+</script>
+
+<div style="background: #1a1a2e; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 32px; margin: 40px 0; text-align: center;">
+  <h3 style="color: #e2e8f0; margin-top: 0; font-size: 22px;">Want the templates from this tutorial?</h3>
+  <p style="color: rgba(226, 232, 240, 0.7); font-size: 16px; line-height: 1.6;">I share every workflow, prompt, and template inside the free AI Creator Hub on Skool. 500+ builders sharing what actually works.</p>
+  <a href="https://www.skool.com/e-com-freedom-amazon-tiktok-4556" target="_blank" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin-top: 8px;">Join Free on Skool</a>
+</div>
